@@ -14,13 +14,19 @@ import {
   Search,
   X,
   ArrowDownLeft,
-  ArrowLeftRight,
   ArrowUpRight,
+  Plus,
+  CreditCard,
+  Users,
+  ShieldCheck,
+  TrendingUp,
   Repeat,
 } from 'lucide-react-native';
 import { useAppTheme } from '../../context/theme-context';
-import { triggerHaptic } from '../../constants/theme';
+import { FONTS, triggerHaptic } from '../../constants/theme';
 import { UserAvatar } from '../../components/ui/UserAvatar';
+import { AmbientGlowBackground } from '../../components/ui/AmbientGlowBackground';
+import { BentoFactorCard } from '../../components/ui/BentoFactorCard';
 import { UserProfileModal, UserProfile } from '../../components/profile/UserProfileModal';
 import { PermissionsModal } from '../../components/security/PermissionsModal';
 import {
@@ -49,6 +55,7 @@ import {
   useCategoriesLive,
   useRecurringLive,
   useUserLive,
+  usePeopleLive,
   addTransaction,
   updateTransaction,
   deleteTransaction,
@@ -107,6 +114,7 @@ export default function DaybookScreen() {
   const { data: dbCategories = [] } = useCategoriesLive();
   const { data: dbRecurring = [] } = useRecurringLive();
   const { data: dbUsers = [] } = useUserLive();
+  const { data: dbPeople = [] } = usePeopleLive();
 
   // Map Drizzle data to component models - 100% dynamic without static seed fallbacks
   const userProfile: UserProfile = useMemo(() => {
@@ -139,25 +147,24 @@ export default function DaybookScreen() {
             const parsed = JSON.parse(c.meshGradient);
             if (parsed.customGradient) customGradient = parsed.customGradient;
             if (parsed.shapePattern) shapePattern = parsed.shapePattern;
-            if (parsed.tabLabel) tabLabel = parsed.tabLabel;
           } catch {
-            tabLabel = c.meshGradient;
+            // Safe JSON parse fallback
           }
         }
 
         return {
           id: c.id,
           name: c.title,
-          cardType: (c.icon?.toUpperCase() || 'VAULT') as any,
+          tabLabel,
           limit: c.totalLimit,
           spent: c.spent || 0,
-          cardNum: '**** 9743',
-          holder: userProfile.name || 'Personal Envelope',
-          expiry: c.cycleDate || 'Monthly',
-          variant: (c.color as any) || 'matchaLime',
+          cardNum: '•••• ' + c.id.slice(-4),
+          variant: ((c as any).gradientType as any) || 'violetGlow',
           customGradient,
           shapePattern,
-          tabLabel,
+          holder: userProfile.name || 'Personal Vault',
+          expiry: 'Monthly',
+          cardType: ((c as any).cardType as any) || 'DEBIT',
         };
       });
     }
@@ -167,13 +174,14 @@ export default function DaybookScreen() {
   const transactions: DashboardTxItem[] = useMemo(() => {
     if (dbTx && dbTx.length > 0) {
       return dbTx.map((t) => {
-        let displayTime = t.timestamp;
+        let displayTime = 'Today';
         try {
-          const d = new Date(t.timestamp);
-          if (!isNaN(d.getTime())) {
-            displayTime = d.toLocaleDateString('en-US', {
-              month: 'short',
-              day: 'numeric',
+          const dateObj = new Date(t.timestamp);
+          if (!isNaN(dateObj.getTime())) {
+            displayTime = dateObj.toLocaleTimeString([], {
+              hour: '2-digit',
+              minute: '2-digit',
+              hour12: true,
             });
           }
         } catch {
@@ -228,11 +236,20 @@ export default function DaybookScreen() {
     return [];
   }, [dbRecurring]);
 
-  // Total balance calculation
+  // Total balance and utilization calculation
   const totalBalance = useMemo(
     () => budgetCards.reduce((acc, c) => acc + (c.limit - c.spent), 0),
     [budgetCards]
   );
+  const totalLimit = useMemo(
+    () => budgetCards.reduce((acc, c) => acc + c.limit, 0),
+    [budgetCards]
+  );
+  const totalSpent = useMemo(
+    () => budgetCards.reduce((acc, c) => acc + c.spent, 0),
+    [budgetCards]
+  );
+  const budgetUtilization = totalLimit > 0 ? Math.round((totalSpent / totalLimit) * 100) : 0;
 
   // Search filtered transactions
   const filteredTx = useMemo(() => {
@@ -353,10 +370,13 @@ export default function DaybookScreen() {
       style={{
         flex: 1,
         backgroundColor: colors.bgPrimary,
-        paddingTop: Math.max(insets.top + 6, 32),
+        paddingTop: Math.max(insets.top + 6, 28),
       }}
     >
-      {/* Top Bar: Profile avatar, greeting, notifications toggle */}
+      {/* Ambient Diffuse Background Glow (Reference Image 1, 2, 3) */}
+      <AmbientGlowBackground />
+
+      {/* Top Bar: Profile avatar, greeting, notifications button (Reference Image 3) */}
       <View style={styles.topBar}>
         <TouchableOpacity
           style={styles.profileRow}
@@ -374,10 +394,10 @@ export default function DaybookScreen() {
           />
           <View>
             <Text style={[styles.greetingSub, { color: colors.textSecondary }]}>
-              {userProfile.name ? `Hi, ${userProfile.name.split(' ')[0]}` : 'Personal Vault'} • Available {currencySymbol}{totalBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              {userProfile.name ? `Good Morning,` : 'Welcome Back,'}
             </Text>
             <Text style={[styles.greetingTitle, { color: colors.textPrimary }]}>
-              Welcome Back!
+              {userProfile.name ? userProfile.name.split(' ')[0] : 'Personal Vault'}
             </Text>
           </View>
         </TouchableOpacity>
@@ -387,8 +407,8 @@ export default function DaybookScreen() {
             style={[
               styles.topIconBtn,
               {
-                backgroundColor: isDark ? colors.cardSecondary : '#F4F4EE',
-                borderColor: isDark ? colors.borderSubtle : '#EAEAE2',
+                backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : '#FFFFFF',
+                borderColor: isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.06)',
               },
             ]}
             onPress={() => {
@@ -401,43 +421,21 @@ export default function DaybookScreen() {
             <View
               style={[
                 styles.notifDot,
-                { backgroundColor: colors.matchaLime },
+                { backgroundColor: colors.coralRose || colors.matchaLime },
               ]}
             />
           </TouchableOpacity>
         </View>
       </View>
 
-      {/* Real-time Search Input Bar */}
-      <View style={styles.searchBarWrapper}>
-        <View
-          style={[
-            styles.searchBarBox,
-            {
-              backgroundColor: isDark ? colors.cardSecondary : '#F4F4EE',
-              borderColor: isDark ? colors.borderSubtle : '#E8E8E0',
-            },
-          ]}
-        >
-          <Search size={18} color={colors.textMuted} />
-          <TextInput
-            value={dashboardSearchQuery}
-            onChangeText={setDashboardSearchQuery}
-            placeholder="Search payments, transactions, channels..."
-            placeholderTextColor={colors.textMuted}
-            style={[styles.searchInputText, { color: colors.textPrimary }]}
-          />
-          {dashboardSearchQuery.length > 0 && (
-            <TouchableOpacity
-              onPress={() => {
-                triggerHaptic('light');
-                setDashboardSearchQuery('');
-              }}
-            >
-              <X size={16} color={colors.textSecondary} />
-            </TouchableOpacity>
-          )}
-        </View>
+      {/* "Your Balance" Headline directly from Image 3 Reference */}
+      <View style={styles.balanceHeaderWrap}>
+        <Text style={[styles.balanceHeaderLabel, { color: colors.textSecondary }]}>
+          Your Balance
+        </Text>
+        <Text style={[styles.balanceHeaderAmount, { color: colors.textPrimary }]}>
+          {currencySymbol}{totalBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+        </Text>
       </View>
 
       <ScrollView
@@ -445,7 +443,7 @@ export default function DaybookScreen() {
         contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 120 }}
         showsVerticalScrollIndicator={false}
       >
-        {/* Modular Stepped Budget Cards Stack */}
+        {/* Modular Stepped Budget Cards Stack (Vibrant Mesh Credit Card - Image 3) */}
         <BudgetCardStack
           cards={budgetCards}
           activeIndex={activeCardIndex}
@@ -461,69 +459,130 @@ export default function DaybookScreen() {
           currencySymbol={currencySymbol}
         />
 
-        {/* 4 Agile Action Buttons */}
-        <View
-          style={[
-            styles.agileBar,
-            {
-              backgroundColor: isDark ? colors.cardSecondary : '#FFFFFF',
-              borderColor: isDark ? colors.borderSubtle : '#EFEFE8',
-            },
-          ]}
-        >
+        {/* 3 Agile Action Pill Buttons matching Image 3 Reference: Receive, Transfer, + */}
+        <View style={styles.actionPillsRow}>
           <TouchableOpacity
-            style={styles.agileBtn}
+            style={[
+              styles.receivePillBtn,
+              {
+                backgroundColor: isDark ? 'rgba(32, 50, 38, 0.88)' : 'rgba(238, 246, 240, 0.96)',
+                borderColor: isDark ? 'rgba(206, 240, 74, 0.28)' : 'rgba(56, 102, 65, 0.22)',
+              },
+            ]}
             onPress={() => openQuickEntry('income')}
-            activeOpacity={0.7}
+            activeOpacity={0.85}
           >
-            <View
+            <ArrowDownLeft size={18} color={colors.matchaLime} strokeWidth={2.5} />
+            <Text
               style={[
-                styles.agileIconBox,
-                { backgroundColor: isDark ? colors.cardElevated : '#F4F4EE' },
+                styles.actionPillText,
+                { color: isDark ? '#E8F5E9' : '#1E3A24', fontFamily: FONTS.sansSemiBold },
               ]}
             >
-              <ArrowDownLeft size={20} color={colors.matchaLime} />
-            </View>
-            <Text style={[styles.agileLabel, { color: colors.textPrimary }]}>
-              Deposit
+              Receive
             </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={styles.agileBtn}
+            style={[
+              styles.transferPillBtn,
+              {
+                backgroundColor: colors.matchaLime,
+              },
+            ]}
             onPress={() => openQuickEntry('transfer')}
-            activeOpacity={0.7}
+            activeOpacity={0.85}
           >
-            <View
-              style={[
-                styles.agileIconBox,
-                { backgroundColor: isDark ? colors.cardElevated : '#F4F4EE' },
-              ]}
-            >
-              <ArrowLeftRight size={20} color={colors.goldenHoney} />
-            </View>
-            <Text style={[styles.agileLabel, { color: colors.textPrimary }]}>
+            <ArrowUpRight size={18} color="#141715" strokeWidth={2.5} />
+            <Text style={[styles.actionPillText, { color: '#141715', fontFamily: FONTS.sansBold }]}>
               Transfer
             </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={styles.agileBtn}
+            style={[
+              styles.plusCircleBtn,
+              {
+                backgroundColor: isDark ? 'rgba(255, 255, 255, 0.12)' : '#FFFFFF',
+                borderColor: isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.08)',
+              },
+            ]}
             onPress={() => openQuickEntry('expense')}
-            activeOpacity={0.7}
+            activeOpacity={0.85}
           >
-            <View
-              style={[
-                styles.agileIconBox,
-                { backgroundColor: isDark ? colors.cardElevated : '#F4F4EE' },
-              ]}
-            >
-              <ArrowUpRight size={20} color={colors.terracotta} />
-            </View>
-            <Text style={[styles.agileLabel, { color: colors.textPrimary }]}>
-              Withdrawal
-            </Text>
+            <Plus size={22} color={colors.textPrimary} strokeWidth={2.5} />
           </TouchableOpacity>
+        </View>
+
+        {/* 2x2 Bento Factors Grid directly from Image 1 Reference */}
+        <View style={styles.bentoSectionWrap}>
+          <View style={styles.bentoRow}>
+            <BentoFactorCard
+              title="Budget Spent"
+              value={`${budgetUtilization}%`}
+              variant="bars"
+              accentColor={budgetUtilization > 85 ? colors.terracotta : colors.matchaLime}
+              icon={<CreditCard size={18} color={colors.matchaLime} />}
+            />
+            <BentoFactorCard
+              title="Active Accounts"
+              value={dbPeople.length}
+              variant="dots"
+              accentColor={colors.goldenHoney}
+              icon={<Users size={18} color={colors.goldenHoney} />}
+              onPress={() => router.push('/(tabs)/khata' as any)}
+            />
+          </View>
+
+          <View style={[styles.bentoRow, { marginTop: 12 }]}>
+            <BentoFactorCard
+              title="Payment Health"
+              value="100%"
+              variant="sparkline"
+              accentColor={colors.mossSage}
+              icon={<ShieldCheck size={18} color={colors.mossSage} />}
+            />
+            <BentoFactorCard
+              title="Vault Flow"
+              value={`${currencySymbol}${Math.round(totalBalance)}`}
+              variant="wave"
+              accentColor={colors.electricViolet}
+              icon={<TrendingUp size={18} color={colors.electricViolet} />}
+              onPress={() => router.push('/(tabs)/analytics' as any)}
+            />
+          </View>
+        </View>
+
+        {/* Sleek Frosted Search Bar */}
+        <View style={styles.searchBarWrapper}>
+          <View
+            style={[
+              styles.searchBarBox,
+              {
+                backgroundColor: isDark ? 'rgba(32, 35, 34, 0.82)' : '#FFFFFF',
+                borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.05)',
+              },
+            ]}
+          >
+            <Search size={16} color={colors.textMuted} />
+            <TextInput
+              value={dashboardSearchQuery}
+              onChangeText={setDashboardSearchQuery}
+              placeholder="Search payments, transactions, channels..."
+              placeholderTextColor={colors.textMuted}
+              style={[styles.searchInputText, { color: colors.textPrimary }]}
+            />
+            {dashboardSearchQuery.length > 0 && (
+              <TouchableOpacity
+                onPress={() => {
+                  triggerHaptic('light');
+                  setDashboardSearchQuery('');
+                }}
+              >
+                <X size={16} color={colors.textSecondary} />
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
 
         {/* Modular Categories Carousel */}
@@ -550,7 +609,7 @@ export default function DaybookScreen() {
             }}
             style={[
               styles.seeAllBtn,
-              { backgroundColor: isDark ? colors.cardSecondary : '#F4F4EE' },
+              { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : '#F4F4EE' },
             ]}
           >
             <Text style={[styles.seeAllText, { color: colors.textPrimary }]}>
@@ -564,8 +623,8 @@ export default function DaybookScreen() {
           style={[
             styles.recurringBanner,
             {
-              backgroundColor: isDark ? colors.cardSecondary : '#FFFFFF',
-              borderColor: isDark ? colors.borderSubtle : '#EFEFE8',
+              backgroundColor: isDark ? 'rgba(32, 35, 34, 0.85)' : '#FFFFFF',
+              borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.05)',
             },
           ]}
           onPress={() => {
@@ -593,7 +652,7 @@ export default function DaybookScreen() {
           <View
             style={[
               styles.recurringBadge,
-              { backgroundColor: isDark ? colors.cardElevated : '#F4F4EE' },
+              { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : '#F4F4EE' },
             ]}
           >
             <Text style={[styles.recurringBadgeText, { color: colors.matchaLime }]}>
@@ -602,7 +661,7 @@ export default function DaybookScreen() {
           </View>
         </TouchableOpacity>
 
-        {/* Modular Transactions List with Live Data & Filter Pills */}
+        {/* Modular Transactions List matching Image 3 Reference */}
         <TransactionList
           transactions={filteredTx}
           timeFilter={dashboardTimeFilter}
@@ -631,7 +690,7 @@ export default function DaybookScreen() {
       <CategoryManagerModal
         visible={categoryModalVisible}
         onClose={() => setCategoryModalVisible(false)}
-        categoryList={categories}
+        categories={categories}
         onAddCategory={handleSaveCategory}
         onEditCategory={handleSaveCategory}
         onDeleteCategory={handleDeleteCategory}
@@ -641,11 +700,23 @@ export default function DaybookScreen() {
         visible={recurringModalVisible}
         onClose={() => setRecurringModalVisible(false)}
         recurringList={recurringList}
-        onSaveList={(newList) => {
-          for (const item of newList) {
-            handleSaveRecurring(item);
+        onSaveList={async (updated) => {
+          for (const item of updated) {
+            await handleSaveRecurring(item);
           }
         }}
+      />
+
+      <PermissionsModal
+        visible={permissionsModalVisible}
+        onClose={() => setPermissionsModalVisible(false)}
+      />
+
+      <UserProfileModal
+        visible={profileModalVisible}
+        profile={userProfile}
+        onSave={handleSaveProfile}
+        onClose={() => setProfileModalVisible(false)}
       />
 
       <TransactionDetailModal
@@ -680,47 +751,17 @@ export default function DaybookScreen() {
         }
         currencySymbol={currencySymbol}
       />
-
-      <UserProfileModal
-        visible={profileModalVisible}
-        profile={userProfile}
-        onSave={handleSaveProfile}
-        onClose={() => setProfileModalVisible(false)}
-      />
-
-      <PermissionsModal
-        visible={permissionsModalVisible}
-        onClose={() => setPermissionsModalVisible(false)}
-      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  searchBarWrapper: {
-    paddingHorizontal: 20,
-    marginBottom: 12,
-  },
-  searchBarBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    height: 44,
-    borderRadius: 22,
-    borderWidth: 1,
-    paddingHorizontal: 14,
-    gap: 10,
-  },
-  searchInputText: {
-    flex: 1,
-    fontSize: 13,
-    fontWeight: '500',
-  },
   topBar: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingBottom: 14,
+    paddingBottom: 8,
   },
   profileRow: {
     flexDirection: 'row',
@@ -728,12 +769,12 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   greetingSub: {
-    fontSize: 11,
-    fontWeight: '500',
+    fontFamily: FONTS.serifItalic,
+    fontSize: 13,
   },
   greetingTitle: {
-    fontSize: 18,
-    fontWeight: '800',
+    fontFamily: FONTS.sansBold,
+    fontSize: 19,
     letterSpacing: -0.4,
   },
   topActionsRow: {
@@ -742,51 +783,126 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   topIconBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 1,
   },
   notifDot: {
     position: 'absolute',
-    top: 10,
-    right: 10,
+    top: 11,
+    right: 11,
     width: 7,
     height: 7,
     borderRadius: 3.5,
   },
-  agileBar: {
+  balanceHeaderWrap: {
+    paddingHorizontal: 20,
+    marginTop: 10,
+    marginBottom: 14,
+  },
+  balanceHeaderLabel: {
+    fontFamily: FONTS.sansMedium,
+    fontSize: 13,
+    letterSpacing: -0.2,
+    marginBottom: 2,
+  },
+  balanceHeaderAmount: {
+    fontFamily: FONTS.sansBold,
+    fontSize: 34,
+    letterSpacing: -1,
+    lineHeight: 40,
+  },
+  actionPillsRow: {
     flexDirection: 'row',
-    borderRadius: 22,
-    paddingVertical: 15,
-    paddingHorizontal: 12,
+    alignItems: 'center',
+    gap: 10,
+    marginTop: 6,
     marginBottom: 20,
+  },
+  receivePillBtn: {
+    flex: 1,
+    height: 52,
+    borderRadius: 26,
     borderWidth: 1,
-    justifyContent: 'space-around',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 2,
   },
-  agileBtn: {
-    alignItems: 'center',
-    gap: 6,
+  transferPillBtn: {
     flex: 1,
-  },
-  agileIconBox: {
-    width: 48,
-    height: 48,
-    borderRadius: 16,
+    height: 52,
+    borderRadius: 26,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 8,
+    shadowColor: '#CEF04A',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.22,
+    shadowRadius: 10,
+    elevation: 3,
   },
-  agileLabel: {
-    fontSize: 12,
-    fontWeight: '700',
+  plusCircleBtn: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  actionPillText: {
+    fontFamily: FONTS.sansBold,
+    fontSize: 15,
+    letterSpacing: -0.3,
+  },
+  bentoSectionWrap: {
+    marginBottom: 20,
+  },
+  bentoRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  searchBarWrapper: {
+    marginBottom: 16,
+  },
+  searchBarBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 20,
+    borderWidth: 1,
+    paddingHorizontal: 14,
+    height: 48,
+    gap: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    elevation: 1,
+  },
+  searchInputText: {
+    flex: 1,
+    fontFamily: FONTS.sansRegular,
+    fontSize: 13,
   },
   sectionHeaderRow: {
     flexDirection: 'row',
@@ -795,11 +911,12 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   sectionTitle: {
+    fontFamily: FONTS.sansBold,
     fontSize: 18,
-    fontWeight: '700',
     letterSpacing: -0.3,
   },
   sectionSub: {
+    fontFamily: FONTS.serifItalic,
     fontSize: 12,
     marginTop: 2,
   },
@@ -809,14 +926,14 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   seeAllText: {
+    fontFamily: FONTS.sansMedium,
     fontSize: 12,
-    fontWeight: '600',
   },
   recurringBanner: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 16,
-    borderRadius: 22,
+    borderRadius: 24,
     borderWidth: 1,
     gap: 12,
     shadowColor: '#000',
@@ -833,11 +950,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   recurringBannerTitle: {
+    fontFamily: FONTS.sansBold,
     fontSize: 14,
-    fontWeight: '700',
     marginBottom: 2,
   },
   recurringBannerSub: {
+    fontFamily: FONTS.sansRegular,
     fontSize: 12,
   },
   recurringBadge: {
@@ -846,7 +964,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   recurringBadgeText: {
+    fontFamily: FONTS.sansBold,
     fontSize: 11,
-    fontWeight: '700',
   },
 });

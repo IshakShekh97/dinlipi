@@ -34,8 +34,8 @@ interface UIState {
   // Dashboard UI state
   activeCardIndex: number;
   setActiveCardIndex: (index: number) => void;
-  dashboardTimeFilter: 'today' | 'week' | 'all';
-  setDashboardTimeFilter: (filter: 'today' | 'week' | 'all') => void;
+  dashboardTimeFilter: 'today' | 'week' | 'month' | 'all';
+  setDashboardTimeFilter: (filter: 'today' | 'week' | 'month' | 'all') => void;
   dashboardSearchQuery: string;
   setDashboardSearchQuery: (query: string) => void;
 

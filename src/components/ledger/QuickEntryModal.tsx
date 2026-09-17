@@ -9,8 +9,9 @@ import {
 } from 'react-native';
 import { Tag, Sparkles, Calendar, CreditCard, Check } from 'lucide-react-native';
 import { CozyModal } from '../ui/CozyModal';
+import { CalendarPickerModal } from '../ui/CalendarPickerModal';
 import { useAppTheme } from '../../context/theme-context';
-import { triggerHaptic } from '../../constants/theme';
+import { triggerHaptic, FONTS } from '../../constants/theme';
 import { useUIStore } from '../../store/ui-store';
 import { getCurrencySymbol } from '../../utils/currency';
 import { BudgetCardData } from '../cards/BudgetCardModal';
@@ -113,6 +114,7 @@ function QuickEntryForm({
       ? new Date(initialData.date).toISOString().split('T')[0]
       : new Date().toISOString().split('T')[0]
   );
+  const [calendarVisible, setCalendarVisible] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
   const computeFinalDate = (): string => {
@@ -258,13 +260,16 @@ function QuickEntryForm({
         <View className="flex-row items-center gap-2">
           {(['today', 'yesterday', 'custom'] as const).map((mode) => {
             const isSelected = dateMode === mode;
-            const label = mode === 'today' ? 'Today' : mode === 'yesterday' ? 'Yesterday' : 'Custom / Past';
+            const label = mode === 'today' ? 'Today' : mode === 'yesterday' ? 'Yesterday' : 'Custom / Calendar';
             return (
               <TouchableOpacity
                 key={mode}
                 onPress={() => {
                   triggerHaptic('light');
                   setDateMode(mode);
+                  if (mode === 'custom') {
+                    setCalendarVisible(true);
+                  }
                 }}
                 style={{
                   backgroundColor: isSelected
@@ -284,7 +289,7 @@ function QuickEntryForm({
                 <Text
                   style={{
                     color: isSelected ? '#141715' : colors.textPrimary,
-                    fontWeight: isSelected ? '800' : '600',
+                    fontFamily: isSelected ? FONTS.sansBold : FONTS.sansMedium,
                   }}
                   className="text-xs"
                 >
@@ -296,26 +301,53 @@ function QuickEntryForm({
         </View>
 
         {dateMode === 'custom' && (
-          <View
+          <TouchableOpacity
+            onPress={() => {
+              triggerHaptic('light');
+              setCalendarVisible(true);
+            }}
             style={[
               styles.inputWrapper,
               {
-                backgroundColor: isDark ? colors.cardSecondary : '#F7F7F4',
-                borderColor: isDark ? colors.borderSubtle : '#E5E7EB',
-                marginTop: 4,
+                backgroundColor: isDark ? 'rgba(206, 240, 74, 0.08)' : '#F2F7EA',
+                borderColor: colors.matchaLime,
+                marginTop: 6,
+                justifyContent: 'space-between',
               },
             ]}
+            activeOpacity={0.75}
           >
-            <Calendar size={16} color={colors.textMuted} style={{ marginRight: 8 }} />
-            <TextInput
-              value={customDateText}
-              onChangeText={setCustomDateText}
-              placeholder="YYYY-MM-DD (e.g. 2026-03-10)"
-              placeholderTextColor={colors.textMuted}
-              style={[styles.input, { color: colors.textPrimary }]}
-            />
-          </View>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+              <Calendar size={18} color={colors.matchaLime} />
+              <Text style={{ color: colors.textPrimary, fontFamily: FONTS.monoBold, fontSize: 14 }}>
+                {customDateText}
+              </Text>
+            </View>
+            <View
+              style={{
+                backgroundColor: colors.matchaLime,
+                paddingHorizontal: 10,
+                paddingVertical: 4,
+                borderRadius: 8,
+              }}
+            >
+              <Text style={{ color: '#141715', fontFamily: FONTS.sansBold, fontSize: 11 }}>
+                Open Calendar
+              </Text>
+            </View>
+          </TouchableOpacity>
         )}
+
+        <CalendarPickerModal
+          visible={calendarVisible}
+          onClose={() => setCalendarVisible(false)}
+          selectedDate={customDateText}
+          onSelectDate={(newDate) => {
+            setCustomDateText(newDate);
+            setDateMode('custom');
+          }}
+          title="Transaction Date"
+        />
       </View>
 
       {/* Connect to Budget Envelope (Optional) */}
@@ -468,8 +500,8 @@ const styles = StyleSheet.create({
     gap: 5,
   },
   inputLabel: {
-    fontSize: 12,
-    fontWeight: '700',
+    fontSize: 11,
+    fontFamily: FONTS.sansBold,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
@@ -484,7 +516,7 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: FONTS.sansMedium,
   },
   saveBtn: {
     height: 50,
@@ -497,7 +529,7 @@ const styles = StyleSheet.create({
   },
   saveBtnText: {
     fontSize: 15,
-    fontWeight: '800',
+    fontFamily: FONTS.sansBold,
     color: '#141715',
     letterSpacing: -0.2,
   },

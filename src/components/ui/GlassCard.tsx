@@ -1,82 +1,87 @@
 import React from 'react';
-import { View, StyleSheet, ViewStyle, StyleProp } from 'react-native';
-import Svg, { Defs, LinearGradient, Stop, Rect } from 'react-native-svg';
+import { View, StyleSheet, ViewStyle, StyleProp, Platform } from 'react-native';
+import { BlurView } from 'expo-blur';
 import { useAppTheme } from '../../context/theme-context';
 
 interface GlassCardProps {
   children: React.ReactNode;
   style?: StyleProp<ViewStyle>;
+  intensity?: number | 'subtle' | 'medium' | 'high';
   borderRadius?: number;
-  intensity?: 'subtle' | 'medium' | 'high';
-  borderGlowColor?: string;
+  tint?: 'light' | 'dark' | 'default';
+  elevated?: boolean;
 }
 
-export function GlassCard({
+export const GlassCard: React.FC<GlassCardProps> = ({
   children,
   style,
-  borderRadius = 24,
-  intensity = 'medium',
-  borderGlowColor,
-}: GlassCardProps) {
+  intensity = 45,
+  borderRadius = 26,
+  tint,
+  elevated = false,
+}) => {
   const { isDark } = useAppTheme();
+  const effectiveTint = tint || (isDark ? 'dark' : 'light');
+  const numericIntensity =
+    typeof intensity === 'number'
+      ? intensity
+      : intensity === 'subtle'
+      ? 25
+      : intensity === 'high'
+      ? 70
+      : 45;
 
-  // Glass opacity based on intensity
-  const bgOpacity = {
-    subtle: isDark ? 0.45 : 0.65,
-    medium: isDark ? 0.72 : 0.85,
-    high: isDark ? 0.88 : 0.95,
-  }[intensity];
+  // Specular top light-reflecting border and soft translucent tint
+  const fallbackBg = isDark
+    ? elevated
+      ? 'rgba(38, 42, 40, 0.82)'
+      : 'rgba(25, 28, 27, 0.76)'
+    : elevated
+    ? 'rgba(255, 255, 255, 0.94)'
+    : 'rgba(255, 255, 255, 0.84)';
 
-  const bgColor = isDark
-    ? `rgba(28, 31, 29, ${bgOpacity})`
-    : `rgba(255, 255, 255, ${bgOpacity})`;
-
-  const borderColor = borderGlowColor || (isDark
-    ? 'rgba(255, 255, 255, 0.12)'
-    : 'rgba(18, 20, 19, 0.08)');
+  const borderColor = isDark
+    ? elevated
+      ? 'rgba(255, 255, 255, 0.16)'
+      : 'rgba(255, 255, 255, 0.10)'
+    : elevated
+    ? 'rgba(255, 255, 255, 0.90)'
+    : 'rgba(0, 0, 0, 0.06)';
 
   return (
     <View
       style={[
-        styles.container,
+        styles.outerContainer,
         {
           borderRadius,
-          backgroundColor: bgColor,
           borderColor,
+          backgroundColor: fallbackBg,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: elevated ? 6 : 3 },
+          shadowOpacity: isDark ? 0.22 : 0.06,
+          shadowRadius: elevated ? 16 : 10,
+          elevation: elevated ? 4 : 2,
         },
         style,
       ]}
     >
-      {/* Specular Frosted Highlight Gradient */}
-      <View style={[StyleSheet.absoluteFill, { borderRadius, overflow: 'hidden' }]} pointerEvents="none">
-        <Svg width="100%" height="100%">
-          <Defs>
-            <LinearGradient id="glassSheen" x1="0%" y1="0%" x2="0%" y2="100%">
-              <Stop
-                offset="0%"
-                stopColor={isDark ? '#FFFFFF' : '#FFFFFF'}
-                stopOpacity={isDark ? 0.08 : 0.45}
-              />
-              <Stop offset="30%" stopColor="#FFFFFF" stopOpacity="0" />
-            </LinearGradient>
-          </Defs>
-          <Rect x="0" y="0" width="100%" height="100%" fill="url(#glassSheen)" />
-        </Svg>
-      </View>
-
-      {children}
+      <BlurView
+        intensity={Platform.OS === 'android' ? Math.min(numericIntensity, 30) : numericIntensity}
+        tint={effectiveTint}
+        style={[styles.blurWrapper, { borderRadius }]}
+      >
+        {children}
+      </BlurView>
     </View>
   );
-}
+};
 
 const styles = StyleSheet.create({
-  container: {
+  outerContainer: {
     borderWidth: 1,
     overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.06,
-    shadowRadius: 12,
-    elevation: 3,
+  },
+  blurWrapper: {
+    width: '100%',
   },
 });

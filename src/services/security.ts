@@ -1,15 +1,15 @@
-import * as LocalAuthentication from 'expo-local-authentication';
-import * as SecureStore from 'expo-secure-store';
-import { Platform } from 'react-native';
+import * as LocalAuthentication from "expo-local-authentication";
+import * as SecureStore from "expo-secure-store";
+import { Platform } from "react-native";
 
 const STORAGE_KEYS = {
-  BIOMETRIC_ENABLED: 'dinlipi_biometric_enabled',
-  PASSCODE_ENABLED: 'dinlipi_passcode_enabled',
-  PASSCODE_HASH: 'dinlipi_passcode_hash',
-  PASSCODE_VALUE: 'dinlipi_passcode_value', // legacy migration
-  PREFERRED_METHOD: 'dinlipi_preferred_method',
-  LOCK_ON_BACKGROUND: 'dinlipi_lock_on_background',
-  ONBOARDING_COMPLETED: 'dinlipi_onboarding_completed',
+  BIOMETRIC_ENABLED: "dinlipi_biometric_enabled",
+  PASSCODE_ENABLED: "dinlipi_passcode_enabled",
+  PASSCODE_HASH: "dinlipi_passcode_hash",
+  PASSCODE_VALUE: "dinlipi_passcode_value", // legacy migration
+  PREFERRED_METHOD: "dinlipi_preferred_method",
+  LOCK_ON_BACKGROUND: "dinlipi_lock_on_background",
+  ONBOARDING_COMPLETED: "dinlipi_onboarding_completed",
 };
 
 // Web / fallback in-memory cache if SecureStore is unavailable
@@ -17,7 +17,7 @@ const memoryFallback: Record<string, string> = {};
 
 async function getSecureItem(key: string): Promise<string | null> {
   try {
-    if (Platform.OS === 'web') {
+    if (Platform.OS === "web") {
       return localStorage.getItem(key) ?? memoryFallback[key] ?? null;
     }
     return await SecureStore.getItemAsync(key);
@@ -29,7 +29,7 @@ async function getSecureItem(key: string): Promise<string | null> {
 
 async function setSecureItem(key: string, value: string): Promise<void> {
   try {
-    if (Platform.OS === 'web') {
+    if (Platform.OS === "web") {
       localStorage.setItem(key, value);
       memoryFallback[key] = value;
       return;
@@ -43,7 +43,7 @@ async function setSecureItem(key: string, value: string): Promise<void> {
 
 async function deleteSecureItem(key: string): Promise<void> {
   try {
-    if (Platform.OS === 'web') {
+    if (Platform.OS === "web") {
       localStorage.removeItem(key);
       delete memoryFallback[key];
       return;
@@ -95,7 +95,8 @@ export function sha256Hex(ascii: string): string {
     words[j] = (words[j] || 0) | (ascii.charCodeAt(i) << ((3 - (i % 4)) * 8));
   }
 
-  words[asciiBitLength >> 5] = (words[asciiBitLength >> 5] || 0) | (0x80 << (24 - (asciiBitLength % 32)));
+  words[asciiBitLength >> 5] =
+    (words[asciiBitLength >> 5] || 0) | (0x80 << (24 - (asciiBitLength % 32)));
   words[(((asciiBitLength + 64) >> 9) << 4) + 15] = asciiBitLength;
 
   const w: number[] = [];
@@ -106,15 +107,23 @@ export function sha256Hex(ascii: string): string {
       if (j < 16) {
         w[j] = words[i + j] | 0;
       } else {
-        const gamma0 = rightRotate(w[j - 15], 7) ^ rightRotate(w[j - 15], 18) ^ (w[j - 15] >>> 3);
-        const gamma1 = rightRotate(w[j - 2], 17) ^ rightRotate(w[j - 2], 19) ^ (w[j - 2] >>> 10);
-        w[j] = ((w[j - 16] + gamma0) | 0) + ((w[j - 7] + gamma1) | 0) | 0;
+        const gamma0 =
+          rightRotate(w[j - 15], 7) ^
+          rightRotate(w[j - 15], 18) ^
+          (w[j - 15] >>> 3);
+        const gamma1 =
+          rightRotate(w[j - 2], 17) ^
+          rightRotate(w[j - 2], 19) ^
+          (w[j - 2] >>> 10);
+        w[j] = (((w[j - 16] + gamma0) | 0) + ((w[j - 7] + gamma1) | 0)) | 0;
       }
 
-      const s1 = rightRotate(a[4], 6) ^ rightRotate(a[4], 11) ^ rightRotate(a[4], 25);
+      const s1 =
+        rightRotate(a[4], 6) ^ rightRotate(a[4], 11) ^ rightRotate(a[4], 25);
       const ch = (a[4] & a[5]) ^ (~a[4] & a[6]);
-      const temp1 = (((((a[7] + s1) | 0) + ch) | 0) + k[j]) | 0 + w[j] | 0;
-      const s0 = rightRotate(a[0], 2) ^ rightRotate(a[0], 13) ^ rightRotate(a[0], 22);
+      const temp1 = (((((a[7] + s1) | 0) + ch) | 0) + k[j]) | (0 + w[j]) | 0;
+      const s0 =
+        rightRotate(a[0], 2) ^ rightRotate(a[0], 13) ^ rightRotate(a[0], 22);
       const maj = (a[0] & a[1]) ^ (a[0] & a[2]) ^ (a[1] & a[2]);
       const temp2 = (s0 + maj) | 0;
 
@@ -133,11 +142,11 @@ export function sha256Hex(ascii: string): string {
     }
   }
 
-  let result = '';
+  let result = "";
   for (let i = 0; i < 8; i++) {
     for (let j = 3; j >= 0; j--) {
       const b = (hash[i] >> (j * 8)) & 255;
-      result += (b < 16 ? '0' : '') + b.toString(16);
+      result += (b < 16 ? "0" : "") + b.toString(16);
     }
   }
   return result;
@@ -147,13 +156,13 @@ export interface BiometricCapabilities {
   hasHardware: boolean;
   isEnrolled: boolean;
   supportedTypes: LocalAuthentication.AuthenticationType[];
-  biometricName: 'Fingerprint' | 'Face ID' | 'Biometrics';
+  biometricName: "Fingerprint" | "Face ID" | "Biometrics";
 }
 
 export interface SecuritySettings {
   biometricEnabled: boolean;
   passcodeEnabled: boolean;
-  preferredMethod: 'passcode' | 'biometric';
+  preferredMethod: "passcode" | "biometric";
   lockOnBackground: boolean;
   hasPasscodeSet: boolean;
 }
@@ -169,18 +178,27 @@ export const SecurityService = {
   async checkBiometricCapabilities(): Promise<BiometricCapabilities> {
     try {
       const hasHardware = await LocalAuthentication.hasHardwareAsync();
-      const isEnrolled = hasHardware ? await LocalAuthentication.isEnrolledAsync() : false;
+      const isEnrolled = hasHardware
+        ? await LocalAuthentication.isEnrolledAsync()
+        : false;
       const supportedTypes = hasHardware
         ? await LocalAuthentication.supportedAuthenticationTypesAsync()
         : [];
 
-      let biometricName: 'Fingerprint' | 'Face ID' | 'Biometrics' = 'Biometrics';
-      if (supportedTypes.includes(LocalAuthentication.AuthenticationType.FACIAL_RECOGNITION)) {
-        biometricName = 'Face ID';
-      } else if (
-        supportedTypes.includes(LocalAuthentication.AuthenticationType.FINGERPRINT)
+      let biometricName: "Fingerprint" | "Face ID" | "Biometrics" =
+        "Biometrics";
+      if (
+        supportedTypes.includes(
+          LocalAuthentication.AuthenticationType.FACIAL_RECOGNITION,
+        )
       ) {
-        biometricName = 'Fingerprint';
+        biometricName = "Face ID";
+      } else if (
+        supportedTypes.includes(
+          LocalAuthentication.AuthenticationType.FINGERPRINT,
+        )
+      ) {
+        biometricName = "Fingerprint";
       }
 
       return {
@@ -190,12 +208,12 @@ export const SecurityService = {
         biometricName,
       };
     } catch (err) {
-      console.warn('[Security] Failed to check biometric capabilities:', err);
+      console.warn("[Security] Failed to check biometric capabilities:", err);
       return {
         hasHardware: false,
         isEnrolled: false,
         supportedTypes: [],
-        biometricName: 'Biometrics',
+        biometricName: "Biometrics",
       };
     }
   },
@@ -204,12 +222,12 @@ export const SecurityService = {
    * Prompts user with native biometric dialog (Fingerprint or Face ID)
    */
   async authenticateWithBiometrics(
-    promptMessage = 'Unlock Dinlipi Ledger'
+    promptMessage = "Unlock Dinlipi Ledger",
   ): Promise<{ success: boolean; error?: string }> {
     try {
       const result = await LocalAuthentication.authenticateAsync({
         promptMessage,
-        cancelLabel: 'Use Passcode',
+        cancelLabel: "Use Passcode",
         disableDeviceFallback: false,
       });
 
@@ -218,7 +236,8 @@ export const SecurityService = {
         error: result.success ? undefined : result.error,
       };
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'Biometric authentication failed';
+      const errorMessage =
+        err instanceof Error ? err.message : "Biometric authentication failed";
       return {
         success: false,
         error: errorMessage,
@@ -230,14 +249,15 @@ export const SecurityService = {
    * Load security settings (default: all disabled)
    */
   async getSettings(): Promise<SecuritySettings> {
-    const [bioVal, passVal, passHash, passLegacy, prefVal, lockBgVal] = await Promise.all([
-      getSecureItem(STORAGE_KEYS.BIOMETRIC_ENABLED),
-      getSecureItem(STORAGE_KEYS.PASSCODE_ENABLED),
-      getSecureItem(STORAGE_KEYS.PASSCODE_HASH),
-      getSecureItem(STORAGE_KEYS.PASSCODE_VALUE),
-      getSecureItem(STORAGE_KEYS.PREFERRED_METHOD),
-      getSecureItem(STORAGE_KEYS.LOCK_ON_BACKGROUND),
-    ]);
+    const [bioVal, passVal, passHash, passLegacy, prefVal, lockBgVal] =
+      await Promise.all([
+        getSecureItem(STORAGE_KEYS.BIOMETRIC_ENABLED),
+        getSecureItem(STORAGE_KEYS.PASSCODE_ENABLED),
+        getSecureItem(STORAGE_KEYS.PASSCODE_HASH),
+        getSecureItem(STORAGE_KEYS.PASSCODE_VALUE),
+        getSecureItem(STORAGE_KEYS.PREFERRED_METHOD),
+        getSecureItem(STORAGE_KEYS.LOCK_ON_BACKGROUND),
+      ]);
 
     // Transparent migration from plaintext passcode to SHA-256 hash if present
     if (passLegacy && !passHash) {
@@ -249,19 +269,22 @@ export const SecurityService = {
     const hasPasscode = Boolean(passHash || passLegacy);
 
     return {
-      biometricEnabled: bioVal === 'true',
-      passcodeEnabled: passVal === 'true',
-      preferredMethod: (prefVal as 'passcode' | 'biometric') || 'passcode',
-      lockOnBackground: lockBgVal !== 'false',
+      biometricEnabled: bioVal === "true",
+      passcodeEnabled: passVal === "true",
+      preferredMethod: (prefVal as "passcode" | "biometric") || "passcode",
+      lockOnBackground: lockBgVal !== "false",
       hasPasscodeSet: hasPasscode,
     };
   },
 
   async setBiometricEnabled(enabled: boolean): Promise<void> {
-    await setSecureItem(STORAGE_KEYS.BIOMETRIC_ENABLED, enabled ? 'true' : 'false');
+    await setSecureItem(
+      STORAGE_KEYS.BIOMETRIC_ENABLED,
+      enabled ? "true" : "false",
+    );
   },
 
-  async setPreferredMethod(method: 'passcode' | 'biometric'): Promise<void> {
+  async setPreferredMethod(method: "passcode" | "biometric"): Promise<void> {
     await setSecureItem(STORAGE_KEYS.PREFERRED_METHOD, method);
   },
 
@@ -272,7 +295,7 @@ export const SecurityService = {
     const hash = sha256Hex(passcode);
     await setSecureItem(STORAGE_KEYS.PASSCODE_HASH, hash);
     await deleteSecureItem(STORAGE_KEYS.PASSCODE_VALUE); // clear plaintext if any
-    await setSecureItem(STORAGE_KEYS.PASSCODE_ENABLED, 'true');
+    await setSecureItem(STORAGE_KEYS.PASSCODE_ENABLED, "true");
   },
 
   /**
@@ -281,13 +304,15 @@ export const SecurityService = {
   async disablePasscode(): Promise<void> {
     await deleteSecureItem(STORAGE_KEYS.PASSCODE_HASH);
     await deleteSecureItem(STORAGE_KEYS.PASSCODE_VALUE);
-    await setSecureItem(STORAGE_KEYS.PASSCODE_ENABLED, 'false');
+    await setSecureItem(STORAGE_KEYS.PASSCODE_ENABLED, "false");
   },
 
   /**
    * Rate-limited verification of entered passcode against stored SHA-256 hash
    */
-  async verifyPasscode(enteredPasscode: string): Promise<{ success: boolean; lockoutSeconds: number }> {
+  async verifyPasscode(
+    enteredPasscode: string,
+  ): Promise<{ success: boolean; lockoutSeconds: number }> {
     const remainingLockout = this.getLockoutRemainingSeconds();
     if (remainingLockout > 0) {
       return { success: false, lockoutSeconds: remainingLockout };
@@ -304,7 +329,10 @@ export const SecurityService = {
       if (legacyStored && legacyStored === enteredPasscode) {
         isMatch = true;
         // Migrate to hash now
-        await setSecureItem(STORAGE_KEYS.PASSCODE_HASH, sha256Hex(enteredPasscode));
+        await setSecureItem(
+          STORAGE_KEYS.PASSCODE_HASH,
+          sha256Hex(enteredPasscode),
+        );
         await deleteSecureItem(STORAGE_KEYS.PASSCODE_VALUE);
       }
     }
@@ -350,15 +378,21 @@ export const SecurityService = {
   },
 
   async setLockOnBackground(enabled: boolean): Promise<void> {
-    await setSecureItem(STORAGE_KEYS.LOCK_ON_BACKGROUND, enabled ? 'true' : 'false');
+    await setSecureItem(
+      STORAGE_KEYS.LOCK_ON_BACKGROUND,
+      enabled ? "true" : "false",
+    );
   },
 
   async isOnboardingCompleted(): Promise<boolean> {
     const val = await getSecureItem(STORAGE_KEYS.ONBOARDING_COMPLETED);
-    return val === 'true';
+    return val === "true";
   },
 
   async setOnboardingCompleted(completed: boolean): Promise<void> {
-    await setSecureItem(STORAGE_KEYS.ONBOARDING_COMPLETED, completed ? 'true' : 'false');
+    await setSecureItem(
+      STORAGE_KEYS.ONBOARDING_COMPLETED,
+      completed ? "true" : "false",
+    );
   },
 };

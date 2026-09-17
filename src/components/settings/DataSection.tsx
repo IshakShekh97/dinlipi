@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Upload, Download, Compass, Coins, ChevronRight, Trash2 } from 'lucide-react-native';
 import { useAppTheme } from '../../context/theme-context';
-import { triggerHaptic } from '../../constants/theme';
+import { triggerHaptic, FONTS } from '../../constants/theme';
 import { useRouter } from 'expo-router';
 import { useSecurity } from '../../context/security-context';
 import { useUIStore } from '../../store/ui-store';
@@ -517,15 +517,15 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   sectionLabel: {
-    fontSize: 12,
-    fontWeight: '700',
+    fontSize: 11,
+    fontFamily: FONTS.sansBold,
     textTransform: 'uppercase',
     letterSpacing: 0.8,
     marginBottom: 10,
     marginLeft: 4,
   },
   cardBox: {
-    borderRadius: 20,
+    borderRadius: 26,
     borderWidth: 1,
     overflow: 'hidden',
   },
@@ -533,8 +533,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingHorizontal: 18,
+    paddingVertical: 15,
   },
   settingLeft: {
     flexDirection: 'row',
@@ -550,28 +550,29 @@ const styles = StyleSheet.create({
   },
   sqliteBadge: {
     paddingHorizontal: 10,
-    paddingVertical: 3,
-    borderRadius: 8,
+    paddingVertical: 4,
+    borderRadius: 10,
     borderWidth: 1,
   },
   sqliteBadgeText: {
     fontSize: 11,
-    fontWeight: '800',
+    fontFamily: FONTS.monoBold,
     letterSpacing: 0.5,
   },
   settingIconBox: {
-    width: 36,
-    height: 36,
-    borderRadius: 12,
+    width: 38,
+    height: 38,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
   },
   settingTitle: {
     fontSize: 14,
-    fontWeight: '700',
+    fontFamily: FONTS.sansSemiBold,
   },
   settingDesc: {
     fontSize: 12,
+    fontFamily: FONTS.sansRegular,
     marginTop: 2,
   },
 });

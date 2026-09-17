@@ -42,7 +42,8 @@
           "photosPermission": "Allow Dinlipi to access your photos for profile avatar customization."
         }
       ],
-      "expo-sharing"
+      "expo-sharing",
+      "expo-font"
     ],
     "experiments": {
       "typedRoutes": true,

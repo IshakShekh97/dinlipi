@@ -1,9 +1,9 @@
-import { create } from 'zustand';
+import { create } from "zustand";
 import {
   SecurityService,
   SecuritySettings,
   BiometricCapabilities,
-} from '../services/security';
+} from "../services/security";
 
 interface SecurityState {
   isLocked: boolean;
@@ -21,9 +21,11 @@ interface SecurityState {
   lock: () => void;
   verifyBiometricForSetup: () => Promise<{ success: boolean; error?: string }>;
   authenticateBiometric: () => Promise<boolean>;
-  verifyPasscode: (pin: string) => Promise<{ success: boolean; lockoutSeconds: number }>;
+  verifyPasscode: (
+    pin: string,
+  ) => Promise<{ success: boolean; lockoutSeconds: number }>;
   setBiometricEnabled: (enabled: boolean) => Promise<void>;
-  setPreferredMethod: (method: 'passcode' | 'biometric') => Promise<void>;
+  setPreferredMethod: (method: "passcode" | "biometric") => Promise<void>;
   setPasscode: (pin: string) => Promise<void>;
   disablePasscode: () => Promise<void>;
   setLockOnBackground: (enabled: boolean) => Promise<void>;
@@ -39,7 +41,7 @@ export const useSecurityStore = create<SecurityState>((set, get) => ({
   settings: {
     biometricEnabled: false,
     passcodeEnabled: false,
-    preferredMethod: 'passcode',
+    preferredMethod: "passcode",
     lockOnBackground: true,
     hasPasscodeSet: false,
   },
@@ -48,11 +50,13 @@ export const useSecurityStore = create<SecurityState>((set, get) => ({
 
   init: async () => {
     try {
-      const [capabilities, currentSettings, onboardingDone] = await Promise.all([
-        SecurityService.checkBiometricCapabilities(),
-        SecurityService.getSettings(),
-        SecurityService.isOnboardingCompleted(),
-      ]);
+      const [capabilities, currentSettings, onboardingDone] = await Promise.all(
+        [
+          SecurityService.checkBiometricCapabilities(),
+          SecurityService.getSettings(),
+          SecurityService.isOnboardingCompleted(),
+        ],
+      );
 
       const shouldLock =
         onboardingDone &&
@@ -68,7 +72,7 @@ export const useSecurityStore = create<SecurityState>((set, get) => ({
         lockoutRemainingSeconds: SecurityService.getLockoutRemainingSeconds(),
       });
     } catch (err) {
-      console.warn('[SecurityStore] Init error:', err);
+      console.warn("[SecurityStore] Init error:", err);
       set({ isLoading: false });
     }
   },
@@ -84,7 +88,7 @@ export const useSecurityStore = create<SecurityState>((set, get) => ({
         lockoutRemainingSeconds: SecurityService.getLockoutRemainingSeconds(),
       });
     } catch (err) {
-      console.warn('[SecurityStore] Refresh error:', err);
+      console.warn("[SecurityStore] Refresh error:", err);
     }
   },
 
@@ -99,7 +103,10 @@ export const useSecurityStore = create<SecurityState>((set, get) => ({
 
   lock: () => {
     const { settings, hasCompletedOnboarding } = get();
-    if (hasCompletedOnboarding && (settings.biometricEnabled || settings.passcodeEnabled)) {
+    if (
+      hasCompletedOnboarding &&
+      (settings.biometricEnabled || settings.passcodeEnabled)
+    ) {
       set({ isLocked: true });
     }
   },
@@ -108,24 +115,34 @@ export const useSecurityStore = create<SecurityState>((set, get) => ({
     const capabilities = await SecurityService.checkBiometricCapabilities();
     set({ biometricCapabilities: capabilities });
     if (!capabilities.hasHardware) {
-      return { success: false, error: 'Your device hardware does not support biometric scanning.' };
+      return {
+        success: false,
+        error: "Your device hardware does not support biometric scanning.",
+      };
     }
     if (!capabilities.isEnrolled) {
-      return { success: false, error: 'No fingerprint or Face ID enrolled. Please register biometrics in your phone system settings first.' };
+      return {
+        success: false,
+        error:
+          "No fingerprint or Face ID enrolled. Please register biometrics in your phone system settings first.",
+      };
     }
     const result = await SecurityService.authenticateWithBiometrics(
-      `Confirm ${capabilities.biometricName} to protect Dinlipi`
+      `Confirm ${capabilities.biometricName} to protect Dinlipi`,
     );
     if (result.success) {
       return { success: true };
     }
-    return { success: false, error: result.error || 'Biometric authentication was not completed.' };
+    return {
+      success: false,
+      error: result.error || "Biometric authentication was not completed.",
+    };
   },
 
   authenticateBiometric: async () => {
     const { biometricCapabilities } = get();
     const result = await SecurityService.authenticateWithBiometrics(
-      `Unlock Dinlipi with ${biometricCapabilities?.biometricName || 'Biometrics'}`
+      `Unlock Dinlipi with ${biometricCapabilities?.biometricName || "Biometrics"}`,
     );
 
     if (result.success) {
@@ -153,7 +170,7 @@ export const useSecurityStore = create<SecurityState>((set, get) => ({
     await get().refreshSettings();
   },
 
-  setPreferredMethod: async (method: 'passcode' | 'biometric') => {
+  setPreferredMethod: async (method: "passcode" | "biometric") => {
     await SecurityService.setPreferredMethod(method);
     await get().refreshSettings();
   },

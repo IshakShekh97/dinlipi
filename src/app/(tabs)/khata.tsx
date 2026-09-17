@@ -21,7 +21,8 @@ import {
   Check,
 } from 'lucide-react-native';
 import { useAppTheme } from '../../context/theme-context';
-import { triggerHaptic } from '../../constants/theme';
+import { FONTS, triggerHaptic } from '../../constants/theme';
+import { AmbientGlowBackground } from '../../components/ui/AmbientGlowBackground';
 import {
   PersonManagerModal,
   PersonData,
@@ -334,9 +335,12 @@ export default function KhataScreen() {
       style={{
         flex: 1,
         backgroundColor: colors.bgPrimary,
-        paddingTop: Math.max(insets.top + 6, 32),
+        paddingTop: Math.max(insets.top + 6, 28),
       }}
     >
+      {/* Ambient Diffuse Background Glow */}
+      <AmbientGlowBackground glowColor={colors.goldenHoney} glowHeight={380} />
+
       {/* Top Header */}
       <View style={styles.header}>
         <View>
@@ -344,7 +348,7 @@ export default function KhataScreen() {
             Khata & Ledger
           </Text>
           <Text style={[styles.headerSub, { color: colors.textSecondary }]}>
-            Track peer credits, lendings & corner tabs
+            Track peer credits, lendings & customer tabs
           </Text>
         </View>
 
@@ -817,83 +821,102 @@ const styles = StyleSheet.create({
     paddingBottom: 14,
   },
   headerTitle: {
+    fontFamily: FONTS.sansBold,
     fontSize: 24,
-    fontWeight: '800',
-    letterSpacing: -0.5,
+    letterSpacing: -0.6,
   },
   headerSub: {
-    fontSize: 12,
+    fontFamily: FONTS.serifItalic,
+    fontSize: 13,
     marginTop: 2,
   },
   addPersonBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 14,
+    paddingHorizontal: 15,
     paddingVertical: 9,
-    borderRadius: 20,
+    borderRadius: 22,
     gap: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 2,
   },
   addPersonBtnText: {
+    fontFamily: FONTS.sansBold,
     color: '#141715',
-    fontWeight: '700',
     fontSize: 13,
   },
   searchBarWrapper: {
     paddingHorizontal: 20,
-    marginBottom: 12,
+    marginBottom: 14,
   },
   searchBarBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    height: 44,
+    height: 48,
     borderRadius: 22,
     borderWidth: 1,
     paddingHorizontal: 14,
     gap: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 4,
+    elevation: 1,
   },
   searchInputText: {
     flex: 1,
+    fontFamily: FONTS.sansRegular,
     fontSize: 13,
-    fontWeight: '500',
   },
   statsRow: {
     flexDirection: 'row',
     paddingHorizontal: 20,
     gap: 12,
-    marginBottom: 14,
+    marginBottom: 16,
   },
   statCard: {
     flex: 1,
-    padding: 14,
-    borderRadius: 18,
+    padding: 16,
+    borderRadius: 24,
     borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 1,
   },
   statIconBoxReceivable: {
-    width: 28,
-    height: 28,
-    borderRadius: 9,
+    width: 32,
+    height: 32,
+    borderRadius: 12,
     backgroundColor: 'rgba(206, 240, 74, 0.16)',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 8,
+    marginBottom: 10,
   },
   statIconBoxPayable: {
-    width: 28,
-    height: 28,
-    borderRadius: 9,
+    width: 32,
+    height: 32,
+    borderRadius: 12,
     backgroundColor: 'rgba(224, 122, 95, 0.16)',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 8,
+    marginBottom: 10,
   },
   statLabel: {
+    fontFamily: FONTS.sansRegular,
     fontSize: 11,
-    fontWeight: '500',
     marginBottom: 2,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   statAmount: {
+    fontFamily: FONTS.monoBold,
     fontSize: 18,
-    fontWeight: '800',
+    letterSpacing: -0.4,
   },
   filterRow: {
     flexDirection: 'row',
@@ -902,11 +925,12 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   filterTab: {
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-    borderRadius: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 18,
   },
   filterTabText: {
+    fontFamily: FONTS.sansMedium,
     fontSize: 12,
   },
   installmentForm: {

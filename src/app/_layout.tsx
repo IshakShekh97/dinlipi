@@ -3,6 +3,24 @@ import React, { useState, useEffect } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import {
+  useFonts,
+  SpaceGrotesk_400Regular,
+  SpaceGrotesk_500Medium,
+  SpaceGrotesk_600SemiBold,
+  SpaceGrotesk_700Bold,
+} from '@expo-google-fonts/space-grotesk';
+import {
+  Newsreader_400Regular,
+  Newsreader_500Medium,
+  Newsreader_600SemiBold,
+  Newsreader_700Bold,
+  Newsreader_400Regular_Italic,
+} from '@expo-google-fonts/newsreader';
+import {
+  SpaceMono_400Regular,
+  SpaceMono_700Bold,
+} from '@expo-google-fonts/space-mono';
 import { ThemeProvider, useAppTheme } from '../context/theme-context';
 import { SecurityProvider } from '../context/security-context';
 import { AuthLockOverlay } from '../components/security/AuthLockOverlay';
@@ -14,9 +32,29 @@ function RootContent() {
   const { isDark, colors } = useAppTheme();
   const [showSplash, setShowSplash] = useState(true);
 
+  const [fontsLoaded] = useFonts({
+    SpaceGrotesk_400Regular,
+    SpaceGrotesk_500Medium,
+    SpaceGrotesk_600SemiBold,
+    SpaceGrotesk_700Bold,
+    Newsreader_400Regular,
+    Newsreader_500Medium,
+    Newsreader_600SemiBold,
+    Newsreader_700Bold,
+    Newsreader_400Regular_Italic,
+    SpaceMono_400Regular,
+    SpaceMono_700Bold,
+  });
+
   useEffect(() => {
     initializeDatabase();
   }, []);
+
+  if (!fontsLoaded) {
+    return (
+      <AnimatedSplashScreen onFinish={() => {}} minDurationMs={1500} />
+    );
+  }
 
   return (
     <>

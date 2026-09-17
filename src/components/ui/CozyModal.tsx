@@ -12,7 +12,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { X } from 'lucide-react-native';
 import { useAppTheme } from '../../context/theme-context';
-import { triggerHaptic } from '../../constants/theme';
+import { triggerHaptic, FONTS } from '../../constants/theme';
 
 interface CozyModalProps {
   visible: boolean;
@@ -47,7 +47,7 @@ export const CozyModal: React.FC<CozyModalProps> = ({
       onRequestClose={onClose}
     >
       <KeyboardAvoidingView
-        style={styles.backdrop}
+        style={[styles.backdrop, { backgroundColor: isDark ? 'rgba(0, 0, 0, 0.70)' : 'rgba(12, 18, 14, 0.45)' }]}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 12 : 0}
       >
@@ -63,8 +63,8 @@ export const CozyModal: React.FC<CozyModalProps> = ({
           style={[
             styles.sheetContainer,
             {
-              backgroundColor: isDark ? '#1A1C1B' : '#FFFFFF',
-              borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
+              backgroundColor: isDark ? 'rgba(25, 29, 27, 0.98)' : 'rgba(255, 255, 255, 0.98)',
+              borderColor: isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.08)',
               paddingBottom: Math.max(insets.bottom + 16, 28),
             },
           ]}
@@ -203,12 +203,12 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 18,
-    fontWeight: '800',
+    fontFamily: FONTS.sansBold,
     letterSpacing: -0.4,
   },
   subtitle: {
     fontSize: 12,
-    fontWeight: '500',
+    fontFamily: FONTS.sansRegular,
     marginTop: 1,
   },
   closeBtn: {

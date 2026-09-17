@@ -22,7 +22,7 @@ import {
   Edit3,
 } from 'lucide-react-native';
 import { useAppTheme } from '../../context/theme-context';
-import { triggerHaptic } from '../../constants/theme';
+import { triggerHaptic, FONTS } from '../../constants/theme';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import { useUIStore } from '../../store/ui-store';
@@ -429,7 +429,7 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: 'transparent',
+    backgroundColor: 'rgba(0, 0, 0, 0.70)',
     justifyContent: 'flex-end',
   },
   sheetContainer: {
@@ -459,7 +459,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 16,
-    fontWeight: '800',
+    fontFamily: FONTS.sansBold,
     letterSpacing: -0.3,
   },
   closeButton: {
@@ -477,23 +477,23 @@ const styles = StyleSheet.create({
   },
   amountText: {
     fontSize: 34,
-    fontWeight: '900',
+    fontFamily: FONTS.monoBold,
     letterSpacing: -1,
   },
   typeBadge: {
     paddingHorizontal: 12,
-    paddingVertical: 3,
+    paddingVertical: 4,
     borderRadius: 12,
     borderWidth: 1,
     marginTop: 6,
   },
   typeBadgeText: {
     fontSize: 10,
-    fontWeight: '900',
+    fontFamily: FONTS.sansBold,
     letterSpacing: 0.8,
   },
   detailsCard: {
-    borderRadius: 20,
+    borderRadius: 26,
     borderWidth: 1,
     paddingHorizontal: 16,
     paddingVertical: 4,
@@ -507,11 +507,11 @@ const styles = StyleSheet.create({
   },
   detailLabel: {
     fontSize: 12,
-    fontWeight: '600',
+    fontFamily: FONTS.sansMedium,
   },
   detailValue: {
     fontSize: 13,
-    fontWeight: '700',
+    fontFamily: FONTS.sansSemiBold,
   },
   actionsRow: {
     flexDirection: 'row',
@@ -520,8 +520,8 @@ const styles = StyleSheet.create({
   },
   actionBtn: {
     flex: 1,
-    height: 48,
-    borderRadius: 24,
+    height: 50,
+    borderRadius: 25,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -529,12 +529,12 @@ const styles = StyleSheet.create({
   },
   actionBtnTextPrimary: {
     fontSize: 14,
-    fontWeight: '800',
+    fontFamily: FONTS.sansBold,
   },
   actionBtnSecondary: {
-    height: 48,
+    height: 50,
     paddingHorizontal: 16,
-    borderRadius: 24,
+    borderRadius: 25,
     borderWidth: 1,
     flexDirection: 'row',
     alignItems: 'center',
@@ -543,12 +543,12 @@ const styles = StyleSheet.create({
   },
   actionBtnTextSecondary: {
     fontSize: 13,
-    fontWeight: '700',
+    fontFamily: FONTS.sansSemiBold,
   },
   iconBtnDanger: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,

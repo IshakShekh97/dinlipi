@@ -18,6 +18,14 @@ export function ThemeSwitcher() {
     await setThemeMode(mode);
   };
 
+  const PALETTE_SWATCHES = [
+    { name: 'Palm Leaf', hex: '#899D78', role: 'Primary Green' },
+    { name: 'Blue Slate', hex: '#326273', role: 'Cool Slate' },
+    { name: 'Tangerine', hex: '#E39774', role: 'Warm Glow' },
+    { name: 'Oxidized', hex: '#B02E0C', role: 'Rich Accent' },
+    { name: 'Obsidian', hex: '#020202', role: 'Deep Base' },
+  ];
+
   return (
     <View style={styles.sectionWrap}>
       <Text style={[styles.sectionLabel, { color: colors.textMuted }]}>
@@ -34,7 +42,7 @@ export function ThemeSwitcher() {
         ]}
       >
         <Text style={[styles.cardSubText, { color: colors.textSecondary }]}>
-          Cozy Pastel Palette (Pure White Light & Dark Neutral Gray)
+          5-Tone Earth & Slate Palette • {isDark ? 'Obsidian Dark' : 'Pure White Light'}
         </Text>
 
         <View
@@ -80,6 +88,34 @@ export function ThemeSwitcher() {
             );
           })}
         </View>
+
+        {/* 5-Tone Color Palette Swatch Strip */}
+        <View style={styles.paletteSection}>
+          <Text style={[styles.paletteHeading, { color: colors.textMuted }]}>
+            Active 5-Tone Palette Swatches
+          </Text>
+          <View style={styles.paletteRow}>
+            {PALETTE_SWATCHES.map((swatch) => (
+              <View key={swatch.hex} style={styles.paletteCol}>
+                <View
+                  style={[
+                    styles.swatchCircle,
+                    {
+                      backgroundColor: swatch.hex,
+                      borderColor: isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.08)',
+                    },
+                  ]}
+                />
+                <Text style={[styles.swatchHex, { color: colors.textPrimary }]} numberOfLines={1}>
+                  {swatch.hex}
+                </Text>
+                <Text style={[styles.swatchName, { color: colors.textMuted }]} numberOfLines={1}>
+                  {swatch.name}
+                </Text>
+              </View>
+            ))}
+          </View>
+        </View>
       </View>
     </View>
   );
@@ -124,5 +160,44 @@ const styles = StyleSheet.create({
   },
   themeTabText: {
     fontSize: 13,
+  },
+  paletteSection: {
+    marginTop: 16,
+    paddingTop: 14,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(128, 128, 128, 0.15)',
+  },
+  paletteHeading: {
+    fontSize: 11,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
+    marginBottom: 10,
+  },
+  paletteRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 6,
+  },
+  paletteCol: {
+    flex: 1,
+    alignItems: 'center',
+    gap: 4,
+  },
+  swatchCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    borderWidth: 1.5,
+  },
+  swatchHex: {
+    fontSize: 9.5,
+    fontWeight: '700',
+    fontVariant: ['tabular-nums'],
+  },
+  swatchName: {
+    fontSize: 9,
+    fontWeight: '600',
   },
 });

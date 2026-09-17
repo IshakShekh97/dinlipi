@@ -20,7 +20,8 @@ import {
   FileText,
 } from 'lucide-react-native';
 import { useAppTheme } from '../../context/theme-context';
-import { triggerHaptic } from '../../constants/theme';
+import { triggerHaptic, FONTS } from '../../constants/theme';
+import { AmbientGlowBackground } from '../../components/ui/AmbientGlowBackground';
 import { useTransactionsLive, useUserLive } from '../../db/queries';
 import { useUIStore } from '../../store/ui-store';
 import { getCurrencySymbol } from '../../utils/currency';
@@ -473,6 +474,8 @@ export default function AnalyticsScreen() {
         paddingTop: Math.max(insets.top + 6, 32),
       }}
     >
+      <AmbientGlowBackground />
+
       {/* Screen Header */}
       <View style={styles.headerRow}>
         <View>
@@ -940,11 +943,12 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 22,
-    fontWeight: '800',
+    fontFamily: FONTS.sansBold,
     letterSpacing: -0.4,
   },
   headerSub: {
     fontSize: 12,
+    fontFamily: FONTS.sansRegular,
     marginTop: 2,
   },
   badgePill: {
@@ -958,7 +962,7 @@ const styles = StyleSheet.create({
   },
   badgeText: {
     fontSize: 12,
-    fontWeight: '700',
+    fontFamily: FONTS.sansBold,
   },
   periodContainer: {
     flexDirection: 'row',
@@ -975,10 +979,11 @@ const styles = StyleSheet.create({
   },
   periodTabText: {
     fontSize: 12,
+    fontFamily: FONTS.sansMedium,
   },
   heroSpendCard: {
-    padding: 18,
-    borderRadius: 24,
+    padding: 20,
+    borderRadius: 26,
     borderWidth: 1,
     marginBottom: 14,
     gap: 16,
@@ -990,11 +995,11 @@ const styles = StyleSheet.create({
   },
   spendLabel: {
     fontSize: 12,
-    fontWeight: '600',
+    fontFamily: FONTS.sansMedium,
   },
   spendAmount: {
     fontSize: 28,
-    fontWeight: '900',
+    fontFamily: FONTS.monoBold,
     letterSpacing: -0.8,
     marginTop: 2,
   },
@@ -1008,7 +1013,7 @@ const styles = StyleSheet.create({
   },
   trendText: {
     fontSize: 12,
-    fontWeight: '700',
+    fontFamily: FONTS.sansBold,
   },
   chartContainer: {
     height: 120,
@@ -1039,6 +1044,7 @@ const styles = StyleSheet.create({
   },
   barLabel: {
     fontSize: 11,
+    fontFamily: FONTS.sansMedium,
   },
   cashflowRow: {
     flexDirection: 'row',
@@ -1051,35 +1057,35 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 10,
     padding: 14,
-    borderRadius: 20,
+    borderRadius: 22,
     borderWidth: 1,
   },
   cashflowIconBox: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     alignItems: 'center',
     justifyContent: 'center',
   },
   cashflowLabel: {
     fontSize: 11,
-    fontWeight: '600',
+    fontFamily: FONTS.sansMedium,
   },
   cashflowVal: {
     fontSize: 16,
-    fontWeight: '800',
+    fontFamily: FONTS.monoBold,
     marginTop: 2,
   },
   donutCard: {
-    padding: 18,
-    borderRadius: 24,
+    padding: 20,
+    borderRadius: 26,
     borderWidth: 1,
     marginBottom: 14,
     alignItems: 'center',
   },
   donutSectionTitle: {
     fontSize: 16,
-    fontWeight: '800',
+    fontFamily: FONTS.sansBold,
     alignSelf: 'flex-start',
     marginBottom: 12,
   },
@@ -1097,12 +1103,12 @@ const styles = StyleSheet.create({
   },
   donutCenterLabel: {
     fontSize: 10,
-    fontWeight: '700',
+    fontFamily: FONTS.sansBold,
     textTransform: 'uppercase',
   },
   donutCenterAmount: {
     fontSize: 22,
-    fontWeight: '900',
+    fontFamily: FONTS.monoBold,
     letterSpacing: -0.5,
   },
   catListWrap: {

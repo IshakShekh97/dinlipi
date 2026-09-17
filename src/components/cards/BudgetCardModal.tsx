@@ -38,26 +38,30 @@ interface BudgetCardModalProps {
 }
 
 const BACKDROP_THEMES: { id: CardThemeVariant; label: string; previewColor: string }[] = [
+  { id: 'palmLeaf', label: 'Palm Leaf', previewColor: '#899D78' },
+  { id: 'blueSlate', label: 'Blue Slate', previewColor: '#326273' },
+  { id: 'tangerine', label: 'Tangerine', previewColor: '#E39774' },
+  { id: 'oxidizedIron', label: 'Oxidized Iron', previewColor: '#B02E0C' },
+  { id: 'obsidian', label: 'Obsidian Black', previewColor: '#020202' },
   { id: 'matchaLime', label: 'Matcha Lime', previewColor: '#CEF04A' },
   { id: 'terracotta', label: 'Terracotta', previewColor: '#E07A5F' },
   { id: 'mossSage', label: 'Moss Sage', previewColor: '#81B29A' },
-  { id: 'goldenHoney', label: 'Golden Honey', previewColor: '#F2CC8F' },
-  { id: 'darkGraphite', label: 'Graphite', previewColor: '#262928' },
-  { id: 'porcelain', label: 'Porcelain', previewColor: '#F4F4EE' },
 ];
 
-function hslToHex(h: number, s: number, l: number): string {
-  l /= 100;
-  const a = (s * Math.min(l, 1 - l)) / 100;
-  const f = (n: number) => {
-    const k = (n + h / 30) % 12;
-    const color = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
-    return Math.round(255 * color)
-      .toString(16)
-      .padStart(2, '0');
-  };
-  return `#${f(0)}${f(8)}${f(4)}`.toUpperCase();
-}
+const CURATED_AESTHETIC_PALETTES: [string, string, string][] = [
+  ['#899D78', '#A2B591', '#4D5F3F'], // Palm Leaf Sage Frosted Glass
+  ['#326273', '#487D91', '#1B3B47'], // Blue Slate Nordic Frost
+  ['#E39774', '#F0B195', '#B55B32'], // Tangerine Glow Glass
+  ['#B02E0C', '#D04620', '#631500'], // Oxidized Iron Velvet
+  ['#181C1A', '#2E3531', '#020202'], // Obsidian Minimal Glass
+  ['#536F63', '#799C8E', '#2B3C35'], // Deep Pine Fog Glass
+  ['#3E5968', '#5E7F91', '#1F3440'], // Pacific Slate Glass
+  ['#D48B6A', '#EBB096', '#944728'], // Warm Terracotta Dawn
+  ['#688A6F', '#8FB096', '#3E5743'], // Matcha Eucalyptus Frost
+  ['#222B29', '#3D4D48', '#0E1312'], // Smoked Carbon Glass
+  ['#7A6F5D', '#A19480', '#4A4134'], // Khaki Linen Glass
+  ['#3D6B78', '#6398A8', '#21424C'], // Polar Ice Glass
+];
 
 function getHexLuminance(hex: string): number {
   const clean = hex.replace('#', '');
@@ -85,7 +89,7 @@ export const BudgetCardModal: React.FC<BudgetCardModalProps> = ({
   const [cardType, setCardType] = useState(initialData ? initialData.cardType : 'Vault');
   const [holder, setHolder] = useState(initialData ? initialData.holder : 'Cardholder');
   const [variant, setVariant] = useState<CardThemeVariant>(
-    initialData ? initialData.variant : 'matchaLime'
+    initialData ? initialData.variant : 'palmLeaf'
   );
   const [customGradient, setCustomGradient] = useState<[string, string, string] | undefined>(
     initialData?.customGradient
@@ -103,7 +107,7 @@ export const BudgetCardModal: React.FC<BudgetCardModalProps> = ({
     setLimit(initialData ? initialData.limit.toString() : '2000');
     setCardType(initialData ? initialData.cardType : 'Vault');
     setHolder(initialData ? initialData.holder : 'Cardholder');
-    setVariant(initialData ? initialData.variant : 'matchaLime');
+    setVariant(initialData ? initialData.variant : 'palmLeaf');
     setCustomGradient(initialData?.customGradient);
     setShapePattern(initialData?.shapePattern || 'waves');
     setErrorMessage('');
@@ -111,28 +115,15 @@ export const BudgetCardModal: React.FC<BudgetCardModalProps> = ({
 
   const generateRandomColors = () => {
     triggerHaptic('medium');
-    const h1 = Math.floor(Math.random() * 360);
-    const s1 = Math.floor(65 + Math.random() * 25);
-    const l1 = Math.floor(40 + Math.random() * 24);
 
-    const h2 = (h1 + 35 + Math.floor(Math.random() * 40)) % 360;
-    const s2 = Math.floor(60 + Math.random() * 25);
-    const l2 = Math.floor(38 + Math.random() * 24);
-
-    const h3 = (h1 + 175 + Math.floor(Math.random() * 40)) % 360;
-    const s3 = Math.floor(55 + Math.random() * 25);
-    const l3 = Math.floor(32 + Math.random() * 24);
-
-    const newGradient: [string, string, string] = [
-      hslToHex(h1, s1, l1),
-      hslToHex(h2, s2, l2),
-      hslToHex(h3, s3, l3),
-    ];
+    // Pick from aesthetic harmonious palettes inspired by the 5-tone palette
+    const randomIndex = Math.floor(Math.random() * CURATED_AESTHETIC_PALETTES.length);
+    const selectedPalette = CURATED_AESTHETIC_PALETTES[randomIndex];
 
     const shapeOptions: ShapePatternType[] = ['waves', 'orbs', 'geometry', 'arcs', 'ribbons'];
     const nextShape = shapeOptions[Math.floor(Math.random() * shapeOptions.length)];
 
-    setCustomGradient(newGradient);
+    setCustomGradient(selectedPalette);
     setShapePattern(nextShape);
     setVariant('custom');
   };

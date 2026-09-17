@@ -260,7 +260,7 @@ const AuthLockContent: React.FC = () => {
         </View>
 
         <Text style={[styles.title, { color: colors.textPrimary }]}>
-          {authMode === 'pin' ? 'Enter Passcode' : `${capabilities.biometricName} Unlock`}
+          {authMode === 'pin' ? 'Enter Passcode' : 'Fingerprint Unlock'}
         </Text>
 
         {/* Manual Switcher Tabs for PIN vs Biometrics */}
@@ -317,11 +317,7 @@ const AuthLockContent: React.FC = () => {
               ]}
               activeOpacity={0.8}
             >
-              {isFaceId ? (
-                <ScanFace size={13} color={authMode === 'biometric' ? colors.matchaLime : colors.textMuted} />
-              ) : (
-                <Fingerprint size={13} color={authMode === 'biometric' ? colors.matchaLime : colors.textMuted} />
-              )}
+              <Fingerprint size={13} color={authMode === 'biometric' ? colors.matchaLime : colors.textMuted} />
               <Text
                 style={[
                   styles.switchTabText,
@@ -331,7 +327,7 @@ const AuthLockContent: React.FC = () => {
                   },
                 ]}
               >
-                {capabilities.biometricName}
+                Fingerprint
               </Text>
             </TouchableOpacity>
           </View>
@@ -347,7 +343,7 @@ const AuthLockContent: React.FC = () => {
           <Text style={[styles.hintText, { color: colors.textSecondary }]}>
             {authMode === 'pin'
               ? 'Enter your 4-digit PIN to access the ledger'
-              : `Tap scanner to authenticate with ${capabilities.biometricName}`}
+              : 'Tap scanner to authenticate with Fingerprint'}
           </Text>
         )}
 
@@ -382,17 +378,13 @@ const AuthLockContent: React.FC = () => {
             activeOpacity={0.8}
           >
             <View style={[styles.biometricIconBox, { backgroundColor: 'rgba(206, 240, 74, 0.16)' }]}>
-              {isFaceId ? (
-                <ScanFace size={36} color={colors.matchaLime} strokeWidth={2} />
-              ) : (
-                <Fingerprint size={36} color={colors.matchaLime} strokeWidth={2} />
-              )}
+              <Fingerprint size={36} color={colors.matchaLime} strokeWidth={2} />
             </View>
             <Text style={[styles.biometricCardTitle, { color: colors.textPrimary }]}>
-              Authenticate with {capabilities.biometricName}
+              Authenticate with Fingerprint
             </Text>
             <Text style={[styles.biometricCardSub, { color: colors.textSecondary }]}>
-              Touch sensor or glance to unlock instantly
+              Touch fingerprint sensor to unlock instantly
             </Text>
           </TouchableOpacity>
 
@@ -432,11 +424,11 @@ const AuthLockContent: React.FC = () => {
         >
           <Text style={[styles.actionPillText, { color: '#141715' }]}>
             {authMode === 'biometric'
-              ? `Scan ${capabilities.biometricName}`
+              ? 'Scan Fingerprint'
               : pin.length === 4
               ? 'Unlock Vault'
               : settings.biometricEnabled
-              ? `Use ${capabilities.biometricName}`
+              ? 'Use Fingerprint'
               : 'Enter 4 Digits'}
           </Text>
           <ChevronsRight size={20} color="#141715" strokeWidth={2.5} />

@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Tag, PlusCircle, MessageCircle, Edit2, Trash2 } from 'lucide-react-native';
 import { useAppTheme } from '../../context/theme-context';
-import { triggerHaptic } from '../../constants/theme';
+import { triggerHaptic, FONTS } from '../../constants/theme';
 import { UserAvatar } from '../ui/UserAvatar';
 import { ContactLedger } from '../../app/(tabs)/khata';
 
@@ -197,7 +197,7 @@ export function ContactCardItem({
 const styles = StyleSheet.create({
   contactCard: {
     padding: 16,
-    borderRadius: 22,
+    borderRadius: 24,
     borderWidth: 1,
     marginBottom: 12,
   },
@@ -211,7 +211,7 @@ const styles = StyleSheet.create({
   },
   contactName: {
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: FONTS.sansBold,
     marginBottom: 4,
   },
   aliasRow: {
@@ -225,21 +225,23 @@ const styles = StyleSheet.create({
     gap: 3,
     paddingHorizontal: 7,
     paddingVertical: 2,
-    borderRadius: 6,
+    borderRadius: 8,
   },
   aliasText: {
     fontSize: 10,
-    fontWeight: '700',
+    fontFamily: FONTS.sansMedium,
   },
   contactTag: {
     fontSize: 12,
+    fontFamily: FONTS.sansRegular,
   },
   remainingAmount: {
-    fontSize: 15,
-    fontWeight: '800',
+    fontSize: 16,
+    fontFamily: FONTS.monoBold,
   },
   remainingLabel: {
     fontSize: 10,
+    fontFamily: FONTS.sansMedium,
     marginTop: 2,
     textTransform: 'uppercase',
   },

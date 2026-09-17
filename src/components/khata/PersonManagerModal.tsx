@@ -10,7 +10,7 @@ import {
 import { UserCheck, Sparkles, Tag, Image as ImageIcon, CreditCard, Check } from 'lucide-react-native';
 import { CozyModal } from '../ui/CozyModal';
 import { useAppTheme } from '../../context/theme-context';
-import { triggerHaptic } from '../../constants/theme';
+import { triggerHaptic, FONTS } from '../../constants/theme';
 import { UserAvatar } from '../ui/UserAvatar';
 import { AvatarPickerModal } from '../ui/AvatarPickerModal';
 import { useUIStore } from '../../store/ui-store';
@@ -508,8 +508,8 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   inputLabel: {
-    fontSize: 12,
-    fontWeight: '700',
+    fontSize: 11,
+    fontFamily: FONTS.sansBold,
     textTransform: 'uppercase',
     letterSpacing: 0.6,
     marginBottom: 6,
@@ -536,7 +536,7 @@ const styles = StyleSheet.create({
   },
   inputText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: FONTS.sansMedium,
   },
   addAliasBtn: {
     paddingHorizontal: 10,
@@ -545,7 +545,7 @@ const styles = StyleSheet.create({
   },
   addAliasText: {
     fontSize: 11,
-    fontWeight: '700',
+    fontFamily: FONTS.sansBold,
   },
   aliasesContainer: {
     flexDirection: 'row',
@@ -564,7 +564,7 @@ const styles = StyleSheet.create({
   },
   aliasChipText: {
     fontSize: 11,
-    fontWeight: '700',
+    fontFamily: FONTS.sansBold,
   },
   notesBox: {
     minHeight: 80,
@@ -574,6 +574,7 @@ const styles = StyleSheet.create({
   },
   notesInput: {
     fontSize: 13,
+    fontFamily: FONTS.sansRegular,
     lineHeight: 18,
     textAlignVertical: 'top',
   },
@@ -588,7 +589,7 @@ const styles = StyleSheet.create({
   },
   saveButtonText: {
     fontSize: 15,
-    fontWeight: '800',
+    fontFamily: FONTS.sansBold,
     letterSpacing: -0.2,
   },
 });

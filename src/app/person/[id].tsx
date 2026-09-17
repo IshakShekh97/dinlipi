@@ -30,9 +30,11 @@ import {
   Receipt,
 } from 'lucide-react-native';
 import { useAppTheme } from '../../context/theme-context';
-import { triggerHaptic } from '../../constants/theme';
+import { FONTS, triggerHaptic } from '../../constants/theme';
+import { AmbientGlowBackground } from '../../components/ui/AmbientGlowBackground';
 import { UserAvatar } from '../../components/ui/UserAvatar';
 import { CozyModal } from '../../components/ui/CozyModal';
+import { CalendarPickerModal } from '../../components/ui/CalendarPickerModal';
 import { useUIStore } from '../../store/ui-store';
 import { getCurrencySymbol } from '../../utils/currency';
 import {
@@ -94,6 +96,7 @@ export default function PersonLedgerPage() {
   const [entryChannel, setEntryChannel] = useState<'Cash' | 'UPI' | 'Bank'>('Cash');
   const [entryDateMode, setEntryDateMode] = useState<'today' | 'yesterday' | 'custom'>('today');
   const [entryCustomDate, setEntryCustomDate] = useState(new Date().toISOString().split('T')[0]);
+  const [calendarVisible, setCalendarVisible] = useState(false);
   const [entryNotes, setEntryNotes] = useState('');
   const [entryLinkedCardId, setEntryLinkedCardId] = useState<string | undefined>();
 
@@ -106,6 +109,7 @@ export default function PersonLedgerPage() {
   const [editType, setEditType] = useState<'lend' | 'income'>('lend');
   const [editNotes, setEditNotes] = useState('');
   const [editDate, setEditDate] = useState('');
+  const [editCalendarVisible, setEditCalendarVisible] = useState(false);
   const [editCardId, setEditCardId] = useState<string | undefined>();
 
   // -------------------------------------------------------------
@@ -390,6 +394,9 @@ export default function PersonLedgerPage() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bgPrimary, paddingTop: insets.top }}>
+      {/* Ambient Diffuse Background Glow */}
+      <AmbientGlowBackground glowColor={colors.mossSage} glowHeight={360} />
+
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity
@@ -925,17 +932,46 @@ export default function PersonLedgerPage() {
               })}
             </View>
             {entryDateMode === 'custom' && (
-              <View style={[styles.inputRow, { backgroundColor: colors.cardSecondary, borderColor: colors.borderSubtle, marginTop: 6 }]}>
-                <Calendar size={15} color={colors.textMuted} style={{ marginRight: 8 }} />
-                <TextInput
-                  value={entryCustomDate}
-                  onChangeText={setEntryCustomDate}
-                  placeholder="YYYY-MM-DD"
-                  placeholderTextColor={colors.textMuted}
-                  style={[styles.textInput, { color: colors.textPrimary }]}
-                />
-              </View>
+              <TouchableOpacity
+                onPress={() => {
+                  triggerHaptic('light');
+                  setCalendarVisible(true);
+                }}
+                style={[
+                  styles.inputRow,
+                  {
+                    backgroundColor: isDark ? 'rgba(206, 240, 74, 0.08)' : '#F2F7EA',
+                    borderColor: colors.matchaLime,
+                    marginTop: 6,
+                    justifyContent: 'space-between',
+                  },
+                ]}
+                activeOpacity={0.75}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <Calendar size={15} color={colors.matchaLime} />
+                  <Text style={[styles.textInput, { color: colors.textPrimary, fontFamily: FONTS.monoBold }]}>
+                    {entryCustomDate}
+                  </Text>
+                </View>
+                <View style={{ backgroundColor: colors.matchaLime, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 }}>
+                  <Text style={{ color: '#141715', fontFamily: FONTS.sansBold, fontSize: 11 }}>
+                    Pick Date
+                  </Text>
+                </View>
+              </TouchableOpacity>
             )}
+
+            <CalendarPickerModal
+              visible={calendarVisible}
+              onClose={() => setCalendarVisible(false)}
+              selectedDate={entryCustomDate}
+              onSelectDate={(newDate) => {
+                setEntryCustomDate(newDate);
+                setEntryDateMode('custom');
+              }}
+              title="Select Entry Date"
+            />
           </View>
 
           {/* Notes / Description */}
@@ -1089,17 +1125,44 @@ export default function PersonLedgerPage() {
           </View>
 
           <View style={styles.formGroup}>
-            <Text style={[styles.formLabel, { color: colors.textSecondary }]}>Date (YYYY-MM-DD)</Text>
-            <View style={[styles.inputRow, { backgroundColor: colors.cardSecondary, borderColor: colors.borderSubtle }]}>
-              <Calendar size={15} color={colors.textMuted} style={{ marginRight: 8 }} />
-              <TextInput
-                value={editDate}
-                onChangeText={setEditDate}
-                placeholder="YYYY-MM-DD"
-                placeholderTextColor={colors.textMuted}
-                style={[styles.textInput, { color: colors.textPrimary }]}
-              />
-            </View>
+            <Text style={[styles.formLabel, { color: colors.textSecondary }]}>Date</Text>
+            <TouchableOpacity
+              onPress={() => {
+                triggerHaptic('light');
+                setEditCalendarVisible(true);
+              }}
+              style={[
+                styles.inputRow,
+                {
+                  backgroundColor: isDark ? 'rgba(206, 240, 74, 0.08)' : '#F2F7EA',
+                  borderColor: colors.matchaLime,
+                  justifyContent: 'space-between',
+                },
+              ]}
+              activeOpacity={0.75}
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Calendar size={15} color={colors.matchaLime} />
+                <Text style={[styles.textInput, { color: colors.textPrimary, fontFamily: FONTS.monoBold }]}>
+                  {editDate || 'Select Date'}
+                </Text>
+              </View>
+              <View style={{ backgroundColor: colors.matchaLime, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 }}>
+                <Text style={{ color: '#141715', fontFamily: FONTS.sansBold, fontSize: 11 }}>
+                  Open Calendar
+                </Text>
+              </View>
+            </TouchableOpacity>
+
+            <CalendarPickerModal
+              visible={editCalendarVisible}
+              onClose={() => setEditCalendarVisible(false)}
+              selectedDate={editDate}
+              onSelectDate={(newDate) => {
+                setEditDate(newDate);
+              }}
+              title="Edit Transaction Date"
+            />
           </View>
 
           <View style={styles.formGroup}>
@@ -1193,12 +1256,12 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 17,
-    fontWeight: '800',
+    fontFamily: FONTS.sansBold,
     letterSpacing: -0.3,
   },
   headerSub: {
     fontSize: 11,
-    fontWeight: '500',
+    fontFamily: FONTS.sansMedium,
   },
   addIconBtn: {
     width: 40,
@@ -1208,23 +1271,24 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   profileCard: {
-    borderRadius: 20,
+    borderRadius: 26,
     borderWidth: 1,
-    padding: 16,
+    padding: 18,
     marginVertical: 10,
   },
   personName: {
     fontSize: 18,
-    fontWeight: '800',
+    fontFamily: FONTS.sansBold,
     letterSpacing: -0.3,
   },
   phoneLine: {
     fontSize: 13,
-    fontWeight: '600',
+    fontFamily: FONTS.mono,
     marginTop: 2,
   },
   noteLine: {
-    fontSize: 11,
+    fontSize: 12,
+    fontFamily: FONTS.sansRegular,
     marginTop: 2,
   },
   contactActionCol: {
@@ -1232,17 +1296,17 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   contactCircleBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
   balanceCard: {
-    borderRadius: 22,
+    borderRadius: 26,
     borderWidth: 1,
-    padding: 18,
+    padding: 20,
     marginVertical: 8,
   },
   balanceHeaderRow: {
@@ -1253,32 +1317,32 @@ const styles = StyleSheet.create({
   },
   balanceLabel: {
     fontSize: 13,
-    fontWeight: '600',
+    fontFamily: FONTS.sansMedium,
   },
   badge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 12,
   },
   badgeText: {
     fontSize: 11,
-    fontWeight: '800',
+    fontFamily: FONTS.sansBold,
   },
   remainingAmount: {
     fontSize: 34,
-    fontWeight: '900',
+    fontFamily: FONTS.monoBold,
     letterSpacing: -1.2,
     marginVertical: 4,
   },
   progressTrack: {
-    height: 7,
+    height: 8,
     borderRadius: 4,
     overflow: 'hidden',
-    marginTop: 4,
-    marginBottom: 14,
+    marginTop: 6,
+    marginBottom: 16,
   },
   progressFill: {
     height: '100%',
@@ -1290,24 +1354,24 @@ const styles = StyleSheet.create({
   },
   foldCell: {
     flex: 1,
-    borderRadius: 14,
+    borderRadius: 18,
     borderWidth: 1,
-    padding: 12,
-    gap: 2,
+    padding: 14,
+    gap: 3,
   },
   foldCellLabel: {
     fontSize: 11,
-    fontWeight: '700',
+    fontFamily: FONTS.sansMedium,
     letterSpacing: -0.2,
   },
   foldCellValue: {
     fontSize: 18,
-    fontWeight: '900',
+    fontFamily: FONTS.monoBold,
     letterSpacing: -0.5,
   },
   foldCellSub: {
-    fontSize: 9,
-    fontWeight: '500',
+    fontSize: 10,
+    fontFamily: FONTS.sansRegular,
   },
   actionRow: {
     flexDirection: 'row',
@@ -1320,12 +1384,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    height: 48,
-    borderRadius: 24,
+    height: 50,
+    borderRadius: 25,
   },
   primaryActionBtnText: {
     fontSize: 14,
-    fontWeight: '800',
+    fontFamily: FONTS.sansBold,
     color: '#141715',
   },
   secondaryActionBtn: {
@@ -1334,13 +1398,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    height: 48,
-    borderRadius: 24,
+    height: 50,
+    borderRadius: 25,
     borderWidth: 1,
   },
   secondaryActionBtnText: {
     fontSize: 13,
-    fontWeight: '700',
+    fontFamily: FONTS.sansSemiBold,
   },
   sectionHeaderRow: {
     marginTop: 14,
@@ -1348,11 +1412,12 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 16,
-    fontWeight: '800',
+    fontFamily: FONTS.sansBold,
     letterSpacing: -0.3,
   },
   sectionSubtitle: {
     fontSize: 11,
+    fontFamily: FONTS.sansRegular,
     marginTop: 1,
   },
   filterSection: {
@@ -1362,41 +1427,42 @@ const styles = StyleSheet.create({
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    height: 42,
-    borderRadius: 14,
+    height: 44,
+    borderRadius: 16,
     borderWidth: 1,
-    paddingHorizontal: 12,
+    paddingHorizontal: 14,
     gap: 8,
   },
   searchInput: {
     flex: 1,
     fontSize: 13,
-    fontWeight: '500',
+    fontFamily: FONTS.sansMedium,
   },
   filterPillsRow: {
     flexDirection: 'row',
     gap: 8,
   },
   filterPill: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 14,
     borderWidth: 1,
   },
   filterPillText: {
-    fontSize: 11,
+    fontSize: 12,
+    fontFamily: FONTS.sansMedium,
   },
   emptyCard: {
-    borderRadius: 18,
+    borderRadius: 22,
     borderWidth: 1,
     padding: 30,
     alignItems: 'center',
     marginVertical: 10,
   },
   txCard: {
-    borderRadius: 16,
+    borderRadius: 20,
     borderWidth: 1,
-    padding: 14,
+    padding: 16,
     marginBottom: 10,
   },
   txMainRow: {
@@ -1406,39 +1472,41 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   typeBadge: {
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 6,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderRadius: 8,
   },
   typeBadgeText: {
     fontSize: 9,
-    fontWeight: '800',
+    fontFamily: FONTS.sansBold,
     letterSpacing: 0.3,
   },
   cardTag: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
     borderWidth: 1,
   },
   cardTagText: {
-    fontSize: 9,
-    fontWeight: '600',
+    fontSize: 10,
+    fontFamily: FONTS.sansSemiBold,
   },
   txTitle: {
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: FONTS.sansSemiBold,
     marginTop: 4,
   },
   txNotes: {
     fontSize: 12,
+    fontFamily: FONTS.sansRegular,
     marginTop: 2,
   },
   txDate: {
     fontSize: 11,
+    fontFamily: FONTS.mono,
     marginTop: 4,
   },
   txAmountCol: {
@@ -1447,7 +1515,7 @@ const styles = StyleSheet.create({
   },
   txAmount: {
     fontSize: 16,
-    fontWeight: '900',
+    fontFamily: FONTS.monoBold,
     letterSpacing: -0.5,
   },
   txActionsRow: {

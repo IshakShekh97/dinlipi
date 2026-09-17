@@ -18,9 +18,11 @@ import {
   Receipt,
   User,
   Tag,
+  ChevronRight,
 } from 'lucide-react-native';
 import { useAppTheme } from '../../context/theme-context';
-import { triggerHaptic } from '../../constants/theme';
+import { FONTS, triggerHaptic } from '../../constants/theme';
+import { AmbientGlowBackground } from '../../components/ui/AmbientGlowBackground';
 import { useUIStore } from '../../store/ui-store';
 import { getCurrencySymbol } from '../../utils/currency';
 import {
@@ -44,7 +46,7 @@ import { BudgetCardData } from '../../components/cards/BudgetCardModal';
 
 export default function TransactionsScreen() {
   const insets = useSafeAreaInsets();
-  const { colors } = useAppTheme();
+  const { colors, isDark } = useAppTheme();
   const { activeCurrency, showConfirmDialog } = useUIStore();
   const currencySymbol = getCurrencySymbol(activeCurrency);
 
@@ -401,23 +403,28 @@ export default function TransactionsScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bgPrimary, paddingTop: insets.top }}>
-      {/* Top App Header */}
+      {/* Ambient Diffuse Background Glow directly from Reference Image 2 */}
+      <AmbientGlowBackground glowColor={colors.terracotta} glowHeight={380} />
+
+      {/* Top App Header matching Reference Image 2: "Activity 🕒" and "Past" */}
       <View style={styles.header}>
         <View>
-          <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>Transactions</Text>
-          <Text style={[styles.headerSubtitle, { color: colors.textMuted }]}>
-            {filteredTransactions.length} records • Live synced
+          <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>
+            Activity 🕒
+          </Text>
+          <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>
+            Past
           </Text>
         </View>
 
         <View style={{ flexDirection: 'row', gap: 8 }}>
           <TouchableOpacity
             onPress={() => handleOpenAdd('income')}
-            style={[styles.headerBtn, { backgroundColor: 'rgba(206,240,74,0.14)', borderColor: colors.matchaLime }]}
+            style={[styles.headerBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : '#FFFFFF', borderColor: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.06)' }]}
             activeOpacity={0.75}
           >
             <TrendingUp size={16} color={colors.matchaLime} />
-            <Text style={[styles.headerBtnText, { color: colors.matchaLime }]}>Income</Text>
+            <Text style={[styles.headerBtnText, { color: colors.textPrimary }]}>Income</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -435,8 +442,8 @@ export default function TransactionsScreen() {
         contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 130 }}
         showsVerticalScrollIndicator={false}
       >
-        {/* KPI Cashflow Bar */}
-        <View style={[styles.kpiCard, { backgroundColor: colors.cardSecondary, borderColor: colors.borderSubtle }]}>
+        {/* Nested Dark Glass Hero Card directly from Reference Image 2 */}
+        <View style={[styles.kpiCard, { backgroundColor: isDark ? 'rgba(22, 25, 24, 0.82)' : '#FFFFFF', borderColor: isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0,0,0,0.06)' }]}>
           <View style={styles.kpiCol}>
             <Text style={[styles.kpiLabel, { color: colors.textMuted }]}>Total Inflow</Text>
             <Text style={[styles.kpiAmount, { color: colors.matchaLime }]}>
@@ -695,22 +702,27 @@ export default function TransactionsScreen() {
                     onPress={() => handleOpenDetail(t)}
                     style={[
                       styles.txRow,
-                      { backgroundColor: colors.cardSecondary, borderColor: colors.borderSubtle },
+                      {
+                        backgroundColor: isDark ? 'rgba(32, 35, 34, 0.85)' : '#FFFFFF',
+                        borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.05)',
+                      },
                     ]}
-                    activeOpacity={0.75}
+                    activeOpacity={0.78}
                   >
+                    {/* Rounded Square Badge matching Reference Image 2 */}
                     <View
                       style={[
-                        styles.iconCircle,
+                        styles.iconSquare,
                         {
-                          backgroundColor: isExpense ? 'rgba(224,122,95,0.12)' : 'rgba(206,240,74,0.12)',
+                          backgroundColor: isDark ? 'rgba(255, 255, 255, 0.06)' : '#F4F4EE',
+                          borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.04)',
                         },
                       ]}
                     >
                       {isExpense ? (
-                        <TrendingDown size={18} color={colors.terracotta} />
+                        <TrendingDown size={18} color={colors.terracotta} strokeWidth={2.2} />
                       ) : (
-                        <TrendingUp size={18} color={colors.matchaLime} />
+                        <TrendingUp size={18} color={colors.matchaLime} strokeWidth={2.2} />
                       )}
                     </View>
 
@@ -718,19 +730,19 @@ export default function TransactionsScreen() {
                       <Text style={[styles.txTitle, { color: colors.textPrimary }]}>{t.title}</Text>
 
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4, flexWrap: 'wrap' }}>
-                        <Text style={[styles.categoryTag, { color: colors.textMuted }]}>
+                        <Text style={[styles.categoryTag, { color: colors.textSecondary }]}>
                           {t.categoryId || 'General'}
                         </Text>
 
                         {personName && (
-                          <View style={[styles.miniBadge, { backgroundColor: colors.cardElevated, borderColor: colors.borderSubtle }]}>
+                          <View style={[styles.miniBadge, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : '#F0F0EA', borderColor: colors.borderSubtle }]}>
                             <User size={10} color={colors.matchaLime} />
                             <Text style={[styles.miniBadgeText, { color: colors.matchaLime }]}>{personName}</Text>
                           </View>
                         )}
 
                         {cardName && (
-                          <View style={[styles.miniBadge, { backgroundColor: colors.cardElevated, borderColor: colors.borderSubtle }]}>
+                          <View style={[styles.miniBadge, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : '#F0F0EA', borderColor: colors.borderSubtle }]}>
                             <CreditCard size={10} color={colors.textSecondary} />
                             <Text style={[styles.miniBadgeText, { color: colors.textSecondary }]}>{cardName}</Text>
                           </View>
@@ -748,9 +760,21 @@ export default function TransactionsScreen() {
                       <Text style={[styles.amountText, { color: itemColor }]}>
                         {isExpense ? '-' : '+'}{currencySymbol}{t.amount.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
                       </Text>
-                      <Text style={{ fontSize: 10, color: colors.textMuted, marginTop: 2 }}>
+                      <Text style={[styles.txTypeLabel, { color: colors.textMuted }]}>
                         {t.type.toUpperCase()}
                       </Text>
+                    </View>
+
+                    {/* Subtle Right Chevron Pill directly from Image 2 */}
+                    <View
+                      style={[
+                        styles.chevronPill,
+                        {
+                          backgroundColor: isDark ? 'rgba(255, 255, 255, 0.06)' : '#F4F4EE',
+                        },
+                      ]}
+                    >
+                      <ChevronRight size={14} color={colors.textSecondary} />
                     </View>
                   </TouchableOpacity>
                 );
@@ -792,35 +816,45 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
   },
   headerTitle: {
-    fontSize: 22,
-    fontWeight: '800',
-    letterSpacing: -0.5,
+    fontFamily: FONTS.sansBold,
+    fontSize: 24,
+    letterSpacing: -0.6,
   },
   headerSubtitle: {
-    fontSize: 12,
-    fontWeight: '500',
+    fontFamily: FONTS.serifItalic,
+    fontSize: 14,
     marginTop: 2,
   },
   headerBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 16,
+    paddingHorizontal: 13,
+    paddingVertical: 8,
+    borderRadius: 18,
     borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 1,
   },
   headerBtnText: {
+    fontFamily: FONTS.sansBold,
     fontSize: 12,
-    fontWeight: '700',
   },
   kpiCard: {
     flexDirection: 'row',
-    borderRadius: 18,
+    borderRadius: 26,
     borderWidth: 1,
-    padding: 14,
-    marginVertical: 10,
+    padding: 18,
+    marginVertical: 12,
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 2,
   },
   kpiCol: {
     flex: 1,
@@ -829,54 +863,60 @@ const styles = StyleSheet.create({
   },
   kpiDivider: {
     width: 1,
-    height: 32,
+    height: 36,
   },
   kpiLabel: {
+    fontFamily: FONTS.sansRegular,
     fontSize: 10,
-    fontWeight: '700',
     textTransform: 'uppercase',
-    letterSpacing: 0.3,
+    letterSpacing: 0.6,
   },
   kpiAmount: {
-    fontSize: 14,
-    fontWeight: '900',
-    letterSpacing: -0.5,
+    fontFamily: FONTS.monoBold,
+    fontSize: 15,
+    letterSpacing: -0.4,
   },
   searchBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    height: 44,
-    borderRadius: 14,
+    height: 48,
+    borderRadius: 20,
     borderWidth: 1,
-    paddingHorizontal: 12,
+    paddingHorizontal: 14,
     gap: 8,
-    marginVertical: 6,
+    marginVertical: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 4,
+    elevation: 1,
   },
   searchInput: {
     flex: 1,
+    fontFamily: FONTS.sansRegular,
     fontSize: 13,
-    fontWeight: '500',
   },
   filterChip: {
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 18,
     borderWidth: 1,
   },
   filterChipText: {
-    fontSize: 11,
+    fontFamily: FONTS.sansMedium,
+    fontSize: 12,
   },
   envelopeChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 10,
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 14,
     borderWidth: 1,
   },
   emptyCard: {
-    borderRadius: 18,
+    borderRadius: 24,
     borderWidth: 1,
     padding: 34,
     alignItems: 'center',
@@ -886,63 +926,85 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
-    marginTop: 4,
+    marginBottom: 10,
+    marginTop: 6,
     paddingHorizontal: 4,
   },
   groupDateText: {
+    fontFamily: FONTS.sansBold,
     fontSize: 12,
-    fontWeight: '700',
     textTransform: 'uppercase',
-    letterSpacing: 0.4,
+    letterSpacing: 0.6,
   },
   groupCountText: {
+    fontFamily: FONTS.sansRegular,
     fontSize: 11,
   },
   txRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 16,
+    borderRadius: 22,
     borderWidth: 1,
-    padding: 14,
+    padding: 13,
     marginBottom: 8,
     gap: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 5,
+    elevation: 1,
   },
-  iconCircle: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
+  iconSquare: {
+    width: 44,
+    height: 44,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
   },
   txTitle: {
+    fontFamily: FONTS.sansBold,
     fontSize: 15,
-    fontWeight: '700',
+    letterSpacing: -0.2,
   },
   categoryTag: {
+    fontFamily: FONTS.sansRegular,
     fontSize: 11,
-    fontWeight: '500',
   },
   miniBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 3,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 6,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderRadius: 8,
     borderWidth: 1,
   },
   miniBadgeText: {
+    fontFamily: FONTS.sansBold,
     fontSize: 10,
-    fontWeight: '700',
   },
   notesText: {
+    fontFamily: FONTS.sansRegular,
     fontSize: 11,
     marginTop: 3,
   },
   amountText: {
+    fontFamily: FONTS.monoBold,
     fontSize: 15,
-    fontWeight: '900',
     letterSpacing: -0.4,
+  },
+  txTypeLabel: {
+    fontFamily: FONTS.sansRegular,
+    fontSize: 10,
+    marginTop: 2,
+  },
+  chevronPill: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 4,
   },
 });
