@@ -19,6 +19,7 @@ import {
 import { useAppTheme } from '../context/theme-context';
 import { triggerHaptic } from '../constants/theme';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
+import { AppLogo } from '../components/ui/AppLogo';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -127,22 +128,7 @@ export default function OnboardingScreen() {
     >
       {/* Top Bar: Brand & Skip */}
       <View className="flex-row items-center justify-between px-6 pb-2">
-        <View className="flex-row items-center gap-2">
-          <View
-            style={{
-              backgroundColor: 'rgba(206, 240, 74, 0.16)',
-              borderColor: colors.borderMedium,
-            }}
-            className="w-8 h-8 rounded-xl items-center justify-center border"
-          >
-            <Text style={{ color: colors.matchaLime }} className="font-black text-base">
-              দ
-            </Text>
-          </View>
-          <Text style={{ color: colors.textPrimary }} className="font-black text-xl tracking-tight">
-            Dinlipi.
-          </Text>
-        </View>
+        <AppLogo variant="header" size="sm" />
 
         {activeIndex < slides.length - 1 && (
           <TouchableOpacity

@@ -35,6 +35,7 @@ import {
 import { CozyModal } from '../ui/CozyModal';
 import { useAppTheme } from '../../context/theme-context';
 import { triggerHaptic } from '../../constants/theme';
+import { getCurrencySymbol } from '../../utils/currency';
 
 export interface CategoryItem {
   id: string;
@@ -46,53 +47,7 @@ export interface CategoryItem {
   type: 'expense' | 'income';
 }
 
-export const INITIAL_CATEGORIES: CategoryItem[] = [
-  {
-    id: 'cat-1',
-    name: 'Investments',
-    iconName: 'Home',
-    color: '#CEF04A',
-    budget: 5000,
-    spent: 3607.0,
-    type: 'expense',
-  },
-  {
-    id: 'cat-2',
-    name: 'Travelling',
-    iconName: 'Car',
-    color: '#81B29A',
-    budget: 6000,
-    spent: 4207.01,
-    type: 'expense',
-  },
-  {
-    id: 'cat-3',
-    name: 'Groceries',
-    iconName: 'ShoppingBag',
-    color: '#F2CC8F',
-    budget: 1000,
-    spent: 604.36,
-    type: 'expense',
-  },
-  {
-    id: 'cat-4',
-    name: 'Cafes & Dining',
-    iconName: 'Utensils',
-    color: '#E07A5F',
-    budget: 500,
-    spent: 296.65,
-    type: 'expense',
-  },
-  {
-    id: 'cat-5',
-    name: 'Sport & Gym',
-    iconName: 'Dumbbell',
-    color: '#CEF04A',
-    budget: 300,
-    spent: 187.5,
-    type: 'expense',
-  },
-];
+export const INITIAL_CATEGORIES: CategoryItem[] = [];
 
 interface CategoryManagerModalProps {
   visible: boolean;
@@ -148,8 +103,10 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
   onSaveList,
 }) => {
   const { colors, isDark } = useAppTheme();
+  const activeCurrency = useUIStore((state) => state.activeCurrency);
+  const currencySymbol = getCurrencySymbol(activeCurrency);
 
-  const activeCategories = categoryList || categories || INITIAL_CATEGORIES;
+  const activeCategories = categoryList || categories || [];
 
   const [mode, setMode] = useState<'list' | 'create' | 'edit'>('list');
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -282,38 +239,121 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
     >
       {mode === 'list' ? (
         <View className="space-y-3 pt-1">
-          {activeCategories.map((cat) => {
-            const pct = cat.budget > 0 ? Math.min(Math.round((cat.spent / cat.budget) * 100), 100) : 0;
-            return (
+          {activeCategories.length === 0 ? (
+            <View style={{ alignItems: 'center', paddingVertical: 24, paddingHorizontal: 8 }}>
               <View
-                key={cat.id}
-                style={[
-                  styles.categoryCard,
-                  {
-                    backgroundColor: colors.cardSecondary,
-                    borderColor: colors.borderSubtle,
-                  },
-                ]}
+                style={{
+                  width: 54,
+                  height: 54,
+                  borderRadius: 27,
+                  backgroundColor: isDark ? colors.cardElevated : '#F4F4EE',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginBottom: 12,
+                }}
               >
-                <View className="flex-row items-center justify-between mb-2.5">
-                  <View className="flex-row items-center gap-3">
-                    <View
-                      style={[
-                        styles.catIconWrap,
-                        { backgroundColor: cat.color, borderColor: 'rgba(0,0,0,0.06)' },
-                      ]}
-                    >
-                      {renderIcon(cat.iconName, 18, '#141715')}
+                <FolderPlus size={24} color={colors.matchaLime} />
+              </View>
+              <Text style={{ color: colors.textPrimary, fontSize: 16, fontWeight: '800', marginBottom: 4 }}>
+                No Categories Configured
+              </Text>
+              <Text style={{ color: colors.textSecondary, fontSize: 12.5, textAlign: 'center', lineHeight: 18, marginBottom: 18 }}>
+                Categories act as budgeting envelopes for your expenses and income. Pick a starter suggestion below or create your own custom category:
+              </Text>
+
+              {/* Starter Suggestions */}
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 8, marginBottom: 20 }}>
+                {[
+                  { name: 'Groceries', icon: 'ShoppingBag', color: '#CEF04A' },
+                  { name: 'Dining Out', icon: 'Utensils', color: '#E07A5F' },
+                  { name: 'Rent & Home', icon: 'Home', color: '#81B29A' },
+                  { name: 'Transport', icon: 'Car', color: '#F2CC8F' },
+                  { name: 'Wellness', icon: 'Heart', color: '#A8D21E' },
+                  { name: 'Salary', icon: 'DollarSign', color: '#CEF04A', type: 'income' as const },
+                ].map((starter) => (
+                  <TouchableOpacity
+                    key={starter.name}
+                    onPress={() => {
+                      triggerHaptic('light');
+                      setName(starter.name);
+                      setSelectedIcon(starter.icon);
+                      setSelectedColor(starter.color);
+                      setType((starter as any).type || 'expense');
+                      setMode('create');
+                    }}
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 6,
+                      paddingHorizontal: 12,
+                      paddingVertical: 8,
+                      borderRadius: 14,
+                      backgroundColor: isDark ? colors.cardElevated : '#F4F4EE',
+                      borderWidth: 1,
+                      borderColor: isDark ? colors.borderSubtle : '#EAEAE2',
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <Plus size={12} color={colors.matchaLime} />
+                    <Text style={{ color: colors.textPrimary, fontSize: 12, fontWeight: '600' }}>
+                      {starter.name}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              <TouchableOpacity
+                onPress={startCreate}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 6,
+                  backgroundColor: colors.matchaLime,
+                  paddingHorizontal: 18,
+                  paddingVertical: 11,
+                  borderRadius: 18,
+                }}
+                activeOpacity={0.8}
+              >
+                <Plus size={15} color="#141715" />
+                <Text style={{ color: '#141715', fontWeight: '800', fontSize: 13 }}>
+                  Create Custom Category
+                </Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            activeCategories.map((cat) => {
+              const pct = cat.budget > 0 ? Math.min(Math.round((cat.spent / cat.budget) * 100), 100) : 0;
+              return (
+                <View
+                  key={cat.id}
+                  style={[
+                    styles.categoryCard,
+                    {
+                      backgroundColor: colors.cardSecondary,
+                      borderColor: colors.borderSubtle,
+                    },
+                  ]}
+                >
+                  <View className="flex-row items-center justify-between mb-2.5">
+                    <View className="flex-row items-center gap-3">
+                      <View
+                        style={[
+                          styles.catIconWrap,
+                          { backgroundColor: cat.color, borderColor: 'rgba(0,0,0,0.06)' },
+                        ]}
+                      >
+                        {renderIcon(cat.iconName, 18, '#141715')}
+                      </View>
+                      <View>
+                        <Text style={[styles.catName, { color: colors.textPrimary }]}>
+                          {cat.name}
+                        </Text>
+                        <Text style={[styles.catBudget, { color: colors.textMuted }]}>
+                          {currencySymbol}{cat.spent} of {currencySymbol}{cat.budget} budget
+                        </Text>
+                      </View>
                     </View>
-                    <View>
-                      <Text style={[styles.catName, { color: colors.textPrimary }]}>
-                        {cat.name}
-                      </Text>
-                      <Text style={[styles.catBudget, { color: colors.textMuted }]}>
-                        ${cat.spent} of ${cat.budget} budget
-                      </Text>
-                    </View>
-                  </View>
 
                   {/* Actions */}
                   <View className="flex-row items-center gap-1.5">
@@ -346,7 +386,7 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
                 </View>
               </View>
             );
-          })}
+          }))}
         </View>
       ) : (
         /* Create / Edit Form */

@@ -27,6 +27,8 @@ import { CozyModal } from '../ui/CozyModal';
 import { useAppTheme } from '../../context/theme-context';
 import { triggerHaptic } from '../../constants/theme';
 
+import { getCurrencySymbol } from '../../utils/currency';
+
 export type RecurringFrequency = 'daily' | 'weekly' | 'monthly' | 'yearly';
 
 export interface RecurringTransaction {
@@ -41,63 +43,7 @@ export interface RecurringTransaction {
   color: string;
 }
 
-export const INITIAL_RECURRING: RecurringTransaction[] = [
-  {
-    id: 'rec-1',
-    name: 'Adobe Creative Cloud',
-    amount: 59.99,
-    frequency: 'monthly',
-    category: 'Work & Tools',
-    nextBillingDate: 'Oct 02, 2026',
-    active: true,
-    iconName: 'Cloud',
-    color: '#E07A5F',
-  },
-  {
-    id: 'rec-2',
-    name: 'Spotify Premium',
-    amount: 10.99,
-    frequency: 'monthly',
-    category: 'Entertainment',
-    nextBillingDate: 'Oct 08, 2026',
-    active: true,
-    iconName: 'Music',
-    color: '#CEF04A',
-  },
-  {
-    id: 'rec-3',
-    name: 'Gym & Wellness Club',
-    amount: 45.0,
-    frequency: 'monthly',
-    category: 'Health',
-    nextBillingDate: 'Oct 15, 2026',
-    active: true,
-    iconName: 'Dumbbell',
-    color: '#81B29A',
-  },
-  {
-    id: 'rec-4',
-    name: 'Netflix 4K UHD',
-    amount: 19.99,
-    frequency: 'monthly',
-    category: 'Entertainment',
-    nextBillingDate: 'Oct 20, 2026',
-    active: false,
-    iconName: 'Tv',
-    color: '#F2CC8F',
-  },
-  {
-    id: 'rec-5',
-    name: 'Apartment Studio Lease',
-    amount: 1200.0,
-    frequency: 'monthly',
-    category: 'Housing',
-    nextBillingDate: 'Nov 01, 2026',
-    active: true,
-    iconName: 'Home',
-    color: '#E76F51',
-  },
-];
+export const INITIAL_RECURRING: RecurringTransaction[] = [];
 
 interface RecurringManagerModalProps {
   visible: boolean;
@@ -113,6 +59,8 @@ export const RecurringManagerModal: React.FC<RecurringManagerModalProps> = ({
   onSaveList,
 }) => {
   const { colors, isDark } = useAppTheme();
+  const activeCurrency = useUIStore((state) => state.activeCurrency);
+  const currencySymbol = getCurrencySymbol(activeCurrency);
 
   // Mode: 'list' | 'create' | 'edit'
   const [mode, setMode] = useState<'list' | 'create' | 'edit'>('list');
@@ -292,7 +240,7 @@ export const RecurringManagerModal: React.FC<RecurringManagerModalProps> = ({
       }
       subtitle={
         mode === 'list'
-          ? `Total Active: $${totalMonthlySpend.toFixed(2)}/month`
+          ? `Total Active: ${currencySymbol}${totalMonthlySpend.toFixed(2)}/month`
           : 'Keep tabs on recurring renewals & automated charges'
       }
     >
@@ -319,7 +267,7 @@ export const RecurringManagerModal: React.FC<RecurringManagerModalProps> = ({
                     triggerHaptic();
                     setFilterFreq(freq);
                   }}
-                  activeOpacity={0.8}
+                  activeOpacity={0.7}
                 >
                   <Text
                     style={[
@@ -370,81 +318,105 @@ export const RecurringManagerModal: React.FC<RecurringManagerModalProps> = ({
             <ArrowRight size={18} color={colors.textMuted} />
           </TouchableOpacity>
 
-          {/* List items */}
+          {/* List items or Guided Empty State */}
           <View style={styles.cardsWrap}>
-            {filteredItems.map((item) => (
-              <View
-                key={item.id}
-                style={[
-                  styles.recurringCard,
-                  {
-                    backgroundColor: isDark ? colors.cardElevated : colors.cardSecondary,
-                    borderColor: isDark ? colors.borderSubtle : '#EFEFE8',
-                    opacity: item.active ? 1 : 0.6,
-                  },
-                ]}
-              >
+            {filteredItems.length === 0 ? (
+              <View style={{ alignItems: 'center', paddingVertical: 28, paddingHorizontal: 16 }}>
                 <View
+                  style={{
+                    width: 52,
+                    height: 52,
+                    borderRadius: 26,
+                    backgroundColor: isDark ? colors.cardElevated : '#F4F4EE',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginBottom: 12,
+                  }}
+                >
+                  <Calendar size={22} color={colors.matchaLime} />
+                </View>
+                <Text style={{ color: colors.textPrimary, fontSize: 15, fontWeight: '700', marginBottom: 4 }}>
+                  No Scheduled Bills
+                </Text>
+                <Text style={{ color: colors.textSecondary, fontSize: 12.5, textAlign: 'center', lineHeight: 18 }}>
+                  Keep automated charges, subscriptions, and EMIs on your radar with upcoming renewal dates.
+                </Text>
+              </View>
+            ) : (
+              filteredItems.map((item) => (
+                <View
+                  key={item.id}
                   style={[
-                    styles.itemIconBox,
-                    { backgroundColor: item.color },
+                    styles.recurringCard,
+                    {
+                      backgroundColor: isDark ? colors.cardElevated : colors.cardSecondary,
+                      borderColor: isDark ? colors.borderSubtle : '#EFEFE8',
+                      opacity: item.active ? 1 : 0.6,
+                    },
                   ]}
                 >
-                  {renderIcon(item.iconName, 18, '#141715')}
-                </View>
-
-                <View style={styles.cardDetails}>
-                  <View style={styles.nameRow}>
-                    <Text
-                      style={[styles.itemName, { color: colors.textPrimary }]}
-                      numberOfLines={1}
-                    >
-                      {item.name}
-                    </Text>
-                    <Text style={[styles.itemAmount, { color: colors.textPrimary }]}>
-                      ${item.amount.toFixed(2)}
-                    </Text>
+                  <View
+                    style={[
+                      styles.itemIconBox,
+                      { backgroundColor: item.color },
+                    ]}
+                  >
+                    {renderIcon(item.iconName, 18, '#141715')}
                   </View>
 
-                  <View style={styles.metaRow}>
-                    <View style={styles.badgePill}>
-                      <Text style={styles.badgeText}>{item.frequency}</Text>
+                  <View style={styles.cardDetails}>
+                    <View style={styles.nameRow}>
+                      <Text
+                        style={[styles.itemName, { color: colors.textPrimary }]}
+                        numberOfLines={1}
+                      >
+                        {item.name}
+                      </Text>
+                      <Text style={[styles.itemAmount, { color: colors.textPrimary }]}>
+                        {currencySymbol}{item.amount.toFixed(2)}
+                      </Text>
                     </View>
-                    <Text style={[styles.nextBillingText, { color: colors.textMuted }]}>
-                      Due: {item.nextBillingDate}
-                    </Text>
+
+                    <View style={styles.metaRow}>
+                      <View style={styles.badgePill}>
+                        <Text style={styles.badgeText}>{item.frequency}</Text>
+                      </View>
+                      <Text style={[styles.nextBillingText, { color: colors.textMuted }]}>
+                        Due: {item.nextBillingDate}
+                      </Text>
+                    </View>
+                  </View>
+
+                  {/* Actions */}
+                  <View style={styles.itemActions}>
+                    <Switch
+                      value={item.active}
+                      onValueChange={() => handleToggleActive(item.id)}
+                      trackColor={{
+                        false: isDark ? '#333835' : '#D1D5DB',
+                        true: colors.matchaLime,
+                      }}
+                      thumbColor={item.active ? '#141715' : '#F9FAFB'}
+                      style={{ transform: [{ scaleX: 0.8 }, { scaleY: 0.8 }] }}
+                    />
+                    <TouchableOpacity
+                      onPress={() => startEdit(item)}
+                      style={styles.actionMiniBtn}
+                      activeOpacity={0.7}
+                    >
+                      <Edit2 size={15} color={colors.textSecondary} />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={() => handleDelete(item.id, item.name)}
+                      style={styles.actionMiniBtn}
+                      activeOpacity={0.7}
+                    >
+                      <Trash2 size={15} color={colors.terracotta} />
+                    </TouchableOpacity>
                   </View>
                 </View>
-
-                {/* Actions */}
-                <View style={styles.itemActions}>
-                  <Switch
-                    value={item.active}
-                    onValueChange={() => handleToggleActive(item.id)}
-                    trackColor={{
-                      false: isDark ? '#333835' : '#D1D5DB',
-                      true: colors.matchaLime,
-                    }}
-                    thumbColor={item.active ? '#141715' : '#F9FAFB'}
-                    style={{ transform: [{ scaleX: 0.8 }, { scaleY: 0.8 }] }}
-                  />
-                  <TouchableOpacity
-                    onPress={() => startEdit(item)}
-                    style={styles.actionMiniBtn}
-                    activeOpacity={0.7}
-                  >
-                    <Edit2 size={15} color={colors.textSecondary} />
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={() => handleDelete(item.id, item.name)}
-                    style={styles.actionMiniBtn}
-                    activeOpacity={0.7}
-                  >
-                    <Trash2 size={15} color={colors.terracotta} />
-                  </TouchableOpacity>
-                </View>
-              </View>
-            ))}
+              ))
+            )}
           </View>
         </View>
       ) : (

@@ -1,0 +1,87 @@
+name: Build & Release Android APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build Standalone Android APK
+    runs-on: ubuntu-latest
+    steps:
+      - name: 1. Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 2. Setup Node.js 20 & Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: 3. Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: 4. Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: 5. Install project dependencies
+        run: bun install --frozen-lockfile
+
+      - name: 6. Generate Android native project (Expo CNG)
+        run: bunx expo prebuild --platform android --clean
+
+      - name: 7. Build Android APK via Gradle
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleRelease --no-daemon
+
+      - name: 8. Prepare Output APK
+        run: |
+          mkdir -p output
+          # Copy generated APK to output directory
+          cp android/app/build/outputs/apk/release/*.apk output/dinlipi-v1.0.0.apk
+          echo "APK successfully built at output/dinlipi-v1.0.0.apk"
+          ls -la output/
+
+      - name: 9. Upload APK to GitHub Artifacts (Always Downloadable)
+        uses: actions/upload-artifact@v4
+        with:
+          name: dinlipi-android-apk
+          path: output/dinlipi-v1.0.0.apk
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: 10. Publish GitHub Release (On Tags or Manual Run)
+        if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: output/dinlipi-v1.0.0.apk
+          name: Dinlipi ${{ github.ref_name }}
+          tag_name: ${{ github.ref_name || 'v1.0.0' }}
+          draft: false
+          prerelease: false
+          body: |
+            ## Dinlipi (দিনলিপি) Android Release 🍃
+            
+            ### Installable Android Package
+            - **Binary**: `dinlipi-v1.0.0.apk`
+            - **Platform**: Android 8.0+
+            - **Type**: Standalone Offline APK (100% Private SQLite Ledger)
+            
+            ### Installation Instructions
+            1. Download **`dinlipi-v1.0.0.apk`** below.
+            2. Tap the downloaded file on your Android phone.
+            3. If prompted, allow "Install unknown apps" in Settings.
+            4. Tap **Install** and enjoy Dinlipi!
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -8,6 +8,7 @@ import Svg, {
   Rect,
   Circle,
   Path,
+  Polygon,
 } from 'react-native-svg';
 
 export type CardThemeVariant =
@@ -19,9 +20,12 @@ export type CardThemeVariant =
   | 'porcelain'
   | 'custom';
 
+export type ShapePatternType = 'waves' | 'orbs' | 'geometry' | 'arcs' | 'ribbons';
+
 interface CardMeshBackgroundProps {
   variant?: CardThemeVariant;
   customGradient?: [string, string, string];
+  shapePattern?: ShapePatternType;
   width?: number | string;
   height?: number | string;
   borderRadius?: number;
@@ -31,6 +35,7 @@ interface CardMeshBackgroundProps {
 export const CardMeshBackground: React.FC<CardMeshBackgroundProps> = ({
   variant = 'matchaLime',
   customGradient,
+  shapePattern = 'waves',
   width = '100%',
   height = '100%',
   borderRadius = 28,
@@ -100,7 +105,7 @@ export const CardMeshBackground: React.FC<CardMeshBackgroundProps> = ({
           </RadialGradient>
           <RadialGradient id="mossMesh2" cx="20%" cy="20%" rx="55%" ry="55%">
             <Stop offset="0%" stopColor="#C2E0C6" stopOpacity="0.35" />
-            <Stop offset="60%" stopColor="#5D875F" stopOpacity="0" />
+            <Stop offset="60%" stopColor="#5D875F" stopOpacity="0.0" />
           </RadialGradient>
 
           {/* 4. Golden Honey Cozy Gradients */}
@@ -170,8 +175,66 @@ export const CardMeshBackground: React.FC<CardMeshBackgroundProps> = ({
         {(variant === 'custom' || customGradient) && customGradient ? (
           <>
             <Rect x="0" y="0" width="400" height="240" fill="url(#bgCustom)" />
-            <Circle cx="85" cy="65" r="140" fill="url(#customMesh1)" />
-            <Circle cx="320" cy="180" r="130" fill="url(#customMesh2)" />
+
+            {/* Procedural Shapes based on shapePattern */}
+            {shapePattern === 'waves' && (
+              <>
+                <Path
+                  d="M -20 120 Q 110 40 220 130 T 420 70 L 420 260 L -20 260 Z"
+                  fill={customGradient[1]}
+                  opacity={0.32}
+                />
+                <Path
+                  d="M -20 170 Q 140 100 270 190 T 420 160 L 420 260 L -20 260 Z"
+                  fill={customGradient[2]}
+                  opacity={0.42}
+                />
+                <Circle cx="320" cy="50" r="90" fill="url(#customMesh2)" opacity={0.65} />
+              </>
+            )}
+
+            {shapePattern === 'orbs' && (
+              <>
+                <Circle cx="85" cy="65" r="140" fill="url(#customMesh1)" />
+                <Circle cx="320" cy="180" r="130" fill="url(#customMesh2)" />
+                <Circle cx="220" cy="110" r="75" fill={customGradient[0]} opacity={0.35} />
+                <Circle cx="320" cy="45" r="45" fill="#FFFFFF" opacity={0.18} />
+              </>
+            )}
+
+            {shapePattern === 'geometry' && (
+              <>
+                <Polygon points="160,-20 420,160 420,-20" fill={customGradient[1]} opacity={0.32} />
+                <Polygon points="-20,110 180,260 -20,260" fill={customGradient[2]} opacity={0.38} />
+                <Polygon points="210,110 260,60 310,110 260,160" fill={customGradient[0]} opacity={0.28} />
+                <Circle cx="340" cy="190" r="60" fill="url(#customMesh2)" opacity={0.55} />
+              </>
+            )}
+
+            {shapePattern === 'arcs' && (
+              <>
+                <Circle cx="370" cy="40" r="90" stroke={customGradient[1]} strokeWidth="24" fill="none" opacity={0.32} />
+                <Circle cx="370" cy="40" r="140" stroke={customGradient[2]} strokeWidth="16" fill="none" opacity={0.22} />
+                <Circle cx="40" cy="200" r="110" stroke={customGradient[0]} strokeWidth="30" fill="none" opacity={0.26} />
+                <Circle cx="90" cy="70" r="100" fill="url(#customMesh1)" opacity={0.5} />
+              </>
+            )}
+
+            {shapePattern === 'ribbons' && (
+              <>
+                <Path
+                  d="M -30 40 Q 120 10 240 120 T 430 130 L 430 190 Q 240 180 120 70 T -30 100 Z"
+                  fill={customGradient[1]}
+                  opacity={0.36}
+                />
+                <Path
+                  d="M 50 -20 Q 200 80 300 30 T 440 80 L 440 130 Q 300 80 200 130 T 50 30 Z"
+                  fill={customGradient[2]}
+                  opacity={0.32}
+                />
+                <Circle cx="70" cy="180" r="90" fill="url(#customMesh1)" opacity={0.5} />
+              </>
+            )}
           </>
         ) : null}
 

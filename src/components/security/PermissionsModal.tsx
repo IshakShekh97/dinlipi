@@ -1,15 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Modal,
   View,
   Text,
   TouchableOpacity,
-  ScrollView,
   StyleSheet,
   Switch,
   Linking,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   ShieldCheck,
   Image,
@@ -17,9 +14,13 @@ import {
   Vibrate,
   CheckCircle2,
   ExternalLink,
-  X,
+  Sparkles,
+  Play,
+  Database,
 } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
+import * as LocalAuthentication from 'expo-local-authentication';
+import { CozyModal } from '../ui/CozyModal';
 import { useAppTheme } from '../../context/theme-context';
 import { triggerHaptic } from '../../constants/theme';
 import { useSecurity } from '../../context/security-context';
@@ -31,12 +32,12 @@ interface PermissionsModalProps {
 }
 
 export function PermissionsModal({ visible, onClose }: PermissionsModalProps) {
-  const insets = useSafeAreaInsets();
   const { colors, isDark } = useAppTheme();
   const { settings, capabilities, enableBiometrics, disableBiometrics } = useSecurity();
   const showConfirm = useUIStore((state) => state.showConfirmDialog);
 
   const [photoGranted, setPhotoGranted] = useState(false);
+  const [activeHapticPulse, setActiveHapticPulse] = useState<string | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -71,6 +72,31 @@ export function PermissionsModal({ visible, onClose }: PermissionsModalProps) {
     }
   };
 
+  const handleTestPicker = async () => {
+    triggerHaptic('medium');
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        triggerHaptic('success');
+        showConfirm({
+          title: 'Gallery Test Successful',
+          message: 'Successfully accessed image gallery and picked a profile asset.',
+          confirmText: 'Great',
+          cancelText: '',
+          onConfirm: () => {},
+        });
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   const handleToggleBiometrics = async () => {
     triggerHaptic('light');
     if (!settings.biometricEnabled) {
@@ -101,195 +127,293 @@ export function PermissionsModal({ visible, onClose }: PermissionsModalProps) {
     }
   };
 
+  const handleTestBiometrics = async () => {
+    triggerHaptic('medium');
+    try {
+      const auth = await LocalAuthentication.authenticateAsync({
+        promptMessage: 'Dinlipi Biometric Sensor Test',
+        cancelLabel: 'Cancel',
+        disableDeviceFallback: false,
+      });
+
+      if (auth.success) {
+        triggerHaptic('success');
+        showConfirm({
+          title: 'Sensor Verified',
+          message: 'Biometric fingerprint/face sensor authenticated successfully.',
+          confirmText: 'Awesome',
+          cancelText: '',
+          onConfirm: () => {},
+        });
+      } else {
+        triggerHaptic('warning');
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const testPulse = (type: 'light' | 'medium' | 'heavy' | 'success' | 'warning') => {
+    setActiveHapticPulse(type);
+    triggerHaptic(type);
+    setTimeout(() => setActiveHapticPulse(null), 300);
+  };
+
   return (
-    <Modal visible={visible} animationType="slide" transparent>
-      <View style={styles.backdrop}>
+    <CozyModal
+      visible={visible}
+      onClose={onClose}
+      title="Hardware & Sensors"
+      subtitle="Permissions, tactile engine & biometrics"
+      icon={<ShieldCheck size={18} color={colors.accentPrimary} />}
+    >
+      <View style={styles.content}>
+        {/* Privacy Guarantee Banner */}
         <View
           style={[
-            styles.sheet,
+            styles.privacyBanner,
             {
-              backgroundColor: colors.bgSecondary,
-              paddingBottom: Math.max(insets.bottom + 16, 28),
+              backgroundColor: isDark ? 'rgba(206, 240, 74, 0.08)' : 'rgba(206, 240, 74, 0.16)',
+              borderColor: 'rgba(206, 240, 74, 0.25)',
             },
           ]}
         >
-          {/* Header */}
-          <View style={styles.header}>
-            <View style={styles.headerTitleRow}>
+          <CheckCircle2 size={16} color={colors.matchaLime} />
+          <Text style={[styles.privacyBannerText, { color: colors.textPrimary }]}>
+            Dinlipi runs 100% locally on your phone. Hardware sensors are never accessed by remote servers.
+          </Text>
+        </View>
+
+        {/* 1. Photo Library */}
+        <View
+          style={[
+            styles.permCard,
+            { backgroundColor: colors.cardSecondary, borderColor: colors.borderSubtle },
+          ]}
+        >
+          <View style={styles.permRow}>
+            <View style={styles.permLeft}>
               <View
                 style={[
-                  styles.iconBox,
-                  { backgroundColor: 'rgba(206, 240, 74, 0.16)', borderColor: colors.borderMedium },
+                  styles.permIconBox,
+                  { backgroundColor: 'rgba(224, 122, 95, 0.16)' },
                 ]}
               >
-                <ShieldCheck size={20} color={colors.matchaLime} />
+                <Image size={20} color={colors.terracotta} />
               </View>
-              <View>
-                <Text style={[styles.title, { color: colors.textPrimary }]}>
-                  Device Permissions
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.permTitle, { color: colors.textPrimary }]}>
+                  Photo Gallery Access
                 </Text>
-                <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-                  Manage local permissions for Dinlipi
+                <Text style={[styles.permDesc, { color: colors.textSecondary }]}>
+                  {"Select custom profile avatar from your phone's photo library"}
                 </Text>
               </View>
             </View>
-
-            <TouchableOpacity
-              onPress={() => {
-                triggerHaptic('light');
-                onClose();
-              }}
-              style={[
-                styles.closeBtn,
-                { backgroundColor: colors.cardSecondary, borderColor: colors.borderSubtle },
-              ]}
-            >
-              <X size={18} color={colors.textSecondary} />
-            </TouchableOpacity>
+            <Switch
+              value={photoGranted}
+              onValueChange={handleTogglePhotos}
+              trackColor={{ false: isDark ? '#333' : '#ddd', true: colors.matchaLime }}
+              thumbColor="#FFFFFF"
+            />
           </View>
 
-          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
-            {/* Privacy Guarantee Banner */}
-            <View
-              style={[
-                styles.privacyBanner,
-                {
-                  backgroundColor: isDark ? 'rgba(206, 240, 74, 0.08)' : 'rgba(206, 240, 74, 0.16)',
-                  borderColor: 'rgba(206, 240, 74, 0.25)',
-                },
-              ]}
+          {photoGranted && (
+            <TouchableOpacity
+              onPress={handleTestPicker}
+              style={[styles.subActionBtn, { backgroundColor: isDark ? colors.cardElevated : '#F4F4EE' }]}
+              activeOpacity={0.7}
             >
-              <CheckCircle2 size={16} color={colors.matchaLime} />
-              <Text style={[styles.privacyBannerText, { color: colors.textPrimary }]}>
-                Dinlipi works 100% locally. Permissions are never shared or sent to any remote server.
+              <Play size={13} color={colors.matchaLime} />
+              <Text style={[styles.subActionText, { color: colors.textPrimary }]}>
+                Test Photo Picker
               </Text>
-            </View>
+            </TouchableOpacity>
+          )}
+        </View>
 
-            {/* 1. Photo Library */}
-            <View
-              style={[
-                styles.permCard,
-                { backgroundColor: colors.cardPrimary, borderColor: colors.borderSubtle },
-              ]}
-            >
-              <View style={styles.permLeft}>
-                <View
-                  style={[
-                    styles.permIconBox,
-                    { backgroundColor: 'rgba(224, 122, 95, 0.16)' },
-                  ]}
-                >
-                  <Image size={20} color={colors.terracotta} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.permTitle, { color: colors.textPrimary }]}>
-                    Photos & Gallery
-                  </Text>
-                  <Text style={[styles.permDesc, { color: colors.textSecondary }]}>
-                    Choose custom avatars for your personal profile
-                  </Text>
-                </View>
-              </View>
-              <Switch
-                value={photoGranted}
-                onValueChange={handleTogglePhotos}
-                trackColor={{ false: isDark ? '#333' : '#ddd', true: colors.matchaLime }}
-                thumbColor="#FFFFFF"
-              />
-            </View>
-
-            {/* 2. Biometrics */}
-            <View
-              style={[
-                styles.permCard,
-                { backgroundColor: colors.cardPrimary, borderColor: colors.borderSubtle },
-              ]}
-            >
-              <View style={styles.permLeft}>
-                <View
-                  style={[
-                    styles.permIconBox,
-                    { backgroundColor: 'rgba(129, 178, 154, 0.16)' },
-                  ]}
-                >
-                  <Fingerprint size={20} color={colors.mossSage} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.permTitle, { color: colors.textPrimary }]}>
-                    Biometric Sensor
-                  </Text>
-                  <Text style={[styles.permDesc, { color: colors.textSecondary }]}>
-                    Unlock ledger securely using {capabilities.biometricName}
-                  </Text>
-                </View>
-              </View>
-              <Switch
-                value={settings.biometricEnabled}
-                onValueChange={handleToggleBiometrics}
-                trackColor={{ false: isDark ? '#333' : '#ddd', true: colors.matchaLime }}
-                thumbColor="#FFFFFF"
-              />
-            </View>
-
-            {/* 3. Haptic Feedback */}
-            <View
-              style={[
-                styles.permCard,
-                { backgroundColor: colors.cardPrimary, borderColor: colors.borderSubtle },
-              ]}
-            >
-              <View style={styles.permLeft}>
-                <View
-                  style={[
-                    styles.permIconBox,
-                    { backgroundColor: 'rgba(242, 204, 143, 0.16)' },
-                  ]}
-                >
-                  <Vibrate size={20} color={colors.goldenHoney} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.permTitle, { color: colors.textPrimary }]}>
-                    Tactile Haptics
-                  </Text>
-                  <Text style={[styles.permDesc, { color: colors.textSecondary }]}>
-                    Apple-like haptic feedback when typing PIN and saving
-                  </Text>
-                </View>
-              </View>
+        {/* 2. Biometrics */}
+        <View
+          style={[
+            styles.permCard,
+            { backgroundColor: colors.cardSecondary, borderColor: colors.borderSubtle },
+          ]}
+        >
+          <View style={styles.permRow}>
+            <View style={styles.permLeft}>
               <View
                 style={[
-                  styles.activeBadge,
+                  styles.permIconBox,
+                  { backgroundColor: 'rgba(129, 178, 154, 0.16)' },
+                ]}
+              >
+                <Fingerprint size={20} color={colors.mossSage} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.permTitle, { color: colors.textPrimary }]}>
+                  Biometric Sensor
+                </Text>
+                <Text style={[styles.permDesc, { color: colors.textSecondary }]}>
+                  {capabilities.biometricName || 'Fingerprint / Face ID'} lock protection
+                </Text>
+              </View>
+            </View>
+            <Switch
+              value={settings.biometricEnabled}
+              onValueChange={handleToggleBiometrics}
+              trackColor={{ false: isDark ? '#333' : '#ddd', true: colors.matchaLime }}
+              thumbColor="#FFFFFF"
+            />
+          </View>
+
+          {capabilities.hasHardware && (
+            <TouchableOpacity
+              onPress={handleTestBiometrics}
+              style={[styles.subActionBtn, { backgroundColor: isDark ? colors.cardElevated : '#F4F4EE' }]}
+              activeOpacity={0.7}
+            >
+              <Sparkles size={13} color={colors.mossSage} />
+              <Text style={[styles.subActionText, { color: colors.textPrimary }]}>
+                Test Biometric Sensor
+              </Text>
+            </TouchableOpacity>
+          )}
+        </View>
+
+        {/* 3. Tactile Haptic Engine */}
+        <View
+          style={[
+            styles.permCard,
+            { backgroundColor: colors.cardSecondary, borderColor: colors.borderSubtle },
+          ]}
+        >
+          <View style={styles.permRow}>
+            <View style={styles.permLeft}>
+              <View
+                style={[
+                  styles.permIconBox,
+                  { backgroundColor: 'rgba(242, 204, 143, 0.16)' },
+                ]}
+              >
+                <Vibrate size={20} color={colors.goldenHoney} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.permTitle, { color: colors.textPrimary }]}>
+                  Tactile Heartbeats Engine
+                </Text>
+                <Text style={[styles.permDesc, { color: colors.textSecondary }]}>
+                  Physical sensory feedback when entering PIN and navigating
+                </Text>
+              </View>
+            </View>
+            <View
+              style={[
+                styles.activeBadge,
+                { backgroundColor: 'rgba(206, 240, 74, 0.18)' },
+              ]}
+            >
+              <Text style={[styles.activeBadgeText, { color: colors.matchaLime }]}>Online</Text>
+            </View>
+          </View>
+
+          {/* Interactive Haptic Test Buttons */}
+          <View style={{ marginTop: 12 }}>
+            <Text style={{ fontSize: 11, fontWeight: '700', color: colors.textMuted, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+              Test Haptic Pulses
+            </Text>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+              {(['light', 'medium', 'heavy', 'success', 'warning'] as const).map((t) => {
+                const isActive = activeHapticPulse === t;
+                return (
+                  <TouchableOpacity
+                    key={t}
+                    onPress={() => testPulse(t)}
+                    style={{
+                      paddingHorizontal: 12,
+                      paddingVertical: 6,
+                      borderRadius: 12,
+                      backgroundColor: isActive ? colors.matchaLime : isDark ? colors.cardElevated : '#F4F4EE',
+                      borderWidth: 1,
+                      borderColor: isDark ? colors.borderSubtle : '#EAEAE2',
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <Text
+                      style={{
+                        fontSize: 12,
+                        fontWeight: '700',
+                        textTransform: 'capitalize',
+                        color: isActive ? '#141715' : colors.textPrimary,
+                      }}
+                    >
+                      {t}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
+        </View>
+
+        {/* 4. Local Database Storage */}
+        <View
+          style={[
+            styles.permCard,
+            { backgroundColor: colors.cardSecondary, borderColor: colors.borderSubtle },
+          ]}
+        >
+          <View style={styles.permRow}>
+            <View style={styles.permLeft}>
+              <View
+                style={[
+                  styles.permIconBox,
                   { backgroundColor: 'rgba(206, 240, 74, 0.16)' },
                 ]}
               >
-                <Text style={[styles.activeBadgeText, { color: colors.matchaLime }]}>Active</Text>
+                <Database size={20} color={colors.matchaLime} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.permTitle, { color: colors.textPrimary }]}>
+                  Encrypted SQLite Storage
+                </Text>
+                <Text style={[styles.permDesc, { color: colors.textSecondary }]}>
+                  All ledger records stay isolated on your internal phone storage
+                </Text>
               </View>
             </View>
-
-            {/* Open Phone System Settings Button */}
-            <TouchableOpacity
-              onPress={() => {
-                triggerHaptic('light');
-                Linking.openSettings();
-              }}
+            <View
               style={[
-                styles.systemBtn,
-                {
-                  backgroundColor: colors.cardSecondary,
-                  borderColor: colors.borderMedium,
-                },
+                styles.activeBadge,
+                { backgroundColor: 'rgba(206, 240, 74, 0.18)' },
               ]}
-              activeOpacity={0.8}
             >
-              <ExternalLink size={16} color={colors.textPrimary} />
-              <Text style={[styles.systemBtnText, { color: colors.textPrimary }]}>
-                Open System App Settings
-              </Text>
-            </TouchableOpacity>
-          </ScrollView>
+              <Text style={[styles.activeBadgeText, { color: colors.matchaLime }]}>Secure</Text>
+            </View>
+          </View>
         </View>
+
+        {/* Open Phone System Settings Button */}
+        <TouchableOpacity
+          onPress={() => {
+            triggerHaptic('light');
+            Linking.openSettings();
+          }}
+          style={[
+            styles.systemBtn,
+            {
+              backgroundColor: colors.cardSecondary,
+              borderColor: colors.borderSubtle,
+            },
+          ]}
+          activeOpacity={0.8}
+        >
+          <ExternalLink size={16} color={colors.textPrimary} />
+          <Text style={[styles.systemBtnText, { color: colors.textPrimary }]}>
+            Open Android System Settings
+          </Text>
+        </TouchableOpacity>
       </View>
-    </Modal>
+    </CozyModal>
   );
 }
 
@@ -362,12 +486,14 @@ const styles = StyleSheet.create({
     lineHeight: 16,
   },
   permCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
     padding: 14,
     borderRadius: 20,
     borderWidth: 1,
+  },
+  permRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
   permLeft: {
     flexDirection: 'row',
@@ -392,6 +518,20 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: 2,
     lineHeight: 15,
+  },
+  subActionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+    marginTop: 10,
+  },
+  subActionText: {
+    fontSize: 12,
+    fontWeight: '700',
   },
   activeBadge: {
     paddingHorizontal: 10,

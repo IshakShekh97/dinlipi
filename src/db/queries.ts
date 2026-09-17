@@ -98,13 +98,19 @@ export async function deleteTransaction(id: string) {
 // ==========================================
 
 export async function addBudgetCard(card: BudgetCardData) {
+  const meshPayload = JSON.stringify({
+    customGradient: card.customGradient,
+    shapePattern: card.shapePattern,
+    tabLabel: card.tabLabel,
+  });
+
   db.insert(schema.budgetCardsTable).values({
     id: card.id,
     title: card.name,
     totalLimit: card.limit,
     spent: card.spent,
     color: card.variant || 'matchaLime',
-    meshGradient: card.tabLabel || 'Card',
+    meshGradient: meshPayload,
     icon: card.cardType.toLowerCase(),
     cycleDate: card.expiry || '1st of month',
     isDefault: false,
@@ -113,13 +119,19 @@ export async function addBudgetCard(card: BudgetCardData) {
 }
 
 export async function updateBudgetCard(card: BudgetCardData) {
+  const meshPayload = JSON.stringify({
+    customGradient: card.customGradient,
+    shapePattern: card.shapePattern,
+    tabLabel: card.tabLabel,
+  });
+
   db.update(schema.budgetCardsTable)
     .set({
       title: card.name,
       totalLimit: card.limit,
       spent: card.spent,
       color: card.variant || 'matchaLime',
-      meshGradient: card.tabLabel || 'Card',
+      meshGradient: meshPayload,
       icon: card.cardType.toLowerCase(),
       cycleDate: card.expiry || '1st of month',
     })

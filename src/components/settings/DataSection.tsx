@@ -1,12 +1,14 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { Upload, Download, Compass, Coins, ChevronRight } from 'lucide-react-native';
+import { Upload, Download, Compass, Coins, ChevronRight, Trash2 } from 'lucide-react-native';
 import { useAppTheme } from '../../context/theme-context';
 import { triggerHaptic } from '../../constants/theme';
 import { useRouter } from 'expo-router';
 import { useSecurity } from '../../context/security-context';
 import { useUIStore } from '../../store/ui-store';
 import { CurrencyPickerModal } from './CurrencyPickerModal';
+import { db } from '../../db/client';
+import * as schema from '../../db/schema';
 
 export function DataSection() {
   const { colors, isDark } = useAppTheme();
@@ -17,6 +19,35 @@ export function DataSection() {
   const currencyModalVisible = useUIStore((state) => state.currencyModalVisible);
   const setCurrencyModalVisible = useUIStore((state) => state.setCurrencyModalVisible);
   const showConfirm = useUIStore((state) => state.showConfirmDialog);
+
+  const handleWipeAllData = () => {
+    triggerHaptic('warning');
+    showConfirm({
+      title: 'Wipe Vault & Start Scratch?',
+      message:
+        'This will permanently delete all transactions, cards, categories, contacts, and user records from your phone. You will start completely from scratch. This cannot be undone.',
+      confirmText: 'Wipe Everything',
+      cancelText: 'Keep Data',
+      isDestructive: true,
+      onConfirm: async () => {
+        try {
+          db.delete(schema.transactionsTable).run();
+          db.delete(schema.budgetCardsTable).run();
+          db.delete(schema.categoriesTable).run();
+          db.delete(schema.peopleTable).run();
+          db.delete(schema.installmentsTable).run();
+          db.delete(schema.recurringTable).run();
+          db.delete(schema.usersTable).run();
+
+          await resetOnboarding();
+          triggerHaptic('success');
+          router.replace('/onboarding');
+        } catch (e) {
+          console.error('Failed to wipe database:', e);
+        }
+      },
+    });
+  };
 
   const handleReplayOnboarding = async () => {
     triggerHaptic();
@@ -246,6 +277,49 @@ export function DataSection() {
               </View>
               <ChevronRight size={18} color={colors.textMuted} />
             </View>
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {/* Danger Zone: Wipe All Data */}
+      <View style={styles.sectionWrap}>
+        <Text style={[styles.sectionLabel, { color: colors.accentDanger }]}>
+          Danger Zone
+        </Text>
+
+        <View
+          style={[
+            styles.cardBox,
+            {
+              backgroundColor: isDark ? colors.cardSecondary : '#FFFFFF',
+              borderColor: isDark ? 'rgba(231, 111, 81, 0.25)' : 'rgba(231, 111, 81, 0.2)',
+            },
+          ]}
+        >
+          <TouchableOpacity
+            onPress={handleWipeAllData}
+            style={styles.settingRow}
+            activeOpacity={0.7}
+          >
+            <View style={styles.settingLeft}>
+              <View
+                style={[
+                  styles.settingIconBox,
+                  { backgroundColor: 'rgba(231, 111, 81, 0.12)' },
+                ]}
+              >
+                <Trash2 size={18} color={colors.accentDanger} />
+              </View>
+              <View>
+                <Text style={[styles.settingTitle, { color: colors.accentDanger }]}>
+                  Wipe All Data & Start From Scratch
+                </Text>
+                <Text style={[styles.settingDesc, { color: colors.textSecondary }]}>
+                  Permanently erase SQLite ledger & reset setup
+                </Text>
+              </View>
+            </View>
+            <ChevronRight size={18} color={colors.accentDanger} />
           </TouchableOpacity>
         </View>
       </View>

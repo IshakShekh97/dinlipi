@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
-import { Tag } from 'lucide-react-native';
+import { Tag, Plus, Sparkles } from 'lucide-react-native';
 import { useAppTheme } from '../../context/theme-context';
 import { triggerHaptic } from '../../constants/theme';
 import { CategoryItem } from './CategoryManagerModal';
@@ -41,56 +41,99 @@ export function CategoryCarousel({
           ]}
         >
           <Text style={[styles.seeAllText, { color: colors.textPrimary }]}>
-            Manage
+            {categories.length === 0 ? 'Create' : 'Manage'}
           </Text>
         </TouchableOpacity>
       </View>
 
-      {/* Categories Horizontal Carousel */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.categoryScroll}
-      >
-        {categories.slice(0, 6).map((cat) => (
-          <TouchableOpacity
-            key={cat.id}
+      {/* Categories Content or Guided Empty State */}
+      {categories.length === 0 ? (
+        <TouchableOpacity
+          onPress={() => {
+            triggerHaptic('medium');
+            onManage();
+          }}
+          style={[
+            styles.emptyGuidedBox,
+            {
+              backgroundColor: isDark ? colors.cardSecondary : '#FFFFFF',
+              borderColor: isDark ? colors.borderSubtle : '#EFEFE8',
+            },
+          ]}
+          activeOpacity={0.8}
+        >
+          <View
             style={[
-              styles.catTile,
-              {
-                backgroundColor: isDark ? colors.cardSecondary : '#FFFFFF',
-                borderColor: isDark ? colors.borderSubtle : '#EFEFE8',
-              },
+              styles.emptyIconCircle,
+              { backgroundColor: isDark ? 'rgba(206, 240, 74, 0.15)' : 'rgba(206, 240, 74, 0.25)' },
             ]}
-            onPress={() => {
-              triggerHaptic();
-              onManage();
-            }}
-            activeOpacity={0.8}
           >
-            <View
+            <Sparkles size={18} color={colors.matchaLime} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>
+              No Budget Categories
+            </Text>
+            <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
+              Create envelopes for Groceries, Bills, or Dining to organize your ledger.
+            </Text>
+          </View>
+          <View
+            style={[
+              styles.addPill,
+              { backgroundColor: colors.matchaLime },
+            ]}
+          >
+            <Plus size={14} color="#141715" />
+            <Text style={styles.addPillText}>New</Text>
+          </View>
+        </TouchableOpacity>
+      ) : (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.categoryScroll}
+        >
+          {categories.slice(0, 6).map((cat) => (
+            <TouchableOpacity
+              key={cat.id}
               style={[
-                styles.catIconWrap,
-                { backgroundColor: cat.color },
+                styles.catTile,
+                {
+                  backgroundColor: isDark ? colors.cardSecondary : '#FFFFFF',
+                  borderColor: isDark ? colors.borderSubtle : '#EFEFE8',
+                },
               ]}
+              onPress={() => {
+                triggerHaptic();
+                onManage();
+              }}
+              activeOpacity={0.8}
             >
-              <Tag size={16} color="#141715" />
-            </View>
-            <Text
-              style={[styles.catName, { color: colors.textPrimary }]}
-              numberOfLines={1}
-            >
-              {cat.name}
-            </Text>
-            <Text style={[styles.catSpent, { color: colors.textPrimary }]}>
-              {currencySymbol}{cat.spent.toFixed(0)}
-            </Text>
-            <Text style={[styles.catBudget, { color: colors.textMuted }]}>
-              of {currencySymbol}{cat.budget.toFixed(0)}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
+              <View
+                style={[
+                  styles.catIconWrap,
+                  { backgroundColor: cat.color },
+                ]}
+              >
+                <Tag size={16} color="#141715" />
+              </View>
+              <Text
+                style={[styles.catName, { color: colors.textPrimary }]}
+                numberOfLines={1}
+              >
+                {cat.name}
+              </Text>
+              <Text style={[styles.catSpent, { color: colors.textPrimary }]}>
+                {currencySymbol}{cat.spent.toFixed(0)}
+              </Text>
+              <Text style={[styles.catBudget, { color: colors.textMuted }]}>
+                of {currencySymbol}{cat.budget.toFixed(0)}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      )}
     </View>
   );
 }
@@ -153,5 +196,43 @@ const styles = StyleSheet.create({
   catBudget: {
     fontSize: 10,
     marginTop: 2,
+  },
+  emptyGuidedBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 20,
+    borderWidth: 1,
+    gap: 12,
+  },
+  emptyIconCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    letterSpacing: -0.2,
+    marginBottom: 2,
+  },
+  emptySubtitle: {
+    fontSize: 11.5,
+    lineHeight: 16,
+  },
+  addPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 12,
+  },
+  addPillText: {
+    color: '#141715',
+    fontWeight: '800',
+    fontSize: 12,
   },
 });

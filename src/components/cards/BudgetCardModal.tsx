@@ -8,7 +8,7 @@ import {
 } from 'react-native';
 import { CreditCard, Check, Wifi, Sparkles, Trash2, Shuffle } from 'lucide-react-native';
 import { CozyModal } from '../ui/CozyModal';
-import { CardMeshBackground, CardThemeVariant } from '../ui/CardMeshBackground';
+import { CardMeshBackground, CardThemeVariant, ShapePatternType } from '../ui/CardMeshBackground';
 import { useAppTheme } from '../../context/theme-context';
 import { triggerHaptic } from '../../constants/theme';
 import { useUIStore } from '../../store/ui-store';
@@ -25,6 +25,7 @@ export interface BudgetCardData {
   expiry: string;
   variant: CardThemeVariant;
   customGradient?: [string, string, string];
+  shapePattern?: ShapePatternType;
   tabLabel?: string;
 }
 
@@ -89,6 +90,9 @@ export const BudgetCardModal: React.FC<BudgetCardModalProps> = ({
   const [customGradient, setCustomGradient] = useState<[string, string, string] | undefined>(
     initialData?.customGradient
   );
+  const [shapePattern, setShapePattern] = useState<ShapePatternType>(
+    initialData?.shapePattern || 'waves'
+  );
   const [errorMessage, setErrorMessage] = useState('');
   const [prevData, setPrevData] = useState(initialData);
 
@@ -101,6 +105,7 @@ export const BudgetCardModal: React.FC<BudgetCardModalProps> = ({
     setHolder(initialData ? initialData.holder : 'Cardholder');
     setVariant(initialData ? initialData.variant : 'matchaLime');
     setCustomGradient(initialData?.customGradient);
+    setShapePattern(initialData?.shapePattern || 'waves');
     setErrorMessage('');
   }
 
@@ -123,7 +128,12 @@ export const BudgetCardModal: React.FC<BudgetCardModalProps> = ({
       hslToHex(h2, s2, l2),
       hslToHex(h3, s3, l3),
     ];
+
+    const shapeOptions: ShapePatternType[] = ['waves', 'orbs', 'geometry', 'arcs', 'ribbons'];
+    const nextShape = shapeOptions[Math.floor(Math.random() * shapeOptions.length)];
+
     setCustomGradient(newGradient);
+    setShapePattern(nextShape);
     setVariant('custom');
   };
 
@@ -148,6 +158,7 @@ export const BudgetCardModal: React.FC<BudgetCardModalProps> = ({
       expiry: initialData ? initialData.expiry : '12/28',
       variant,
       customGradient: variant === 'custom' ? customGradient : undefined,
+      shapePattern: variant === 'custom' ? shapePattern : undefined,
       tabLabel: name.trim().slice(0, 10),
     };
 
@@ -206,7 +217,12 @@ export const BudgetCardModal: React.FC<BudgetCardModalProps> = ({
       {/* Live Interactive Card Preview */}
       <View style={styles.previewContainer}>
         <View style={[styles.cardPreview, { borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)' }]}>
-          <CardMeshBackground variant={variant} customGradient={customGradient} borderRadius={24} />
+          <CardMeshBackground
+            variant={variant}
+            customGradient={customGradient}
+            shapePattern={shapePattern}
+            borderRadius={24}
+          />
 
           {/* Card Header */}
           <View className="flex-row items-center justify-between">

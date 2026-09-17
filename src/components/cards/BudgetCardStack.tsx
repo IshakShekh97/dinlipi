@@ -182,6 +182,7 @@ export function BudgetCardStack({
               <CardMeshBackground
                 variant={activeCard.variant}
                 customGradient={activeCard.customGradient}
+                shapePattern={activeCard.shapePattern}
                 borderRadius={28}
               />
 

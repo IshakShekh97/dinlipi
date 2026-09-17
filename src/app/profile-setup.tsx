@@ -83,17 +83,12 @@ export default function ProfileSetupScreen() {
 
   const handleLaunch = async () => {
     if (!name.trim()) {
-      setErrorMessage('Please enter your name to personalize your ledger.');
+      setErrorMessage('Your name is required to initialize your personal ledger.');
       triggerHaptic('warning');
       return;
     }
     triggerHaptic('success');
     await finishSetup(name.trim(), phone.trim(), avatar, currency);
-  };
-
-  const handleSkip = async () => {
-    triggerHaptic('medium');
-    await finishSetup('Valued Member', '', avatar, DEFAULT_CURRENCY);
   };
 
   return (
@@ -125,19 +120,17 @@ export default function ProfileSetupScreen() {
           </Text>
         </View>
 
-        <TouchableOpacity
-          onPress={handleSkip}
+        <View
           style={{
-            backgroundColor: colors.cardSecondary,
-            borderColor: colors.borderSubtle,
+            backgroundColor: 'rgba(206, 240, 74, 0.12)',
+            borderColor: 'rgba(206, 240, 74, 0.3)',
           }}
-          className="px-4 py-1.5 rounded-full border active:opacity-70"
-          activeOpacity={0.7}
+          className="px-3 py-1 rounded-full border"
         >
-          <Text style={{ color: colors.textSecondary }} className="text-xs font-bold">
-            Skip
+          <Text style={{ color: colors.matchaLime }} className="text-xs font-bold">
+            Step 2 of 2
           </Text>
-        </TouchableOpacity>
+        </View>
       </View>
 
       <KeyboardAvoidingView

@@ -94,41 +94,7 @@ export async function initializeDatabase() {
       );
     `);
 
-    // 2. Check and seed default user profile if empty
-    const existingUsers = db.select().from(schema.usersTable).all();
-    if (existingUsers.length === 0) {
-      db.insert(schema.usersTable).values({
-        id: 'default_user',
-        name: 'Valued Member',
-        phone: '',
-        avatar: 'avatar_matcha_fox',
-        currency: '₹ INR',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      }).run();
-    }
-
-    // 3. Seed initial categories if empty
-    const existingCategories = db.select().from(schema.categoriesTable).all();
-    if (existingCategories.length === 0) {
-      const defaultCategories = [
-        { id: 'cat_groceries', name: 'Groceries', icon: 'shopping-bag', color: '#CEF04A', budgetLimit: 12000, type: 'expense' },
-        { id: 'cat_dining', name: 'Dining Out', icon: 'utensils', color: '#E07A5F', budgetLimit: 5000, type: 'expense' },
-        { id: 'cat_rent', name: 'Housing & Rent', icon: 'home', color: '#81B29A', budgetLimit: 22000, type: 'expense' },
-        { id: 'cat_bills', name: 'Utilities & Bills', icon: 'zap', color: '#F2CC8F', budgetLimit: 4000, type: 'expense' },
-        { id: 'cat_salary', name: 'Salary', icon: 'briefcase', color: '#CEF04A', budgetLimit: 0, type: 'income' },
-        { id: 'cat_freelance', name: 'Freelance & Bonus', icon: 'dollar-sign', color: '#81B29A', budgetLimit: 0, type: 'income' },
-      ];
-
-      for (const cat of defaultCategories) {
-        db.insert(schema.categoriesTable).values({
-          ...cat,
-          createdAt: new Date().toISOString(),
-        }).run();
-      }
-    }
-
-    console.log('[Drizzle/SQLite] Database initialized dynamically with zero mock data.');
+    console.log('[Drizzle/SQLite] Database tables initialized with zero prefilled data.');
   } catch (err) {
     console.error('[Drizzle/SQLite] Initialization error:', err);
   }

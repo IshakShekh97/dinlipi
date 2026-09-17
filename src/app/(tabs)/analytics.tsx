@@ -5,16 +5,19 @@ import {
   ScrollView,
   TouchableOpacity,
   StyleSheet,
+  ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle, G } from 'react-native-svg';
+import * as Print from 'expo-print';
+import * as Sharing from 'expo-sharing';
 import {
   ArrowUpRight,
   TrendingUp,
-  CreditCard,
   ChevronRight,
   Sparkles,
   ArrowDownLeft,
+  FileText,
 } from 'lucide-react-native';
 import { useAppTheme } from '../../context/theme-context';
 import { triggerHaptic } from '../../constants/theme';
@@ -90,14 +93,254 @@ export default function AnalyticsScreen() {
     return [];
   }, [dbTransactions, totalSpending, currencySymbol, colors]);
 
-  const barData = [
-    { month: 'Feb', height: 42, active: false },
-    { month: 'Mar', height: 68, active: false },
-    { month: 'Apr', height: 50, active: false },
-    { month: 'May', height: 85, active: true },
-    { month: 'Jun', height: 60, active: false },
-    { month: 'Jul', height: 74, active: false },
-  ];
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+
+  const barData = React.useMemo(() => {
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const now = new Date();
+    const result = [];
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const mIdx = d.getMonth();
+      const yr = d.getFullYear();
+      const monthTx = dbTransactions.filter((t) => {
+        const txDate = new Date(t.timestamp);
+        return txDate.getMonth() === mIdx && txDate.getFullYear() === yr && t.type === 'expense';
+      });
+      const sum = monthTx.reduce((acc, t) => acc + t.amount, 0);
+      result.push({
+        month: monthNames[mIdx],
+        amount: sum,
+        active: i === 0,
+      });
+    }
+    const maxAmount = Math.max(...result.map((r) => r.amount), 1);
+    return result.map((r) => ({
+      month: r.month,
+      height: r.amount > 0 ? Math.max(16, Math.min(95, Math.round((r.amount / maxAmount) * 90))) : 8,
+      active: r.active,
+      amount: r.amount,
+    }));
+  }, [dbTransactions]);
+
+  const handleDownloadStatement = async () => {
+    try {
+      setIsGeneratingPdf(true);
+      triggerHaptic('medium');
+
+      const userName = dbUsers && dbUsers.length > 0 && dbUsers[0].name ? dbUsers[0].name : 'Dinlipi Account';
+      const reportDate = new Date().toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      });
+      const periodLabel = new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+      const netSavings = totalIncome - totalSpending;
+
+      const rowsHtml = dbTransactions.slice(0, 60).map((t) => {
+        const isExp = t.type === 'expense';
+        const color = isExp ? '#E07A5F' : '#354E38';
+        const prefix = isExp ? '-' : '+';
+        const formattedDate = new Date(t.timestamp).toLocaleDateString('en-US', {
+          month: 'short',
+          day: 'numeric',
+        });
+        return `
+          <tr style="border-bottom: 1px solid #EBECE8;">
+            <td style="padding: 10px 8px; font-size: 13px; color: #555;">${formattedDate}</td>
+            <td style="padding: 10px 8px; font-size: 13px; font-weight: 600; color: #111;">${t.title || 'Transaction'}</td>
+            <td style="padding: 10px 8px; font-size: 12px; color: #777;">${t.categoryId || 'General'}</td>
+            <td style="padding: 10px 8px; font-size: 12px; text-transform: capitalize; color: #666;">${t.type}</td>
+            <td style="padding: 10px 8px; font-size: 13px; font-weight: 700; text-align: right; color: ${color};">
+              ${prefix}${currencySymbol}${t.amount.toFixed(2)}
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      const html = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <title>Dinlipi Statement - ${periodLabel}</title>
+          <style>
+            body {
+              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+              color: #141715;
+              background-color: #FFFFFF;
+              padding: 36px 30px;
+              margin: 0;
+            }
+            .header {
+              display: flex;
+              justify-content: space-between;
+              align-items: flex-start;
+              border-bottom: 2px solid #141715;
+              padding-bottom: 20px;
+              margin-bottom: 24px;
+            }
+            .brand-title {
+              font-size: 26px;
+              font-weight: 900;
+              letter-spacing: -0.5px;
+              margin: 0 0 4px 0;
+              color: #141715;
+            }
+            .brand-sub {
+              font-size: 13px;
+              color: #666;
+              margin: 0;
+            }
+            .meta-box {
+              text-align: right;
+              font-size: 12px;
+              color: #555;
+            }
+            .meta-box strong {
+              color: #111;
+            }
+            .summary-grid {
+              display: flex;
+              gap: 16px;
+              margin-bottom: 28px;
+            }
+            .summary-card {
+              flex: 1;
+              padding: 16px;
+              border-radius: 12px;
+              background-color: #F8F9F6;
+              border: 1px solid #EBECE8;
+            }
+            .summary-label {
+              font-size: 11px;
+              text-transform: uppercase;
+              letter-spacing: 0.8px;
+              color: #666;
+              margin-bottom: 6px;
+            }
+            .summary-value {
+              font-size: 20px;
+              font-weight: 800;
+              margin: 0;
+            }
+            .income { color: #2E7D32; }
+            .expense { color: #C62828; }
+            .balance { color: #1565C0; }
+            .table-title {
+              font-size: 16px;
+              font-weight: 700;
+              margin: 24px 0 12px 0;
+              color: #141715;
+            }
+            table {
+              width: 100%;
+              border-collapse: collapse;
+              margin-bottom: 30px;
+            }
+            th {
+              text-align: left;
+              padding: 8px;
+              font-size: 11px;
+              text-transform: uppercase;
+              letter-spacing: 0.5px;
+              color: #888;
+              border-bottom: 1px solid #DDD;
+            }
+            .footer {
+              margin-top: 40px;
+              padding-top: 16px;
+              border-top: 1px solid #EAEAEA;
+              font-size: 11px;
+              color: #888;
+              text-align: center;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <div>
+              <h1 class="brand-title">DINLIPI</h1>
+              <p class="brand-sub">Private Personal Financial Ledger</p>
+            </div>
+            <div class="meta-box">
+              <p style="margin: 0 0 4px 0;"><strong>Statement Period:</strong> ${periodLabel}</p>
+              <p style="margin: 0 0 4px 0;"><strong>Account Holder:</strong> ${userName}</p>
+              <p style="margin: 0;"><strong>Generated:</strong> ${reportDate}</p>
+            </div>
+          </div>
+
+          <div class="summary-grid">
+            <div class="summary-card">
+              <div class="summary-label">Total Income</div>
+              <div class="summary-value income">${currencySymbol}${totalIncome.toFixed(2)}</div>
+            </div>
+            <div class="summary-card">
+              <div class="summary-label">Total Spending</div>
+              <div class="summary-value expense">${currencySymbol}${totalSpending.toFixed(2)}</div>
+            </div>
+            <div class="summary-card">
+              <div class="summary-label">Net Balance</div>
+              <div class="summary-value balance">${currencySymbol}${netSavings.toFixed(2)}</div>
+            </div>
+          </div>
+
+          <div class="table-title">Recent Activity (${dbTransactions.length} Transactions)</div>
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Description</th>
+                <th>Category</th>
+                <th>Type</th>
+                <th style="text-align: right;">Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rowsHtml || '<tr><td colspan="5" style="text-align:center; padding: 24px; color:#888;">No transactions recorded in this cycle.</td></tr>'}
+            </tbody>
+          </table>
+
+          <div class="footer">
+            Dinlipi &bull; Local-first encrypted offline ledger &bull; Generated from on-device SQLite database
+          </div>
+        </body>
+        </html>
+      `;
+
+      const file = await Print.printToFileAsync({ html });
+      triggerHaptic('success');
+
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(file.uri, {
+          UTI: '.pdf',
+          mimeType: 'application/pdf',
+          dialogTitle: `Dinlipi Statement - ${periodLabel}`,
+        });
+      } else {
+        showConfirm({
+          title: 'Statement Generated',
+          message: `PDF file created successfully at ${file.uri}`,
+          confirmText: 'OK',
+          cancelText: '',
+          onConfirm: () => {},
+        });
+      }
+    } catch (err) {
+      console.error('Failed to export statement:', err);
+      triggerHaptic('warning');
+      showConfirm({
+        title: 'Export Error',
+        message: 'Could not complete statement generation. Please check storage permissions and try again.',
+        confirmText: 'OK',
+        cancelText: '',
+        isDestructive: true,
+        onConfirm: () => {},
+      });
+    } finally {
+      setIsGeneratingPdf(false);
+    }
+  };
 
   return (
     <View
@@ -329,121 +572,147 @@ export default function AnalyticsScreen() {
             Category Distribution
           </Text>
 
-          <View style={styles.donutSvgWrap}>
-            <Svg width={180} height={180} viewBox="0 0 180 180">
-              <G rotation="-90" origin="90, 90">
-                {/* Background Ring */}
-                <Circle
-                  cx="90"
-                  cy="90"
-                  r="66"
-                  stroke={isDark ? colors.cardElevated : '#F4F4EE'}
-                  strokeWidth="16"
-                  fill="none"
-                />
-                {/* Segment 1: Matcha Lime (33%) */}
-                <Circle
-                  cx="90"
-                  cy="90"
-                  r="66"
-                  stroke={colors.matchaLime}
-                  strokeWidth="16"
-                  strokeDasharray="136 278"
-                  strokeDashoffset="0"
-                  fill="none"
-                  strokeLinecap="round"
-                />
-                {/* Segment 2: Golden Honey (16%) */}
-                <Circle
-                  cx="90"
-                  cy="90"
-                  r="66"
-                  stroke={colors.goldenHoney}
-                  strokeWidth="16"
-                  strokeDasharray="66 348"
-                  strokeDashoffset="-140"
-                  fill="none"
-                  strokeLinecap="round"
-                />
-                {/* Segment 3: Terracotta (15%) */}
-                <Circle
-                  cx="90"
-                  cy="90"
-                  r="66"
-                  stroke={colors.terracotta}
-                  strokeWidth="16"
-                  strokeDasharray="62 352"
-                  strokeDashoffset="-210"
-                  fill="none"
-                  strokeLinecap="round"
-                />
-                {/* Segment 4: Moss Sage (11%) */}
-                <Circle
-                  cx="90"
-                  cy="90"
-                  r="66"
-                  stroke={colors.mossSage}
-                  strokeWidth="16"
-                  strokeDasharray="45 369"
-                  strokeDashoffset="-276"
-                  fill="none"
-                  strokeLinecap="round"
-                />
-                {/* Segment 5: Dark Graphite (8%) */}
-                <Circle
-                  cx="90"
-                  cy="90"
-                  r="66"
-                  stroke={isDark ? '#4B5563' : '#374151'}
-                  strokeWidth="16"
-                  strokeDasharray="33 381"
-                  strokeDashoffset="-325"
-                  fill="none"
-                  strokeLinecap="round"
-                />
-              </G>
-            </Svg>
-
-            <View style={styles.donutCenterText}>
-              <Text style={[styles.donutCenterLabel, { color: colors.textMuted }]}>
-                Spend
+          {categories.length === 0 ? (
+            <View style={{ alignItems: 'center', paddingVertical: 32, paddingHorizontal: 20 }}>
+              <View
+                style={{
+                  width: 52,
+                  height: 52,
+                  borderRadius: 26,
+                  backgroundColor: isDark ? colors.cardElevated : '#F4F4EE',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginBottom: 12,
+                }}
+              >
+                <TrendingUp size={22} color={colors.textMuted} />
+              </View>
+              <Text style={{ color: colors.textPrimary, fontWeight: '700', fontSize: 15, marginBottom: 4 }}>
+                No Expense Breakdown
               </Text>
-              <Text style={[styles.donutCenterAmount, { color: colors.textPrimary }]}>
-                $1,842
+              <Text style={{ color: colors.textMuted, fontSize: 13, textAlign: 'center', lineHeight: 18 }}>
+                Categorize your expenses in the ledger to view live proportional distribution.
               </Text>
             </View>
-          </View>
+          ) : (
+            <>
+              <View style={styles.donutSvgWrap}>
+                <Svg width={180} height={180} viewBox="0 0 180 180">
+                  <G rotation="-90" origin="90, 90">
+                    {/* Background Ring */}
+                    <Circle
+                      cx="90"
+                      cy="90"
+                      r="66"
+                      stroke={isDark ? colors.cardElevated : '#F4F4EE'}
+                      strokeWidth="16"
+                      fill="none"
+                    />
+                    {/* Segment 1: Matcha Lime */}
+                    <Circle
+                      cx="90"
+                      cy="90"
+                      r="66"
+                      stroke={colors.matchaLime}
+                      strokeWidth="16"
+                      strokeDasharray="136 278"
+                      strokeDashoffset="0"
+                      fill="none"
+                      strokeLinecap="round"
+                    />
+                    {/* Segment 2: Golden Honey */}
+                    <Circle
+                      cx="90"
+                      cy="90"
+                      r="66"
+                      stroke={colors.goldenHoney}
+                      strokeWidth="16"
+                      strokeDasharray="66 348"
+                      strokeDashoffset="-140"
+                      fill="none"
+                      strokeLinecap="round"
+                    />
+                    {/* Segment 3: Terracotta */}
+                    <Circle
+                      cx="90"
+                      cy="90"
+                      r="66"
+                      stroke={colors.terracotta}
+                      strokeWidth="16"
+                      strokeDasharray="62 352"
+                      strokeDashoffset="-210"
+                      fill="none"
+                      strokeLinecap="round"
+                    />
+                    {/* Segment 4: Moss Sage */}
+                    <Circle
+                      cx="90"
+                      cy="90"
+                      r="66"
+                      stroke={colors.mossSage}
+                      strokeWidth="16"
+                      strokeDasharray="45 369"
+                      strokeDashoffset="-276"
+                      fill="none"
+                      strokeLinecap="round"
+                    />
+                    {/* Segment 5: Dark Graphite */}
+                    <Circle
+                      cx="90"
+                      cy="90"
+                      r="66"
+                      stroke={isDark ? '#4B5563' : '#374151'}
+                      strokeWidth="16"
+                      strokeDasharray="33 381"
+                      strokeDashoffset="-325"
+                      fill="none"
+                      strokeLinecap="round"
+                    />
+                  </G>
+                </Svg>
 
-          {/* Categories List */}
-          <View style={styles.catListWrap}>
-            {categories.map((cat, i) => (
-              <View
-                key={i}
-                style={[
-                  styles.catRow,
-                  {
-                    borderTopColor: i === 0 ? 'transparent' : isDark ? colors.borderSubtle : '#F0F0E8',
-                    borderTopWidth: i === 0 ? 0 : 1,
-                  },
-                ]}
-              >
-                <View style={styles.catRowLeft}>
-                  <View style={[styles.catBullet, { backgroundColor: cat.color }]} />
-                  <Text style={[styles.catRowName, { color: colors.textPrimary }]}>
-                    {cat.name}
+                <View style={styles.donutCenterText}>
+                  <Text style={[styles.donutCenterLabel, { color: colors.textMuted }]}>
+                    Spend
                   </Text>
-                </View>
-                <View style={styles.catRowRight}>
-                  <Text style={[styles.catRowAmount, { color: colors.textSecondary }]}>
-                    {cat.amount}
-                  </Text>
-                  <Text style={[styles.catRowPercent, { color: cat.color }]}>
-                    {cat.percent}
+                  <Text style={[styles.donutCenterAmount, { color: colors.textPrimary }]}>
+                    {currencySymbol}{totalSpending >= 1000 ? `${(totalSpending / 1000).toFixed(1)}k` : totalSpending.toFixed(0)}
                   </Text>
                 </View>
               </View>
-            ))}
-          </View>
+
+              {/* Categories List */}
+              <View style={styles.catListWrap}>
+                {categories.map((cat, i) => (
+                  <View
+                    key={i}
+                    style={[
+                      styles.catRow,
+                      {
+                        borderTopColor: i === 0 ? 'transparent' : isDark ? colors.borderSubtle : '#F0F0E8',
+                        borderTopWidth: i === 0 ? 0 : 1,
+                      },
+                    ]}
+                  >
+                    <View style={styles.catRowLeft}>
+                      <View style={[styles.catBullet, { backgroundColor: cat.color }]} />
+                      <Text style={[styles.catRowName, { color: colors.textPrimary }]}>
+                        {cat.name}
+                      </Text>
+                    </View>
+                    <View style={styles.catRowRight}>
+                      <Text style={[styles.catRowAmount, { color: colors.textSecondary }]}>
+                        {cat.amount}
+                      </Text>
+                      <Text style={[styles.catRowPercent, { color: cat.color }]}>
+                        {cat.percent}
+                      </Text>
+                    </View>
+                  </View>
+                ))}
+              </View>
+            </>
+          )}
         </View>
 
         {/* Download Statement Option */}
@@ -457,23 +726,29 @@ export default function AnalyticsScreen() {
               cancelText: 'Cancel',
               isDestructive: false,
               onConfirm: () => {
-                triggerHaptic();
+                handleDownloadStatement();
               },
             });
           }}
+          disabled={isGeneratingPdf}
           style={[
             styles.statementBtn,
             {
               backgroundColor: isDark ? colors.cardSecondary : '#FFFFFF',
               borderColor: isDark ? colors.borderSubtle : '#EFEFE8',
+              opacity: isGeneratingPdf ? 0.7 : 1,
             },
           ]}
           activeOpacity={0.8}
         >
           <View style={styles.statementLeft}>
-            <CreditCard size={18} color={colors.matchaLime} />
+            {isGeneratingPdf ? (
+              <ActivityIndicator size="small" color={colors.matchaLime} />
+            ) : (
+              <FileText size={18} color={colors.matchaLime} />
+            )}
             <Text style={[styles.statementText, { color: colors.textPrimary }]}>
-              Download Monthly Statement (PDF)
+              {isGeneratingPdf ? 'Generating PDF Statement...' : 'Download Monthly Statement (PDF)'}
             </Text>
           </View>
           <ChevronRight size={16} color={colors.textMuted} />

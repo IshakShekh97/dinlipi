@@ -119,7 +119,7 @@ export default function DaybookScreen() {
       };
     }
     return {
-      name: 'Valued Member',
+      name: '',
       phone: '',
       avatar: 'avatar_matcha_fox',
       currency: '₹ INR',
@@ -128,18 +128,37 @@ export default function DaybookScreen() {
 
   const budgetCards: BudgetCardData[] = useMemo(() => {
     if (dbCards && dbCards.length > 0) {
-      return dbCards.map((c) => ({
-        id: c.id,
-        name: c.title,
-        cardType: (c.icon?.toUpperCase() || 'VISA') as any,
-        limit: c.totalLimit,
-        spent: c.spent || 0,
-        cardNum: '**** 9743',
-        holder: userProfile.name || 'Valued Member',
-        expiry: c.cycleDate || 'Monthly',
-        variant: (c.color as any) || 'matchaLime',
-        tabLabel: c.meshGradient || c.title.slice(0, 10),
-      }));
+      return dbCards.map((c) => {
+        let customGradient: [string, string, string] | undefined = undefined;
+        let shapePattern: any = undefined;
+        let tabLabel = c.title.slice(0, 10);
+
+        if (c.meshGradient) {
+          try {
+            const parsed = JSON.parse(c.meshGradient);
+            if (parsed.customGradient) customGradient = parsed.customGradient;
+            if (parsed.shapePattern) shapePattern = parsed.shapePattern;
+            if (parsed.tabLabel) tabLabel = parsed.tabLabel;
+          } catch {
+            tabLabel = c.meshGradient;
+          }
+        }
+
+        return {
+          id: c.id,
+          name: c.title,
+          cardType: (c.icon?.toUpperCase() || 'VAULT') as any,
+          limit: c.totalLimit,
+          spent: c.spent || 0,
+          cardNum: '**** 9743',
+          holder: userProfile.name || 'Personal Envelope',
+          expiry: c.cycleDate || 'Monthly',
+          variant: (c.color as any) || 'matchaLime',
+          customGradient,
+          shapePattern,
+          tabLabel,
+        };
+      });
     }
     return [];
   }, [dbCards, userProfile.name]);
@@ -332,7 +351,7 @@ export default function DaybookScreen() {
           />
           <View>
             <Text style={[styles.greetingSub, { color: colors.textSecondary }]}>
-              Hi, {userProfile.name.split(' ')[0]} • Available {userProfile.currency} {totalBalance.toLocaleString()}
+              {userProfile.name ? `Hi, ${userProfile.name.split(' ')[0]}` : 'Personal Vault'} • Available {currencySymbol}{totalBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </Text>
             <Text style={[styles.greetingTitle, { color: colors.textPrimary }]}>
               Welcome Back!
