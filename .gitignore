@@ -41,3 +41,12 @@ example
 # generated native folders
 /ios
 /android
+
+
+# skills
+.agents/
+dinlipimd.md
+memory-storage.md
+
+# vs code
+.vscode/
