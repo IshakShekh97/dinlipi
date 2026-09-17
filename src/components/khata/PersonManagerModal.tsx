@@ -7,14 +7,15 @@ import {
   StyleSheet,
   ScrollView,
 } from 'react-native';
-import { UserCheck, Sparkles, Tag, Image as ImageIcon } from 'lucide-react-native';
+import { UserCheck, Sparkles, Tag, Image as ImageIcon, CreditCard, Check } from 'lucide-react-native';
 import { CozyModal } from '../ui/CozyModal';
 import { useAppTheme } from '../../context/theme-context';
 import { triggerHaptic } from '../../constants/theme';
 import { UserAvatar } from '../ui/UserAvatar';
 import { AvatarPickerModal } from '../ui/AvatarPickerModal';
 import { useUIStore } from '../../store/ui-store';
-import { getCurrencySymbol } from '../../utils/currency';
+import { getCurrencySymbol, getCountryCodeForCurrency } from '../../utils/currency';
+import { useBudgetCardsLive } from '../../db/queries';
 
 export interface PersonData {
   id: string;
@@ -28,6 +29,7 @@ export interface PersonData {
   avatarPreset: string;
   avatarColor: string;
   notes?: string;
+  budgetCardId?: string;
 }
 
 interface PersonManagerModalProps {
@@ -59,6 +61,10 @@ export const PersonManagerModal: React.FC<PersonManagerModalProps> = ({
   const activeCurrency = useUIStore((state) => state.activeCurrency);
   const showConfirm = useUIStore((state) => state.showConfirmDialog);
   const currencySymbol = getCurrencySymbol(activeCurrency);
+  const dialCode = getCountryCodeForCurrency(activeCurrency);
+
+  const { data: dbCards = [] } = useBudgetCardsLive();
+  const [budgetCardId, setBudgetCardId] = useState<string | undefined>(initialData?.budgetCardId);
 
   const [prevData, setPrevData] = useState(initialData);
   if (initialData !== prevData) {
@@ -73,9 +79,10 @@ export const PersonManagerModal: React.FC<PersonManagerModalProps> = ({
       setType(initialData.type);
       setAmount(initialData.totalDue.toString());
       setSelectedAvatarId(initialData.avatarPreset || 'avatar_matcha_fox');
+      setBudgetCardId(initialData.budgetCardId);
     } else {
       setName('');
-      setPhone('');
+      setPhone(dialCode); // pre-fill with currency dial code
       setAliases([]);
       setAliasInput('');
       setTag('');
@@ -83,6 +90,7 @@ export const PersonManagerModal: React.FC<PersonManagerModalProps> = ({
       setType('receivable');
       setAmount('');
       setSelectedAvatarId('avatar_matcha_fox');
+      setBudgetCardId(undefined);
     }
   }
 
@@ -137,6 +145,7 @@ export const PersonManagerModal: React.FC<PersonManagerModalProps> = ({
       paidSoFar: initialData ? initialData.paidSoFar : 0,
       avatarPreset: selectedAvatarId,
       avatarColor: type === 'receivable' ? '#CEF04A' : '#E07A5F',
+      budgetCardId,
     };
 
     onSave(personPayload);
@@ -361,7 +370,64 @@ export const PersonManagerModal: React.FC<PersonManagerModalProps> = ({
             />
           </View>
 
-          {/* Notes / Details */}
+          {/* Link to Default Budget Envelope (Optional) */}
+          {dbCards && dbCards.length > 0 && (
+            <>
+              <Text style={[styles.inputLabel, { color: colors.textSecondary, marginTop: 14 }]}>
+                Link to Budget Envelope (Optional)
+              </Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+                <TouchableOpacity
+                  onPress={() => { triggerHaptic('light'); setBudgetCardId(undefined); }}
+                  style={[
+                    styles.inputBox,
+                    {
+                      height: 38,
+                      backgroundColor: !budgetCardId ? colors.cardElevated : colors.cardSecondary,
+                      borderColor: !budgetCardId ? colors.matchaLime : colors.borderSubtle,
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 6,
+                      paddingHorizontal: 12,
+                    },
+                  ]}
+                  activeOpacity={0.75}
+                >
+                  <Text style={{ color: colors.textPrimary, fontSize: 12, fontWeight: '700' }}>None</Text>
+                  {!budgetCardId && <Check size={11} color={colors.matchaLime} strokeWidth={3} />}
+                </TouchableOpacity>
+                {dbCards.map((card) => {
+                  const isSel = budgetCardId === card.id;
+                  return (
+                    <TouchableOpacity
+                      key={card.id}
+                      onPress={() => { triggerHaptic('light'); setBudgetCardId(card.id); }}
+                      style={[
+                        styles.inputBox,
+                        {
+                          height: 38,
+                          backgroundColor: isSel ? 'rgba(206,240,74,0.14)' : colors.cardSecondary,
+                          borderColor: isSel ? colors.matchaLime : colors.borderSubtle,
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          gap: 6,
+                          paddingHorizontal: 12,
+                        },
+                      ]}
+                      activeOpacity={0.75}
+                    >
+                      <CreditCard size={12} color={isSel ? colors.matchaLime : colors.textSecondary} />
+                      <Text style={{ color: isSel ? colors.matchaLime : colors.textPrimary, fontSize: 12, fontWeight: isSel ? '800' : '600' }}>
+                        {card.title}
+                      </Text>
+                      {isSel && <Check size={11} color={colors.matchaLime} strokeWidth={3} />}
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            </>
+          )}
+
           <Text style={[styles.inputLabel, { color: colors.textSecondary, marginTop: 14 }]}>
             Private Note (Optional)
           </Text>

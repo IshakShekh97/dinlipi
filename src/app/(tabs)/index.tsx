@@ -8,13 +8,14 @@ import {
   StyleSheet,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { router } from 'expo-router';
 import {
   Bell,
   Search,
   X,
   ArrowDownLeft,
   ArrowLeftRight,
-  FolderOpen,
+  ArrowUpRight,
   Repeat,
 } from 'lucide-react-native';
 import { useAppTheme } from '../../context/theme-context';
@@ -165,19 +166,35 @@ export default function DaybookScreen() {
 
   const transactions: DashboardTxItem[] = useMemo(() => {
     if (dbTx && dbTx.length > 0) {
-      return dbTx.map((t) => ({
-        id: t.id,
-        title: t.title,
-        category: t.categoryId || 'General',
-        time: t.timestamp,
-        amount: t.amount,
-        isExpense: t.type === 'expense',
-        channel: (t.notes as any) || 'Cash',
-        color: t.type === 'expense' ? '#E07A5F' : '#CEF04A',
-      }));
+      return dbTx.map((t) => {
+        let displayTime = t.timestamp;
+        try {
+          const d = new Date(t.timestamp);
+          if (!isNaN(d.getTime())) {
+            displayTime = d.toLocaleDateString('en-US', {
+              month: 'short',
+              day: 'numeric',
+            });
+          }
+        } catch {
+          displayTime = t.timestamp;
+        }
+
+        const isOutflow = t.type === 'expense' || t.type === 'lend';
+        return {
+          id: t.id,
+          title: t.title,
+          category: t.categoryId || 'General',
+          time: displayTime,
+          amount: t.amount,
+          isExpense: isOutflow,
+          channel: (t.notes as any) || 'Cash',
+          color: isOutflow ? colors.terracotta : colors.matchaLime,
+        };
+      });
     }
     return [];
-  }, [dbTx]);
+  }, [dbTx, colors.matchaLime, colors.terracotta]);
 
   const categories: CategoryItem[] = useMemo(() => {
     if (dbCategories && dbCategories.length > 0) {
@@ -247,6 +264,8 @@ export default function DaybookScreen() {
         amount: entry.amount,
         type: entry.type === 'income' ? 'income' : 'expense',
         categoryId: entry.category,
+        cardId: entry.cardId,
+        date: entry.date,
         notes: entry.channel,
       });
     } else {
@@ -255,6 +274,8 @@ export default function DaybookScreen() {
         amount: entry.amount,
         type: entry.type === 'income' ? 'income' : 'expense',
         categoryId: entry.category,
+        cardId: entry.cardId,
+        date: entry.date,
         notes: entry.channel,
       });
     }
@@ -268,7 +289,9 @@ export default function DaybookScreen() {
 
   const handleEditTransaction = (tx: TransactionItemData) => {
     setEditingTx(tx);
-    setQuickEntryType(tx.type);
+    const normalizedType: 'expense' | 'income' =
+      tx.type === 'income' || tx.type === 'borrow' ? 'income' : 'expense';
+    setQuickEntryType(normalizedType);
     setEntryModalVisible(true);
   };
 
@@ -495,35 +518,10 @@ export default function DaybookScreen() {
                 { backgroundColor: isDark ? colors.cardElevated : '#F4F4EE' },
               ]}
             >
-              <ArrowDownLeft
-                size={20}
-                color={colors.terracotta}
-                style={{ transform: [{ rotate: '180deg' }] }}
-              />
+              <ArrowUpRight size={20} color={colors.terracotta} />
             </View>
             <Text style={[styles.agileLabel, { color: colors.textPrimary }]}>
-              Withdraw
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.agileBtn}
-            onPress={() => {
-              triggerHaptic();
-              setCategoryModalVisible(true);
-            }}
-            activeOpacity={0.7}
-          >
-            <View
-              style={[
-                styles.agileIconBox,
-                { backgroundColor: isDark ? colors.cardElevated : '#F4F4EE' },
-              ]}
-            >
-              <FolderOpen size={20} color={colors.mossSage} />
-            </View>
-            <Text style={[styles.agileLabel, { color: colors.textPrimary }]}>
-              More
+              Withdrawal
             </Text>
           </TouchableOpacity>
         </View>
@@ -613,6 +611,10 @@ export default function DaybookScreen() {
           onClearSearch={() => setDashboardSearchQuery('')}
           onSelectTx={openTxDetail}
           onAddTx={() => openQuickEntry('expense')}
+          onViewMore={() => {
+            triggerHaptic('light');
+            router.push('/(tabs)/transactions' as any);
+          }}
           currencySymbol={currencySymbol}
         />
       </ScrollView>
@@ -657,6 +659,7 @@ export default function DaybookScreen() {
       <QuickEntryModal
         visible={entryModalVisible}
         type={quickEntryType}
+        cards={budgetCards}
         onClose={() => {
           setEntryModalVisible(false);
           setEditingTx(null);
@@ -668,9 +671,10 @@ export default function DaybookScreen() {
                 id: editingTx.id,
                 title: editingTx.title,
                 amount: editingTx.amount,
-                type: editingTx.type,
+                type: (editingTx.type === 'income' || editingTx.type === 'borrow' ? 'income' : 'expense') as 'expense' | 'income',
                 category: editingTx.category,
                 channel: editingTx.channel,
+                date: editingTx.date,
               }
             : null
         }
@@ -756,12 +760,17 @@ const styles = StyleSheet.create({
   },
   agileBar: {
     flexDirection: 'row',
-    borderRadius: 24,
-    paddingVertical: 14,
-    paddingHorizontal: 10,
+    borderRadius: 22,
+    paddingVertical: 15,
+    paddingHorizontal: 12,
     marginBottom: 20,
     borderWidth: 1,
     justifyContent: 'space-around',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
   },
   agileBtn: {
     alignItems: 'center',
@@ -769,15 +778,15 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   agileIconBox: {
-    width: 46,
-    height: 46,
+    width: 48,
+    height: 48,
     borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
   },
   agileLabel: {
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   sectionHeaderRow: {
     flexDirection: 'row',
@@ -806,14 +815,19 @@ const styles = StyleSheet.create({
   recurringBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 14,
-    borderRadius: 20,
+    padding: 16,
+    borderRadius: 22,
     borderWidth: 1,
     gap: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 1,
   },
   recurringBannerIcon: {
-    width: 40,
-    height: 40,
+    width: 42,
+    height: 42,
     borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',

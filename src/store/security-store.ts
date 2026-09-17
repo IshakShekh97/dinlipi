@@ -19,6 +19,7 @@ interface SecurityState {
   refreshSettings: () => Promise<void>;
   unlock: () => void;
   lock: () => void;
+  verifyBiometricForSetup: () => Promise<{ success: boolean; error?: string }>;
   authenticateBiometric: () => Promise<boolean>;
   verifyPasscode: (pin: string) => Promise<{ success: boolean; lockoutSeconds: number }>;
   setBiometricEnabled: (enabled: boolean) => Promise<void>;
@@ -75,7 +76,9 @@ export const useSecurityStore = create<SecurityState>((set, get) => ({
   refreshSettings: async () => {
     try {
       const currentSettings = await SecurityService.getSettings();
+      const capabilities = await SecurityService.checkBiometricCapabilities();
       set({
+        biometricCapabilities: capabilities,
         settings: currentSettings,
         failedAttempts: SecurityService.getFailedAttempts(),
         lockoutRemainingSeconds: SecurityService.getLockoutRemainingSeconds(),
@@ -101,14 +104,28 @@ export const useSecurityStore = create<SecurityState>((set, get) => ({
     }
   },
 
-  authenticateBiometric: async () => {
-    const { settings, biometricCapabilities } = get();
-    if (!settings.biometricEnabled || !biometricCapabilities?.isEnrolled) {
-      return false;
+  verifyBiometricForSetup: async () => {
+    const capabilities = await SecurityService.checkBiometricCapabilities();
+    set({ biometricCapabilities: capabilities });
+    if (!capabilities.hasHardware) {
+      return { success: false, error: 'Your device hardware does not support biometric scanning.' };
     }
-
+    if (!capabilities.isEnrolled) {
+      return { success: false, error: 'No fingerprint or Face ID enrolled. Please register biometrics in your phone system settings first.' };
+    }
     const result = await SecurityService.authenticateWithBiometrics(
-      `Unlock Dinlipi with ${biometricCapabilities.biometricName}`
+      `Confirm ${capabilities.biometricName} to protect Dinlipi`
+    );
+    if (result.success) {
+      return { success: true };
+    }
+    return { success: false, error: result.error || 'Biometric authentication was not completed.' };
+  },
+
+  authenticateBiometric: async () => {
+    const { biometricCapabilities } = get();
+    const result = await SecurityService.authenticateWithBiometrics(
+      `Unlock Dinlipi with ${biometricCapabilities?.biometricName || 'Biometrics'}`
     );
 
     if (result.success) {

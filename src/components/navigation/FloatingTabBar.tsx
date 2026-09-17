@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   Home,
+  ArrowLeftRight,
   Users,
   PieChart,
   ShieldCheck,
@@ -58,6 +59,8 @@ function AnimatedTabItem({
     switch (name) {
       case 'index':
         return <Home size={size} color={iconColor} strokeWidth={focused ? 2.5 : 1.8} />;
+      case 'transactions':
+        return <ArrowLeftRight size={size} color={iconColor} strokeWidth={focused ? 2.5 : 1.8} />;
       case 'khata':
         return <Users size={size} color={iconColor} strokeWidth={focused ? 2.5 : 1.8} />;
       case 'analytics':
@@ -73,6 +76,8 @@ function AnimatedTabItem({
     switch (name) {
       case 'index':
         return 'Home';
+      case 'transactions':
+        return 'Activity';
       case 'khata':
         return 'Khata';
       case 'analytics':

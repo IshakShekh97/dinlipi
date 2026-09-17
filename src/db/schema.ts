@@ -42,6 +42,7 @@ export const peopleTable = sqliteTable('people', {
   totalLent: real('total_lent').default(0),
   totalBorrowed: real('total_borrowed').default(0),
   notes: text('notes').default(''),
+  cardId: text('card_id').default(''),
   createdAt: text('created_at').notNull(),
   updatedAt: text('updated_at').notNull(),
 });

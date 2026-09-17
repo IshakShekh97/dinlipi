@@ -17,7 +17,12 @@ import { useSecurity } from '../context/security-context';
 import { triggerHaptic } from '../constants/theme';
 import { UserAvatar } from '../components/ui/UserAvatar';
 import { AvatarPickerModal } from '../components/ui/AvatarPickerModal';
-import { DEFAULT_CURRENCY, SUPPORTED_CURRENCIES } from '../utils/currency';
+import {
+  DEFAULT_CURRENCY,
+  SUPPORTED_CURRENCIES,
+  CURRENCY_COUNTRY_CODES,
+  getCountryCodeForCurrency,
+} from '../utils/currency';
 import { useUIStore } from '../store/ui-store';
 import { db } from '../db/client';
 import { usersTable } from '../db/schema';
@@ -37,11 +42,34 @@ export default function ProfileSetupScreen() {
   const setActiveCurrency = useUIStore((state) => state.setActiveCurrency);
 
   const [name, setName] = useState('');
-  const [phone, setPhone] = useState('');
-  const [avatar, setAvatar] = useState('avatar_matcha_fox');
   const [currency, setCurrency] = useState(DEFAULT_CURRENCY);
+  const [phone, setPhone] = useState(getCountryCodeForCurrency(DEFAULT_CURRENCY));
+  const [avatar, setAvatar] = useState('avatar_matcha_fox');
   const [avatarPickerVisible, setAvatarPickerVisible] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+
+  const handleCurrencySelect = (newCurrencyDisplay: string) => {
+    triggerHaptic('light');
+    setCurrency(newCurrencyDisplay);
+    const newPrefix = getCountryCodeForCurrency(newCurrencyDisplay);
+    // If phone is empty or only had country prefix, replace with newPrefix
+    const trimmed = phone.trim();
+    const isOnlyCountryCode =
+      !trimmed ||
+      Object.values(CURRENCY_COUNTRY_CODES).some(
+        (code) => trimmed === code.trim() || trimmed === code.replace(/\s+/g, '')
+      );
+
+    if (isOnlyCountryCode) {
+      setPhone(newPrefix);
+    } else if (phone.startsWith('+')) {
+      // Replace existing dial code prefix while keeping user-typed digits
+      const digitsOnly = phone.replace(/^\+\d+\s*/, '');
+      setPhone(`${newPrefix}${digitsOnly}`);
+    } else {
+      setPhone(`${newPrefix}${phone}`);
+    }
+  };
 
   const finishSetup = async (userName: string, userPhone: string, userAvatar: string, userCurrency: string) => {
     try {
@@ -289,43 +317,14 @@ export default function ProfileSetupScreen() {
             </View>
           </View>
 
-          {/* Phone Number Input */}
+          {/* Currency Selector (Choose first so phone code auto-populates) */}
           <View className="mb-4">
-            <Text
-              style={{ color: colors.textSecondary }}
-              className="text-xs font-bold uppercase tracking-wider mb-2"
-            >
-              Phone Number (Optional)
-            </Text>
-            <View
-              style={{
-                backgroundColor: colors.cardPrimary,
-                borderColor: colors.borderSubtle,
-              }}
-              className="flex-row items-center h-13 px-4 rounded-2xl border"
-            >
-              <Phone size={18} color={colors.textSecondary} style={{ marginRight: 10 }} />
-              <TextInput
-                value={phone}
-                onChangeText={setPhone}
-                placeholder="+91 98765 43210"
-                keyboardType="phone-pad"
-                placeholderTextColor={colors.textMuted}
-                style={{ color: colors.textPrimary }}
-                className="flex-1 text-base font-semibold"
-                returnKeyType="done"
-              />
-            </View>
-          </View>
-
-          {/* Currency Selector */}
-          <View className="mb-6">
             <View className="flex-row items-center justify-between mb-2">
               <Text
                 style={{ color: colors.textSecondary }}
                 className="text-xs font-bold uppercase tracking-wider"
               >
-                Primary Currency (Default: ₹ INR)
+                Primary Currency (Selects Country Code)
               </Text>
               <View
                 style={{
@@ -335,7 +334,7 @@ export default function ProfileSetupScreen() {
                 className="px-2 py-0.5 rounded-full border"
               >
                 <Text style={{ color: colors.matchaLime }} className="text-[10px] font-black">
-                  INDIA DEFAULT
+                  LOCALIZED
                 </Text>
               </View>
             </View>
@@ -346,10 +345,7 @@ export default function ProfileSetupScreen() {
                 return (
                   <TouchableOpacity
                     key={curr.code}
-                    onPress={() => {
-                      triggerHaptic('light');
-                      setCurrency(curr.display);
-                    }}
+                    onPress={() => handleCurrencySelect(curr.display)}
                     style={{
                       backgroundColor: isSelected ? colors.matchaLime : colors.cardPrimary,
                       borderColor: isSelected ? colors.matchaLime : colors.borderSubtle,
@@ -370,6 +366,40 @@ export default function ProfileSetupScreen() {
                   </TouchableOpacity>
                 );
               })}
+            </View>
+          </View>
+
+          {/* Phone Number Input (Auto-filled with country code based on currency) */}
+          <View className="mb-6">
+            <View className="flex-row items-center justify-between mb-2">
+              <Text
+                style={{ color: colors.textSecondary }}
+                className="text-xs font-bold uppercase tracking-wider"
+              >
+                Phone Number (Optional)
+              </Text>
+              <Text style={{ color: colors.textMuted }} className="text-[11px]">
+                Pre-filled for WhatsApp reminders
+              </Text>
+            </View>
+            <View
+              style={{
+                backgroundColor: colors.cardPrimary,
+                borderColor: colors.borderSubtle,
+              }}
+              className="flex-row items-center h-13 px-4 rounded-2xl border"
+            >
+              <Phone size={18} color={colors.textSecondary} style={{ marginRight: 10 }} />
+              <TextInput
+                value={phone}
+                onChangeText={setPhone}
+                placeholder="+91 98765 43210"
+                keyboardType="phone-pad"
+                placeholderTextColor={colors.textMuted}
+                style={{ color: colors.textPrimary }}
+                className="flex-1 text-base font-semibold"
+                returnKeyType="done"
+              />
             </View>
           </View>
 

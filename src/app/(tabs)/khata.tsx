@@ -9,12 +9,16 @@ import {
   StyleSheet,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { router } from 'expo-router';
 import {
   UserPlus,
   ArrowUpRight,
   ArrowDownLeft,
   Search,
   X,
+  Calendar,
+  CreditCard,
+  Check,
 } from 'lucide-react-native';
 import { useAppTheme } from '../../context/theme-context';
 import { triggerHaptic } from '../../constants/theme';
@@ -29,6 +33,7 @@ import { CozyModal } from '../../components/ui/CozyModal';
 import {
   usePeopleLive,
   useInstallmentsLive,
+  useBudgetCardsLive,
   addPerson,
   updatePerson,
   deletePerson,
@@ -77,7 +82,6 @@ export default function KhataScreen() {
     khataProfileModalVisible,
     setKhataProfileModalVisible,
     profilePerson,
-    setProfilePerson,
     installmentModalVisible,
     setInstallmentModalVisible,
     selectedKhataContact,
@@ -87,10 +91,14 @@ export default function KhataScreen() {
   const currencySymbol = getCurrencySymbol(activeCurrency);
   const [installmentAmount, setInstallmentAmount] = useState('');
   const [installmentMode, setInstallmentMode] = useState<'UPI' | 'Cash' | 'Bank'>('UPI');
+  const [installmentDateMode, setInstallmentDateMode] = useState<'today' | 'yesterday' | 'custom'>('today');
+  const [installmentCustomDate, setInstallmentCustomDate] = useState(new Date().toISOString().split('T')[0]);
+  const [installmentEnvelopeId, setInstallmentEnvelopeId] = useState<string | undefined>(undefined);
 
   // Drizzle Reactive Live Queries
   const { data: dbPeople = [] } = usePeopleLive();
   const { data: dbInstallments = [] } = useInstallmentsLive();
+  const { data: dbCards = [] } = useBudgetCardsLive();
 
   // Map Drizzle people to ContactLedger[] - 100% dynamic without static seed fallbacks
   const contacts: ContactLedger[] = useMemo(() => {
@@ -179,21 +187,8 @@ export default function KhataScreen() {
 
   const handleOpenPersonProfile = (contact: ContactLedger) => {
     triggerHaptic('light');
-    const data: PersonProfileData = {
-      id: contact.id,
-      name: contact.name,
-      phone: contact.phone,
-      aliases: contact.aliases || [],
-      avatar: contact.avatar,
-      type: contact.type,
-      totalDue: contact.totalDue,
-      paidSoFar: contact.paidSoFar,
-      tag: contact.tag,
-      notes: contact.notes,
-      installments: contact.installments,
-    };
-    setProfilePerson(data);
-    setKhataProfileModalVisible(true);
+    // Navigate to full-screen person ledger page
+    router.push(`/person/${contact.id}` as any);
   };
 
   const handleOpenAddPerson = () => {
@@ -291,6 +286,9 @@ export default function KhataScreen() {
     const balance = contact.totalDue - contact.paidSoFar;
     setInstallmentAmount(balance > 0 ? Math.min(balance, 500).toString() : '0');
     setInstallmentMode('UPI');
+    setInstallmentDateMode('today');
+    setInstallmentCustomDate(new Date().toISOString().split('T')[0]);
+    setInstallmentEnvelopeId(undefined);
     setInstallmentModalVisible(true);
   };
 
@@ -308,8 +306,26 @@ export default function KhataScreen() {
       return;
     }
 
-    triggerHaptic();
-    await recordInstallment(selectedKhataContact.id, num, installmentMode);
+    let finalDate = new Date().toISOString();
+    if (installmentDateMode === 'yesterday') {
+      const d = new Date();
+      d.setDate(d.getDate() - 1);
+      finalDate = d.toISOString();
+    } else if (installmentDateMode === 'custom') {
+      const parsed = new Date(installmentCustomDate);
+      if (!isNaN(parsed.getTime())) {
+        finalDate = parsed.toISOString();
+      }
+    }
+
+    triggerHaptic('success');
+    await recordInstallment(
+      selectedKhataContact.id,
+      num,
+      installmentMode,
+      finalDate,
+      installmentEnvelopeId
+    );
     setInstallmentModalVisible(false);
   };
 
@@ -601,6 +617,165 @@ export default function KhataScreen() {
               })}
             </View>
           </View>
+
+          {/* Date Selector (Allows recording past installments) */}
+          <View style={styles.inputGroup}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>
+                Payment Date
+              </Text>
+              <Text style={{ color: colors.matchaLime, fontSize: 11, fontWeight: '700' }}>
+                Past Dates Allowed
+              </Text>
+            </View>
+            <View style={styles.modeRow}>
+              {(['today', 'yesterday', 'custom'] as const).map((dm) => {
+                const isSel = installmentDateMode === dm;
+                const label = dm === 'today' ? 'Today' : dm === 'yesterday' ? 'Yesterday' : 'Custom / Past';
+                return (
+                  <TouchableOpacity
+                    key={dm}
+                    style={[
+                      styles.modePill,
+                      {
+                        backgroundColor: isSel
+                          ? colors.matchaLime
+                          : isDark
+                          ? colors.cardSecondary
+                          : '#F7F7F4',
+                        borderColor: isSel ? colors.matchaLime : colors.borderSubtle,
+                      },
+                    ]}
+                    onPress={() => {
+                      triggerHaptic('light');
+                      setInstallmentDateMode(dm);
+                    }}
+                    activeOpacity={0.8}
+                  >
+                    <Text
+                      style={[
+                        styles.modeText,
+                        {
+                          color: isSel ? '#141715' : colors.textPrimary,
+                          fontWeight: isSel ? '700' : '500',
+                        },
+                      ]}
+                    >
+                      {label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
+            {installmentDateMode === 'custom' && (
+              <View
+                style={[
+                  styles.inputWrapper,
+                  {
+                    backgroundColor: isDark ? colors.cardSecondary : '#F7F7F4',
+                    borderColor: isDark ? colors.borderSubtle : '#E5E7EB',
+                    marginTop: 6,
+                  },
+                ]}
+              >
+                <Calendar size={16} color={colors.textMuted} style={{ marginRight: 8 }} />
+                <TextInput
+                  style={[styles.textInput, { color: colors.textPrimary }]}
+                  placeholder="YYYY-MM-DD (e.g. 2026-03-10)"
+                  placeholderTextColor={colors.textMuted}
+                  value={installmentCustomDate}
+                  onChangeText={setInstallmentCustomDate}
+                />
+              </View>
+            )}
+          </View>
+
+          {/* Link to Budget Envelope (Optional) */}
+          {dbCards && dbCards.length > 0 && (
+            <View style={styles.inputGroup}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>
+                  Link to Budget Envelope (Optional)
+                </Text>
+                <Text style={{ color: colors.textMuted, fontSize: 11 }}>
+                  {installmentEnvelopeId ? 'Linked' : 'None'}
+                </Text>
+              </View>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingVertical: 2 }}>
+                <TouchableOpacity
+                  onPress={() => {
+                    triggerHaptic('light');
+                    setInstallmentEnvelopeId(undefined);
+                  }}
+                  style={{
+                    backgroundColor: !installmentEnvelopeId
+                      ? isDark
+                        ? colors.cardElevated
+                        : '#E5E7EB'
+                      : isDark
+                      ? colors.cardSecondary
+                      : '#F7F7F4',
+                    borderColor: !installmentEnvelopeId ? colors.matchaLime : 'transparent',
+                    borderWidth: 1,
+                    borderRadius: 14,
+                    paddingHorizontal: 12,
+                    paddingVertical: 8,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 6,
+                  }}
+                  activeOpacity={0.75}
+                >
+                  <Text style={{ color: colors.textPrimary, fontSize: 12, fontWeight: '700' }}>
+                    None (General)
+                  </Text>
+                  {!installmentEnvelopeId && <Check size={12} color={colors.matchaLime} strokeWidth={3} />}
+                </TouchableOpacity>
+
+                {dbCards.map((card) => {
+                  const isSelected = installmentEnvelopeId === card.id;
+                  return (
+                    <TouchableOpacity
+                      key={card.id}
+                      onPress={() => {
+                        triggerHaptic('light');
+                        setInstallmentEnvelopeId(card.id);
+                      }}
+                      style={{
+                        backgroundColor: isSelected
+                          ? 'rgba(206, 240, 74, 0.16)'
+                          : isDark
+                          ? colors.cardSecondary
+                          : '#F7F7F4',
+                        borderColor: isSelected ? colors.matchaLime : isDark ? colors.borderSubtle : '#E5E7EB',
+                        borderWidth: 1,
+                        borderRadius: 14,
+                        paddingHorizontal: 12,
+                        paddingVertical: 8,
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        gap: 6,
+                      }}
+                      activeOpacity={0.75}
+                    >
+                      <CreditCard size={13} color={isSelected ? colors.matchaLime : colors.textSecondary} />
+                      <Text
+                        style={{
+                          color: isSelected ? colors.matchaLime : colors.textPrimary,
+                          fontSize: 12,
+                          fontWeight: isSelected ? '800' : '600',
+                        }}
+                      >
+                        {card.title} ({currencySymbol}{card.totalLimit.toLocaleString()})
+                      </Text>
+                      {isSelected && <Check size={12} color={colors.matchaLime} strokeWidth={3} />}
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            </View>
+          )}
 
           <TouchableOpacity
             style={[styles.recordBtn, { backgroundColor: colors.matchaLime }]}

@@ -19,6 +19,29 @@ export const SUPPORTED_CURRENCIES: CurrencyOption[] = [
 
 export const DEFAULT_CURRENCY = '₹ INR';
 
+export const CURRENCY_COUNTRY_CODES: Record<string, string> = {
+  INR: '+91 ',
+  BDT: '+880 ',
+  USD: '+1 ',
+  GBP: '+44 ',
+  EUR: '+49 ',
+  JPY: '+81 ',
+  AED: '+971 ',
+  CAD: '+1 ',
+  AUD: '+61 ',
+};
+
+export function getCountryCodeForCurrency(currencyStr?: string): string {
+  if (!currencyStr) return '+91 ';
+  const match = SUPPORTED_CURRENCIES.find(
+    (c) => c.display === currencyStr || c.code === currencyStr || currencyStr.includes(c.code)
+  );
+  if (match && CURRENCY_COUNTRY_CODES[match.code]) {
+    return CURRENCY_COUNTRY_CODES[match.code];
+  }
+  return '+91 ';
+}
+
 /**
  * Extracts the symbol from a currency string (e.g., '₹ INR' -> '₹', '$ USD' -> '$')
  */

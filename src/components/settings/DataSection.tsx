@@ -7,6 +7,9 @@ import { useRouter } from 'expo-router';
 import { useSecurity } from '../../context/security-context';
 import { useUIStore } from '../../store/ui-store';
 import { CurrencyPickerModal } from './CurrencyPickerModal';
+import * as FileSystem from 'expo-file-system/legacy';
+import * as DocumentPicker from 'expo-document-picker';
+import * as Sharing from 'expo-sharing';
 import { db } from '../../db/client';
 import * as schema from '../../db/schema';
 
@@ -55,29 +58,205 @@ export function DataSection() {
     router.push('/onboarding');
   };
 
-  const handleExportBackup = () => {
-    triggerHaptic('success');
-    showConfirm({
-      title: 'Database Backup Exported',
-      message: 'All your offline transactions and ledger accounts are backed up to local device storage.',
-      confirmText: 'Done',
-      cancelText: 'Close',
-      onConfirm: () => {},
-    });
+  const handleExportBackup = async () => {
+    try {
+      triggerHaptic('medium');
+      const users = db.select().from(schema.usersTable).all();
+      const budgetCards = db.select().from(schema.budgetCardsTable).all();
+      const categories = db.select().from(schema.categoriesTable).all();
+      const people = db.select().from(schema.peopleTable).all();
+      const installments = db.select().from(schema.installmentsTable).all();
+      const transactions = db.select().from(schema.transactionsTable).all();
+      const recurring = db.select().from(schema.recurringTable).all();
+
+      const backupData = {
+        app: 'Dinlipi',
+        version: '1.0',
+        exportedAt: new Date().toISOString(),
+        tables: {
+          users,
+          budgetCards,
+          categories,
+          people,
+          installments,
+          transactions,
+          recurring,
+        },
+      };
+
+      const dateTag = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+      const fileName = `dinlipi_backup_${dateTag}.json`;
+      const fileUri = `${FileSystem.documentDirectory}${fileName}`;
+
+      await FileSystem.writeAsStringAsync(fileUri, JSON.stringify(backupData, null, 2), {
+        encoding: FileSystem.EncodingType.UTF8,
+      });
+
+      triggerHaptic('success');
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(fileUri, {
+          mimeType: 'application/json',
+          dialogTitle: 'Save Dinlipi Backup',
+          UTI: 'public.json',
+        });
+      } else {
+        showConfirm({
+          title: 'Backup Exported',
+          message: `Backup saved successfully at: ${fileUri}`,
+          confirmText: 'Done',
+          cancelText: 'Close',
+          onConfirm: () => {},
+        });
+      }
+    } catch (err) {
+      console.error('Export backup error:', err);
+      triggerHaptic('error');
+      showConfirm({
+        title: 'Export Failed',
+        message: 'Could not export database backup. Please check storage permissions.',
+        confirmText: 'OK',
+        cancelText: '',
+        onConfirm: () => {},
+      });
+    }
   };
 
-  const handleRestoreBackup = () => {
-    triggerHaptic('light');
-    showConfirm({
-      title: 'Restore Ledger',
-      message: 'Are you sure you want to restore from the selected backup? This will sync your offline database.',
-      confirmText: 'Restore',
-      cancelText: 'Cancel',
-      isDestructive: false,
-      onConfirm: () => {
-        triggerHaptic('success');
-      },
-    });
+  const handleRestoreBackup = async () => {
+    try {
+      triggerHaptic('light');
+      const result = await DocumentPicker.getDocumentAsync({
+        type: ['application/json', '*/*'],
+        copyToCacheDirectory: true,
+      });
+
+      if (result.canceled || !result.assets || result.assets.length === 0) {
+        return;
+      }
+
+      const fileUri = result.assets[0].uri;
+      const fileContent = await FileSystem.readAsStringAsync(fileUri, {
+        encoding: FileSystem.EncodingType.UTF8,
+      });
+
+      let backupObj: any;
+      try {
+        backupObj = JSON.parse(fileContent);
+      } catch {
+        showConfirm({
+          title: 'Invalid File',
+          message: 'The selected file is not a valid Dinlipi JSON backup.',
+          confirmText: 'OK',
+          cancelText: '',
+          onConfirm: () => {},
+        });
+        return;
+      }
+
+      if (!backupObj || (!backupObj.tables && !backupObj.data)) {
+        showConfirm({
+          title: 'Unrecognized Backup',
+          message: 'The selected backup file is missing required table structures.',
+          confirmText: 'OK',
+          cancelText: '',
+          onConfirm: () => {},
+        });
+        return;
+      }
+
+      const tables = backupObj.tables || backupObj.data;
+
+      showConfirm({
+        title: 'Restore Ledger Database?',
+        message: `This will replace current data with:\n• ${tables.transactions?.length || 0} transactions\n• ${tables.budgetCards?.length || 0} envelopes\n• ${tables.people?.length || 0} contacts\n• ${tables.installments?.length || 0} installments. Continue?`,
+        confirmText: 'Restore Now',
+        cancelText: 'Cancel',
+        isDestructive: true,
+        onConfirm: async () => {
+          try {
+            db.delete(schema.transactionsTable).run();
+            db.delete(schema.installmentsTable).run();
+            db.delete(schema.peopleTable).run();
+            db.delete(schema.budgetCardsTable).run();
+            db.delete(schema.categoriesTable).run();
+            db.delete(schema.recurringTable).run();
+            if (tables.users && tables.users.length > 0) {
+              db.delete(schema.usersTable).run();
+            }
+
+            if (tables.users && Array.isArray(tables.users)) {
+              for (const u of tables.users) {
+                db.insert(schema.usersTable).values(u).run();
+              }
+            }
+
+            if (tables.budgetCards && Array.isArray(tables.budgetCards)) {
+              for (const c of tables.budgetCards) {
+                db.insert(schema.budgetCardsTable).values(c).run();
+              }
+            }
+
+            if (tables.categories && Array.isArray(tables.categories)) {
+              for (const cat of tables.categories) {
+                db.insert(schema.categoriesTable).values(cat).run();
+              }
+            }
+
+            if (tables.people && Array.isArray(tables.people)) {
+              for (const p of tables.people) {
+                db.insert(schema.peopleTable).values(p).run();
+              }
+            }
+
+            if (tables.installments && Array.isArray(tables.installments)) {
+              for (const inst of tables.installments) {
+                db.insert(schema.installmentsTable).values(inst).run();
+              }
+            }
+
+            if (tables.transactions && Array.isArray(tables.transactions)) {
+              for (const tx of tables.transactions) {
+                db.insert(schema.transactionsTable).values(tx).run();
+              }
+            }
+
+            if (tables.recurring && Array.isArray(tables.recurring)) {
+              for (const r of tables.recurring) {
+                db.insert(schema.recurringTable).values(r).run();
+              }
+            }
+
+            triggerHaptic('success');
+            showConfirm({
+              title: 'Restore Complete',
+              message: 'Your offline ledger has been successfully restored from the backup file.',
+              confirmText: 'Great',
+              cancelText: '',
+              onConfirm: () => {},
+            });
+          } catch (restoreErr) {
+            console.error('Error inserting restored backup:', restoreErr);
+            triggerHaptic('error');
+            showConfirm({
+              title: 'Restore Error',
+              message: 'Failed to write restored data to database.',
+              confirmText: 'OK',
+              cancelText: '',
+              onConfirm: () => {},
+            });
+          }
+        },
+      });
+    } catch (err) {
+      console.error('Restore document error:', err);
+      triggerHaptic('error');
+      showConfirm({
+        title: 'File Selection Error',
+        message: 'Could not access the selected backup file.',
+        confirmText: 'OK',
+        cancelText: '',
+        onConfirm: () => {},
+      });
+    }
   };
 
   return (

@@ -56,6 +56,7 @@ export async function initializeDatabase() {
         total_lent REAL DEFAULT 0,
         total_borrowed REAL DEFAULT 0,
         notes TEXT DEFAULT '',
+        card_id TEXT DEFAULT '',
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL
       );
@@ -92,7 +93,14 @@ export async function initializeDatabase() {
         category_id TEXT,
         is_active INTEGER DEFAULT 1
       );
+      DELETE FROM transactions WHERE title IN ('Stripe', 'Payout', 'Broody', 'Spotify', 'Coffee', 'Gym Membership', 'Sample Income', 'Sample Expense');
     `);
+
+    try {
+      expoDb.execSync("ALTER TABLE people ADD COLUMN card_id TEXT DEFAULT '';");
+    } catch {
+      // Column already exists
+    }
 
     console.log('[Drizzle/SQLite] Database tables initialized with zero prefilled data.');
   } catch (err) {

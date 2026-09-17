@@ -25,10 +25,28 @@ import { useTransactionsLive, useUserLive } from '../../db/queries';
 import { useUIStore } from '../../store/ui-store';
 import { getCurrencySymbol } from '../../utils/currency';
 
+function parseTxDate(timestampStr: string): Date {
+  if (!timestampStr) return new Date();
+  const d = new Date(timestampStr);
+  if (!isNaN(d.getTime())) return d;
+  const match = timestampStr.match(/([A-Za-z]+)\s+(\d+)/);
+  if (match) {
+    const monthNames = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+    const mIdx = monthNames.indexOf(match[1].toLowerCase().slice(0, 3));
+    const day = parseInt(match[2], 10);
+    if (mIdx !== -1 && !isNaN(day)) {
+      const year = new Date().getFullYear();
+      return new Date(year, mIdx, day);
+    }
+  }
+  return new Date();
+}
+
 export default function AnalyticsScreen() {
   const insets = useSafeAreaInsets();
   const { colors, isDark } = useAppTheme();
   const [period, setPeriod] = useState<'week' | 'month' | 'year'>('month');
+  const [selectedCategory, setSelectedCategory] = useState<string>('All');
 
   const activeCurrency = useUIStore((state) => state.activeCurrency);
   const showConfirm = useUIStore((state) => state.showConfirmDialog);
@@ -41,29 +59,44 @@ export default function AnalyticsScreen() {
       ? getCurrencySymbol(dbUsers[0].currency)
       : getCurrencySymbol(activeCurrency);
 
-  // Calculate live spending and income - 100% dynamic
+  // Available categories list
+  const availableCategories = React.useMemo(() => {
+    const set = new Set<string>();
+    dbTransactions.forEach((t) => {
+      if (t.categoryId) set.add(t.categoryId);
+    });
+    return ['All', ...Array.from(set)];
+  }, [dbTransactions]);
+
+  // Filter transactions by selected category
+  const activeTx = React.useMemo(() => {
+    if (selectedCategory === 'All') return dbTransactions;
+    return dbTransactions.filter((t) => (t.categoryId || 'General') === selectedCategory);
+  }, [dbTransactions, selectedCategory]);
+
+  // Calculate live spending and income for the active category filter
   const totalSpending = React.useMemo(() => {
-    if (dbTransactions && dbTransactions.length > 0) {
-      const expenses = dbTransactions.filter((t) => t.type === 'expense');
+    if (activeTx && activeTx.length > 0) {
+      const expenses = activeTx.filter((t) => t.type === 'expense' || t.type === 'lend');
       return expenses.reduce((acc, t) => acc + t.amount, 0);
     }
     return 0;
-  }, [dbTransactions]);
+  }, [activeTx]);
 
   const totalIncome = React.useMemo(() => {
-    if (dbTransactions && dbTransactions.length > 0) {
-      const income = dbTransactions.filter((t) => t.type === 'income');
+    if (activeTx && activeTx.length > 0) {
+      const income = activeTx.filter((t) => t.type === 'income' || t.type === 'borrow');
       return income.reduce((acc, t) => acc + t.amount, 0);
     }
     return 0;
-  }, [dbTransactions]);
+  }, [activeTx]);
 
   // Compute category breakdown
   const categories = React.useMemo(() => {
     if (dbTransactions && dbTransactions.length > 0 && totalSpending > 0) {
       const expenseMap: Record<string, number> = {};
       dbTransactions
-        .filter((t) => t.type === 'expense')
+        .filter((t) => t.type === 'expense' || t.type === 'lend')
         .forEach((t) => {
           const cat = t.categoryId || 'General';
           expenseMap[cat] = (expenseMap[cat] || 0) + t.amount;
@@ -95,33 +128,121 @@ export default function AnalyticsScreen() {
 
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
 
+  // Dynamic bar data based on selected category & selected period
   const barData = React.useMemo(() => {
-    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     const now = new Date();
-    const result = [];
-    for (let i = 5; i >= 0; i--) {
-      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const mIdx = d.getMonth();
-      const yr = d.getFullYear();
-      const monthTx = dbTransactions.filter((t) => {
-        const txDate = new Date(t.timestamp);
-        return txDate.getMonth() === mIdx && txDate.getFullYear() === yr && t.type === 'expense';
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+
+    if (period === 'week') {
+      // Show the weeks of this month (W1, W2, W3, W4, W5)
+      const currentDay = now.getDate();
+      const weeks = [
+        { label: 'W1 (1-7)', start: 1, end: 7 },
+        { label: 'W2 (8-14)', start: 8, end: 14 },
+        { label: 'W3 (15-21)', start: 15, end: 21 },
+        { label: 'W4 (22-28)', start: 22, end: 28 },
+        { label: 'W5 (29+)', start: 29, end: 31 },
+      ];
+
+      const weekResults = weeks.map((w) => {
+        const sum = activeTx
+          .filter((t) => {
+            if (t.type !== 'expense') return false;
+            const d = parseTxDate(t.timestamp);
+            return (
+              d.getFullYear() === currentYear &&
+              d.getMonth() === currentMonth &&
+              d.getDate() >= w.start &&
+              d.getDate() <= w.end
+            );
+          })
+          .reduce((acc, t) => acc + t.amount, 0);
+
+        const isActive = currentDay >= w.start && currentDay <= w.end;
+        return {
+          month: w.label,
+          amount: sum,
+          active: isActive,
+        };
       });
-      const sum = monthTx.reduce((acc, t) => acc + t.amount, 0);
-      result.push({
-        month: monthNames[mIdx],
-        amount: sum,
-        active: i === 0,
+
+      const maxAmount = Math.max(...weekResults.map((r) => r.amount), 1);
+      return weekResults.map((r) => ({
+        month: r.month,
+        height: r.amount > 0 ? Math.max(16, Math.min(95, Math.round((r.amount / maxAmount) * 90))) : 8,
+        active: r.active,
+        amount: r.amount,
+      }));
+    } else if (period === 'month') {
+      // Show interval blocks across this month
+      const currentDay = now.getDate();
+      const intervals = [
+        { label: '1-5', start: 1, end: 5 },
+        { label: '6-10', start: 6, end: 10 },
+        { label: '11-15', start: 11, end: 15 },
+        { label: '16-20', start: 16, end: 20 },
+        { label: '21-25', start: 21, end: 25 },
+        { label: '26-31', start: 26, end: 31 },
+      ];
+
+      const intervalResults = intervals.map((inv) => {
+        const sum = activeTx
+          .filter((t) => {
+            if (t.type !== 'expense') return false;
+            const d = parseTxDate(t.timestamp);
+            return (
+              d.getFullYear() === currentYear &&
+              d.getMonth() === currentMonth &&
+              d.getDate() >= inv.start &&
+              d.getDate() <= inv.end
+            );
+          })
+          .reduce((acc, t) => acc + t.amount, 0);
+
+        const isActive = currentDay >= inv.start && currentDay <= inv.end;
+        return {
+          month: inv.label,
+          amount: sum,
+          active: isActive,
+        };
       });
+
+      const maxAmount = Math.max(...intervalResults.map((r) => r.amount), 1);
+      return intervalResults.map((r) => ({
+        month: r.month,
+        height: r.amount > 0 ? Math.max(16, Math.min(95, Math.round((r.amount / maxAmount) * 90))) : 8,
+        active: r.active,
+        amount: r.amount,
+      }));
+    } else {
+      // Year: Show the 12 months of this year
+      const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      const yearResults = monthNames.map((mName, mIdx) => {
+        const sum = activeTx
+          .filter((t) => {
+            if (t.type !== 'expense') return false;
+            const d = parseTxDate(t.timestamp);
+            return d.getFullYear() === currentYear && d.getMonth() === mIdx;
+          })
+          .reduce((acc, t) => acc + t.amount, 0);
+
+        return {
+          month: mName,
+          amount: sum,
+          active: mIdx === currentMonth,
+        };
+      });
+
+      const maxAmount = Math.max(...yearResults.map((r) => r.amount), 1);
+      return yearResults.map((r) => ({
+        month: r.month,
+        height: r.amount > 0 ? Math.max(16, Math.min(95, Math.round((r.amount / maxAmount) * 90))) : 8,
+        active: r.active,
+        amount: r.amount,
+      }));
     }
-    const maxAmount = Math.max(...result.map((r) => r.amount), 1);
-    return result.map((r) => ({
-      month: r.month,
-      height: r.amount > 0 ? Math.max(16, Math.min(95, Math.round((r.amount / maxAmount) * 90))) : 8,
-      active: r.active,
-      amount: r.amount,
-    }));
-  }, [dbTransactions]);
+  }, [activeTx, period]);
 
   const handleDownloadStatement = async () => {
     try {
@@ -137,13 +258,15 @@ export default function AnalyticsScreen() {
       const periodLabel = new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
       const netSavings = totalIncome - totalSpending;
 
-      const rowsHtml = dbTransactions.slice(0, 60).map((t) => {
-        const isExp = t.type === 'expense';
+      const rowsHtml = activeTx.slice(0, 80).map((t) => {
+        const isExp = t.type === 'expense' || t.type === 'lend';
         const color = isExp ? '#E07A5F' : '#354E38';
         const prefix = isExp ? '-' : '+';
-        const formattedDate = new Date(t.timestamp).toLocaleDateString('en-US', {
+        const parsed = parseTxDate(t.timestamp);
+        const formattedDate = parsed.toLocaleDateString('en-US', {
           month: 'short',
           day: 'numeric',
+          year: 'numeric',
         });
         return `
           <tr style="border-bottom: 1px solid #EBECE8;">
@@ -423,6 +546,55 @@ export default function AnalyticsScreen() {
               </TouchableOpacity>
             );
           })}
+        </View>
+
+        {/* Dynamic Category Filter Chips */}
+        <View style={{ marginBottom: 16 }}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ gap: 8, paddingHorizontal: 2 }}
+          >
+            {availableCategories.map((cat) => {
+              const isSelected = selectedCategory === cat;
+              return (
+                <TouchableOpacity
+                  key={cat}
+                  onPress={() => {
+                    triggerHaptic('light');
+                    setSelectedCategory(cat);
+                  }}
+                  style={{
+                    backgroundColor: isSelected
+                      ? colors.matchaLime
+                      : isDark
+                      ? colors.cardSecondary
+                      : '#F4F4EE',
+                    borderColor: isSelected
+                      ? colors.matchaLime
+                      : isDark
+                      ? colors.borderSubtle
+                      : '#EAEAE2',
+                    borderWidth: 1,
+                    borderRadius: 12,
+                    paddingHorizontal: 12,
+                    paddingVertical: 7,
+                  }}
+                  activeOpacity={0.75}
+                >
+                  <Text
+                    style={{
+                      color: isSelected ? '#141715' : colors.textPrimary,
+                      fontWeight: isSelected ? '800' : '600',
+                      fontSize: 12,
+                    }}
+                  >
+                    {cat}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
         </View>
 
         {/* Total Spending Stat Hero (Inspired by Image 2 & 4) */}

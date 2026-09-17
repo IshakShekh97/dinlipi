@@ -26,6 +26,7 @@ interface TransactionListProps {
   onClearSearch: () => void;
   onSelectTx: (tx: DashboardTxItem) => void;
   onAddTx: () => void;
+  onViewMore?: () => void;
   currencySymbol?: string;
 }
 
@@ -38,9 +39,11 @@ export function TransactionList({
   onClearSearch,
   onSelectTx,
   onAddTx,
+  onViewMore,
   currencySymbol = '₹',
 }: TransactionListProps) {
   const { colors, isDark } = useAppTheme();
+  const displayTransactions = transactions.slice(0, 6);
 
   return (
     <View style={styles.container}>
@@ -48,41 +51,27 @@ export function TransactionList({
       <View style={styles.sectionHeaderRow}>
         <View>
           <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>
-            All Transactions
+            Recent Transactions
           </Text>
           <Text style={[styles.sectionSub, { color: colors.textSecondary }]}>
-            Recent account movements
+            Latest movements
           </Text>
         </View>
-        <View style={styles.timeFilterRow}>
-          {(['today', 'week', 'all'] as const).map((tf) => (
-            <TouchableOpacity
-              key={tf}
-              onPress={() => {
-                triggerHaptic();
-                onTimeFilterChange(tf);
-              }}
-              style={[
-                styles.filterPill,
-                timeFilter === tf && {
-                  backgroundColor: colors.matchaLime,
-                },
-              ]}
-            >
-              <Text
-                style={[
-                  styles.filterPillText,
-                  {
-                    color: timeFilter === tf ? '#141715' : colors.textMuted,
-                    fontWeight: timeFilter === tf ? '700' : '500',
-                  },
-                ]}
-              >
-                {tf.charAt(0).toUpperCase() + tf.slice(1)}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+
+        {onViewMore && (
+          <TouchableOpacity
+            onPress={onViewMore}
+            style={[
+              styles.viewMoreHeaderBtn,
+              { backgroundColor: isDark ? colors.cardSecondary : '#F4F4EE', borderColor: colors.borderSubtle },
+            ]}
+            activeOpacity={0.75}
+          >
+            <Text style={[styles.viewMoreHeaderText, { color: colors.matchaLime }]}>
+              View More →
+            </Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* Transactions Rows */}
@@ -93,7 +82,7 @@ export function TransactionList({
             <SkeletonTransactionRow />
             <SkeletonTransactionRow />
           </>
-        ) : transactions.length === 0 ? (
+        ) : displayTransactions.length === 0 ? (
           searchQuery ? (
             <EmptyStateView
               type="no_search_results"
@@ -106,7 +95,7 @@ export function TransactionList({
             />
           )
         ) : (
-          transactions.map((tx) => (
+          displayTransactions.map((tx) => (
             <TouchableOpacity
               key={tx.id}
               style={[
@@ -162,6 +151,24 @@ export function TransactionList({
             </TouchableOpacity>
           ))
         )}
+
+        {transactions.length > 0 && onViewMore && (
+          <TouchableOpacity
+            onPress={onViewMore}
+            style={[
+              styles.bottomViewMoreBtn,
+              {
+                backgroundColor: isDark ? colors.cardSecondary : '#FFFFFF',
+                borderColor: colors.borderSubtle,
+              },
+            ]}
+            activeOpacity={0.8}
+          >
+            <Text style={[styles.bottomViewMoreText, { color: colors.textPrimary }]}>
+              View All in Activity ({transactions.length}) →
+            </Text>
+          </TouchableOpacity>
+        )}
       </View>
     </View>
   );
@@ -207,14 +214,19 @@ const styles = StyleSheet.create({
   txCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 14,
-    borderRadius: 18,
+    padding: 15,
+    borderRadius: 20,
     borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    elevation: 1,
   },
   txIconBox: {
     width: 44,
     height: 44,
-    borderRadius: 14,
+    borderRadius: 15,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 14,
@@ -224,7 +236,8 @@ const styles = StyleSheet.create({
   },
   txTitle: {
     fontSize: 15,
-    fontWeight: '600',
+    fontWeight: '700',
+    letterSpacing: -0.2,
     marginBottom: 3,
   },
   txCategory: {
@@ -232,10 +245,40 @@ const styles = StyleSheet.create({
   },
   txAmount: {
     fontSize: 15,
-    fontWeight: '700',
+    fontWeight: '800',
+    letterSpacing: -0.3,
     marginBottom: 3,
   },
   txTime: {
     fontSize: 11,
+  },
+  viewMoreHeaderBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+  },
+  viewMoreHeaderText: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  bottomViewMoreBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 14,
+    borderRadius: 18,
+    borderWidth: 1,
+    marginTop: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+  bottomViewMoreText: {
+    fontSize: 13,
+    fontWeight: '700',
+    letterSpacing: -0.2,
   },
 });

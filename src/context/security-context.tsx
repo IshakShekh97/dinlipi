@@ -95,9 +95,9 @@ export const SecurityProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   const enableBiometrics = async (): Promise<{ success: boolean; error?: string }> => {
-    const result = await store.authenticateBiometric();
-    if (!result) {
-      return { success: false, error: 'Authentication cancelled' };
+    const res = await store.verifyBiometricForSetup();
+    if (!res.success) {
+      return res;
     }
     await store.setBiometricEnabled(true);
     triggerHaptic('success');

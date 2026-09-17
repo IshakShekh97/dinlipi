@@ -5,6 +5,8 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
+  Share,
+  Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
@@ -21,6 +23,8 @@ import {
 } from 'lucide-react-native';
 import { useAppTheme } from '../../context/theme-context';
 import { triggerHaptic } from '../../constants/theme';
+import * as Print from 'expo-print';
+import * as Sharing from 'expo-sharing';
 import { useUIStore } from '../../store/ui-store';
 import { getCurrencySymbol } from '../../utils/currency';
 
@@ -29,7 +33,7 @@ export interface TransactionItemData {
   title: string;
   category: string;
   amount: number;
-  type: 'expense' | 'income';
+  type: 'expense' | 'income' | 'lend' | 'borrow';
   channel: 'Cash' | 'UPI' | 'Bank';
   envelope: string;
   time: string;
@@ -41,7 +45,7 @@ interface TransactionDetailModalProps {
   transaction: TransactionItemData | null;
   onClose: () => void;
   onDelete?: (id: string) => void;
-  onEdit?: (transaction: TransactionItemData) => void;
+  onEdit?: (tx: TransactionItemData) => void;
 }
 
 export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
@@ -59,18 +63,99 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
 
   if (!transaction) return null;
 
-  const isExpense = transaction.type === 'expense';
+  const isExpense = transaction.type === 'expense' || transaction.type === 'lend';
   const amountColor = isExpense ? colors.terracotta : colors.matchaLime;
 
-  const handleShare = () => {
-    triggerHaptic('medium');
-    showConfirm({
-      title: 'Receipt Exported',
-      message: `Generated slip for "${transaction.title}" (Slip #DL-${transaction.id.slice(-6)}). Saved to device.`,
-      confirmText: 'Done',
-      cancelText: 'Close',
-      onConfirm: () => {},
-    });
+  const handleShare = async () => {
+    try {
+      triggerHaptic('medium');
+      const safeId = transaction.id || '000000';
+      const slipNumber = `DL-${safeId.slice(-6).toUpperCase()}`;
+      const isExp = transaction.type === 'expense' || transaction.type === 'lend';
+      const safeAmount = (transaction.amount || 0).toFixed(2);
+      const signPrefix = isExp ? '-' : '+';
+      const slipText =
+        `🧾 DINLIPI FINANCIAL VOUCHER\n` +
+        `Receipt No: #${slipNumber}\n` +
+        `Date: ${transaction.date || transaction.time || 'Today'}\n` +
+        `Description: ${transaction.title}\n` +
+        `Category: ${transaction.category || 'General'}\n` +
+        `Payment Channel: ${transaction.channel || 'Cash'}\n` +
+        `Budget Envelope: ${transaction.envelope || 'General'}\n` +
+        `Amount: ${signPrefix}${currencySymbol}${safeAmount}\n` +
+        `Status: Recorded in Sandboxed Offline Ledger`;
+
+      const html = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 24px; color: #141715; margin: 0; background: #FFF; }
+            .receipt { border: 2px dashed #333; padding: 24px; border-radius: 12px; max-width: 360px; margin: 0 auto; }
+            .title { font-size: 20px; font-weight: 900; text-align: center; margin: 0 0 4px 0; letter-spacing: 1px; }
+            .sub { font-size: 11px; text-align: center; color: #666; margin: 0 0 16px 0; }
+            .divider { border-top: 1px dashed #CCC; margin: 12px 0; }
+            .row { display: flex; justify-content: space-between; margin: 8px 0; font-size: 13px; }
+            .bold { font-weight: 700; }
+            .amount { font-size: 24px; font-weight: 900; text-align: center; margin: 16px 0; color: ${isExp ? '#E07A5F' : '#2E7D32'}; }
+            .footer { font-size: 10px; text-align: center; color: #888; margin-top: 18px; }
+          </style>
+        </head>
+        <body>
+          <div class="receipt">
+            <h1 class="title">DINLIPI VOUCHER</h1>
+            <p class="sub">Receipt #${slipNumber}</p>
+            <div class="divider"></div>
+            <div class="row"><span>Date:</span><span class="bold">${transaction.date || transaction.time || 'Today'}</span></div>
+            <div class="row"><span>Description:</span><span class="bold">${transaction.title}</span></div>
+            <div class="row"><span>Category:</span><span>${transaction.category || 'General'}</span></div>
+            <div class="row"><span>Payment Channel:</span><span class="bold">${transaction.channel || 'Cash'}</span></div>
+            <div class="row"><span>Budget Envelope:</span><span>${transaction.envelope || 'General'}</span></div>
+            <div class="amount">${signPrefix}${currencySymbol}${safeAmount}</div>
+            <div class="divider"></div>
+            <p class="footer">Dinlipi &bull; Local-First Sandboxed Financial Ledger</p>
+          </div>
+        </body>
+        </html>
+      `;
+
+      if (Platform.OS === 'web') {
+        await Print.printAsync({ html });
+        return;
+      }
+
+      try {
+        const file = await Print.printToFileAsync({ html });
+        const canShare = await Sharing.isAvailableAsync();
+        if (canShare && file?.uri) {
+          await Sharing.shareAsync(file.uri, {
+            UTI: '.pdf',
+            mimeType: 'application/pdf',
+            dialogTitle: `Dinlipi Receipt - ${slipNumber}`,
+          });
+          return;
+        }
+      } catch (pdfErr) {
+        console.warn('PDF generation/sharing error, falling back to text share:', pdfErr);
+      }
+
+      // Text share fallback
+      await Share.share({
+        title: `Dinlipi Receipt - ${slipNumber}`,
+        message: slipText,
+      });
+    } catch (err) {
+      console.warn('Share receipt fallback error:', err);
+      showConfirm({
+        title: 'Receipt Ready',
+        message: `Receipt #${(transaction.id || '000000').slice(-6).toUpperCase()} for ${currencySymbol}${(transaction.amount || 0).toFixed(2)} generated successfully.`,
+        confirmText: 'Done',
+        cancelText: '',
+        onConfirm: () => {},
+      });
+    }
   };
 
   const handleDuplicate = () => {
