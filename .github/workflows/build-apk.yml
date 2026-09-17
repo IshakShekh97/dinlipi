@@ -33,12 +33,14 @@ jobs:
 
       - name: 4. Setup Android SDK
         uses: android-actions/setup-android@v3
+        with:
+          packages: 'platform-tools'
 
       - name: 5. Setup Gradle & Cache
         uses: gradle/actions/setup-gradle@v3
 
       - name: 6. Install project dependencies
-        run: bun install --frozen-lockfile
+        run: bun install
 
       - name: 7. Generate Android native project (Expo CNG)
         run: bunx expo prebuild --platform android --clean
@@ -52,9 +54,8 @@ jobs:
       - name: 9. Prepare Output APK
         run: |
           mkdir -p output
-          # Copy generated APK to output directory
-          cp android/app/build/outputs/apk/release/*.apk output/dinlipi-latest.apk
-          echo "APK successfully built at output/dinlipi-latest.apk"
+          find android/app/build/outputs/apk -name "*.apk" -exec cp {} output/dinlipi-latest.apk \;
+          echo "APK successfully prepared:"
           ls -lh output/
 
       - name: 10. Upload APK to GitHub Artifacts (Immediate Download)
