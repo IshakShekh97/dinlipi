@@ -1,13 +1,14 @@
 name: Build & Release Android APK
 
 on:
-  workflow_dispatch:
   push:
     branches:
       - main
     tags:
       - 'v*'
+  workflow_dispatch:
 
+# Permissions needed to create/update releases
 permissions:
   contents: write
 
@@ -19,7 +20,7 @@ jobs:
       - name: 1. Checkout repository
         uses: actions/checkout@v4
 
-      - name: 2. Setup Node.js 20 & Bun
+      - name: 2. Setup Bun & Node.js
         uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
@@ -33,55 +34,61 @@ jobs:
       - name: 4. Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: 5. Install project dependencies
+      - name: 5. Setup Gradle & Cache
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: 6. Install project dependencies
         run: bun install --frozen-lockfile
 
-      - name: 6. Generate Android native project (Expo CNG)
+      - name: 7. Generate Android native project (Expo CNG)
         run: bunx expo prebuild --platform android --clean
 
-      - name: 7. Build Android APK via Gradle
+      - name: 8. Build Android Release APK via Gradle
         working-directory: android
         run: |
           chmod +x gradlew
           ./gradlew assembleRelease --no-daemon
 
-      - name: 8. Prepare Output APK
+      - name: 9. Prepare Output APK
         run: |
           mkdir -p output
           # Copy generated APK to output directory
-          cp android/app/build/outputs/apk/release/*.apk output/dinlipi-v1.0.0.apk
-          echo "APK successfully built at output/dinlipi-v1.0.0.apk"
-          ls -la output/
+          cp android/app/build/outputs/apk/release/*.apk output/dinlipi-latest.apk
+          echo "APK successfully built at output/dinlipi-latest.apk"
+          ls -lh output/
 
-      - name: 9. Upload APK to GitHub Artifacts (Always Downloadable)
+      - name: 10. Upload APK to GitHub Artifacts (Immediate Download)
         uses: actions/upload-artifact@v4
         with:
           name: dinlipi-android-apk
-          path: output/dinlipi-v1.0.0.apk
+          path: output/dinlipi-latest.apk
           if-no-files-found: error
           retention-days: 30
 
-      - name: 10. Publish GitHub Release (On Tags or Manual Run)
-        if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
+      - name: 11. Publish / Update GitHub Release on Every Push
         uses: softprops/action-gh-release@v2
         with:
-          files: output/dinlipi-v1.0.0.apk
-          name: Dinlipi ${{ github.ref_name }}
-          tag_name: ${{ github.ref_name || 'v1.0.0' }}
+          files: output/dinlipi-latest.apk
+          name: "Dinlipi Latest (Auto-Build)"
+          tag_name: "latest"
           draft: false
           prerelease: false
+          make_latest: true
           body: |
-            ## Dinlipi (দিনলিপি) Android Release 🍃
-            
-            ### Installable Android Package
-            - **Binary**: `dinlipi-v1.0.0.apk`
-            - **Platform**: Android 8.0+
-            - **Type**: Standalone Offline APK (100% Private SQLite Ledger)
-            
-            ### Installation Instructions
-            1. Download **`dinlipi-v1.0.0.apk`** below.
-            2. Tap the downloaded file on your Android phone.
-            3. If prompted, allow "Install unknown apps" in Settings.
-            4. Tap **Install** and enjoy Dinlipi!
+            ## Dinlipi (দিনলিপি) Latest Auto-Build 🍃
+
+            > Automatically built on every commit to `main` via GitHub Actions. Zero cloud queue, zero cost.
+
+            ### 📲 Download & Run
+            - **Download File**: [**`dinlipi-latest.apk`**](https://github.com/${{ github.repository }}/releases/download/latest/dinlipi-latest.apk)
+            - **Commit**: `${{ github.sha }}`
+            - **Platform**: Android 8.0+ (Universal APK)
+            - **Database**: 100% Offline SQLite with Drizzle ORM
+
+            ### How to Install:
+            1. Tap **`dinlipi-latest.apk`** below to download.
+            2. Open the downloaded file on your Android phone.
+            3. If prompted, allow "Install from this source" in Settings.
+            4. Tap **Install** and open Dinlipi!
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
