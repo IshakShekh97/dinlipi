@@ -1,0 +1,22 @@
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/preflight.css" layer(base);
+@import "tailwindcss/utilities.css";
+
+@import "nativewind/theme";
+
+@theme {
+  --color-forest: #2D6A4F;
+  --color-emerald: #40916C;
+  --color-sage: #74C69D;
+  --color-mint: #95D5B2;
+
+  --color-pine-dark: #0C0F0D;
+  --color-pine-surface: #151916;
+  --color-pine-card: #1B211C;
+  --color-pine-border: #273029;
+
+  --color-pine-light: #F6F8F6;
+  --color-pine-surface-light: #FFFFFF;
+  --color-pine-card-light: #EDF2EE;
+  --color-pine-border-light: #DCE4DD;
+}
