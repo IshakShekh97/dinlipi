@@ -15,6 +15,7 @@ import { triggerHaptic, FONTS } from '../../constants/theme';
 import { useUIStore } from '../../store/ui-store';
 import { getCurrencySymbol } from '../../utils/currency';
 import { BudgetCardData } from '../cards/BudgetCardModal';
+import { TagSelectorField } from '../categories/TagSelectorField';
 
 export interface QuickEntryData {
   id?: string;
@@ -22,6 +23,8 @@ export interface QuickEntryData {
   amount: number;
   type: 'expense' | 'income' | 'transfer';
   category?: string;
+  categoryId?: string;
+  tags?: string[];
   channel?: 'Cash' | 'UPI' | 'Bank';
   date?: string;
   cardId?: string;
@@ -122,6 +125,12 @@ function QuickEntryForm({
   const [selectedCardId, setSelectedCardId] = useState<string | undefined>(
     initialData?.cardId || (cards.length > 0 ? cards[0].id : undefined)
   );
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | undefined>(
+    initialData?.categoryId
+  );
+  const [selectedCategoryName, setSelectedCategoryName] = useState<string | undefined>(
+    initialData?.category
+  );
 
   // Date selection states
   const [dateMode, setDateMode] = useState<'today' | 'yesterday' | 'custom'>(
@@ -176,7 +185,9 @@ function QuickEntryForm({
       title: title.trim(),
       amount: parsedAmount,
       type: initialData ? initialData.type : type,
-      category: initialData?.category || (type === 'income' ? 'Income' : 'General'),
+      category: selectedCategoryName || initialData?.category || (type === 'income' ? 'Income' : 'General'),
+      categoryId: selectedCategoryId,
+      tags: selectedCategoryId ? [selectedCategoryId] : [],
       channel,
       cardId: selectedCardId,
       date: computeFinalDate(),
@@ -324,7 +335,7 @@ function QuickEntryForm({
         >
           <Text
             style={{
-              color: colors.matchaLime,
+              color: colors.palmLeaf,
               fontSize: 18,
               fontWeight: '900',
               marginRight: 8,
@@ -347,13 +358,22 @@ function QuickEntryForm({
         </View>
       </View>
 
+      {/* Tag / Category Selector */}
+      <TagSelectorField
+        selectedCategoryId={selectedCategoryId}
+        onSelectCategory={(cat) => {
+          setSelectedCategoryId(cat ? cat.id : undefined);
+          setSelectedCategoryName(cat ? cat.name : undefined);
+        }}
+      />
+
       {/* Date Selector (Allows backdating past entries) */}
       <View style={styles.inputGroup}>
         <View className="flex-row items-center justify-between">
           <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>
             Transaction Date
           </Text>
-          <Text style={{ color: colors.matchaLime, fontSize: 11, fontWeight: '700' }}>
+          <Text style={{ color: colors.palmLeaf, fontSize: 11, fontWeight: '700' }}>
             Past Dates Allowed
           </Text>
         </View>

@@ -28,6 +28,8 @@ import {
   X,
   FileText,
   Receipt,
+  Banknote,
+  Hammer,
 } from 'lucide-react-native';
 import { useAppTheme } from '../../context/theme-context';
 import { FONTS, triggerHaptic } from '../../constants/theme';
@@ -45,6 +47,7 @@ import {
   updateTransaction,
   deleteTransaction,
 } from '../../db/queries';
+import { TagSelectorField } from '../../components/categories/TagSelectorField';
 
 const MODES = ['Cash', 'UPI', 'Bank'] as const;
 const DATE_MODES = ['today', 'yesterday', 'custom'] as const;
@@ -86,19 +89,33 @@ export default function PersonLedgerPage() {
   const [searchQuery, setSearchQuery] = useState('');
 
   // -------------------------------------------------------------
-  // Add Entry Modal State
+  // Receive Money Modal State
   // -------------------------------------------------------------
-  const [addModalVisible, setAddModalVisible] = useState(false);
-  const [entryMode, setEntryMode] = useState<'fold' | 'debit' | 'credit'>('fold');
-  const [entryTitle, setEntryTitle] = useState('');
-  const [entryTotalCost, setEntryTotalCost] = useState('');
-  const [entryPaidAmount, setEntryPaidAmount] = useState('');
-  const [entryChannel, setEntryChannel] = useState<'Cash' | 'UPI' | 'Bank'>('Cash');
-  const [entryDateMode, setEntryDateMode] = useState<'today' | 'yesterday' | 'custom'>('today');
-  const [entryCustomDate, setEntryCustomDate] = useState(new Date().toISOString().split('T')[0]);
-  const [calendarVisible, setCalendarVisible] = useState(false);
-  const [entryNotes, setEntryNotes] = useState('');
-  const [entryLinkedCardId, setEntryLinkedCardId] = useState<string | undefined>();
+  const [receiveModalVisible, setReceiveModalVisible] = useState(false);
+  const [receiveAmount, setReceiveAmount] = useState('');
+  const [receiveChannel, setReceiveChannel] = useState<'Cash' | 'UPI' | 'Bank'>('Cash');
+  const [receiveDateMode, setReceiveDateMode] = useState<'today' | 'yesterday' | 'custom'>('today');
+  const [receiveCustomDate, setReceiveCustomDate] = useState(new Date().toISOString().split('T')[0]);
+  const [receiveCalendarVisible, setReceiveCalendarVisible] = useState(false);
+  const [receiveNotes, setReceiveNotes] = useState('');
+  const [receiveLinkedCardId, setReceiveLinkedCardId] = useState<string | undefined>();
+  const [receiveCategoryId, setReceiveCategoryId] = useState<string | null>(null);
+
+  // -------------------------------------------------------------
+  // Add Work / Bill Modal State
+  // -------------------------------------------------------------
+  const [billModalVisible, setBillModalVisible] = useState(false);
+  const [billTitle, setBillTitle] = useState('');
+  const [billTotalCost, setBillTotalCost] = useState('');
+  const [billAdvancePaid, setBillAdvancePaid] = useState('');
+  const [billShowAdvance, setBillShowAdvance] = useState(false);
+  const [billChannel, setBillChannel] = useState<'Cash' | 'UPI' | 'Bank'>('Cash');
+  const [billDateMode, setBillDateMode] = useState<'today' | 'yesterday' | 'custom'>('today');
+  const [billCustomDate, setBillCustomDate] = useState(new Date().toISOString().split('T')[0]);
+  const [billCalendarVisible, setBillCalendarVisible] = useState(false);
+  const [billNotes, setBillNotes] = useState('');
+  const [billLinkedCardId, setBillLinkedCardId] = useState<string | undefined>();
+  const [billCategoryId, setBillCategoryId] = useState<string | null>(null);
 
   // -------------------------------------------------------------
   // Edit Transaction Modal State
@@ -181,41 +198,55 @@ export default function PersonLedgerPage() {
   }, [allPersonTxs, filterType, searchQuery]);
 
   // -------------------------------------------------------------
-  // Open Add Modal
+  // Open Receive Money Modal
   // -------------------------------------------------------------
-  const openAddModal = (mode: 'fold' | 'debit' | 'credit' = 'fold') => {
+  const openReceiveModal = () => {
     triggerHaptic('medium');
-    setEntryMode(mode);
-    setEntryTitle('');
-    setEntryTotalCost('');
-    setEntryPaidAmount(mode === 'credit' && remainingDue > 0 ? String(remainingDue) : '');
-    setEntryChannel('Cash');
-    setEntryDateMode('today');
-    setEntryCustomDate(new Date().toISOString().split('T')[0]);
-    setEntryNotes('');
-    setEntryLinkedCardId((person as any)?.cardId || (dbCards.length > 0 ? dbCards[0].id : undefined));
-    setAddModalVisible(true);
+    setReceiveAmount(remainingDue > 0 ? String(remainingDue) : '');
+    setReceiveChannel('Cash');
+    setReceiveDateMode('today');
+    setReceiveCustomDate(new Date().toISOString().split('T')[0]);
+    setReceiveNotes('');
+    setReceiveLinkedCardId((person as any)?.cardId || (dbCards.length > 0 ? dbCards[0].id : undefined));
+    setReceiveCategoryId(null);
+    setReceiveModalVisible(true);
   };
 
   // -------------------------------------------------------------
-  // Save New Entry
+  // Open Add Work / Bill Modal
   // -------------------------------------------------------------
-  const handleSaveEntry = async () => {
-    let finalDate = new Date().toISOString();
-    if (entryDateMode === 'yesterday') {
-      const d = new Date();
-      d.setDate(d.getDate() - 1);
-      finalDate = d.toISOString();
-    } else if (entryDateMode === 'custom') {
-      const p = new Date(entryCustomDate);
-      if (!isNaN(p.getTime())) finalDate = p.toISOString();
+  const openBillModal = () => {
+    triggerHaptic('medium');
+    setBillTitle('');
+    setBillTotalCost('');
+    setBillAdvancePaid('');
+    setBillShowAdvance(false);
+    setBillChannel('Cash');
+    setBillDateMode('today');
+    setBillCustomDate(new Date().toISOString().split('T')[0]);
+    setBillNotes('');
+    setBillLinkedCardId((person as any)?.cardId || (dbCards.length > 0 ? dbCards[0].id : undefined));
+    setBillCategoryId(null);
+    setBillModalVisible(true);
+  };
+
+  // -------------------------------------------------------------
+  // Save Receive Money Entry
+  // -------------------------------------------------------------
+  const handleSaveReceive = async () => {
+    const paidNum = parseFloat(receiveAmount);
+    if (isNaN(paidNum) || paidNum <= 0) {
+      showConfirmDialog({
+        title: 'Invalid Amount',
+        message: 'Please enter a valid payment amount.',
+        confirmText: 'OK',
+        cancelText: 'Cancel',
+        onConfirm: () => {},
+      });
+      return;
     }
 
-    const costNum = parseFloat(entryTotalCost);
-    const paidNum = parseFloat(entryPaidAmount);
-
-    const effectiveCardId = entryLinkedCardId || (person as any)?.cardId || (dbCards.length > 0 ? dbCards[0].id : undefined);
-
+    const effectiveCardId = receiveLinkedCardId || (person as any)?.cardId || (dbCards.length > 0 ? dbCards[0].id : undefined);
     if (!effectiveCardId) {
       showConfirmDialog({
         title: 'Budget Envelope Required',
@@ -227,76 +258,86 @@ export default function PersonLedgerPage() {
       return;
     }
 
-    if (entryMode === 'fold') {
-      if ((isNaN(costNum) || costNum <= 0) && (isNaN(paidNum) || paidNum <= 0)) {
-        showConfirmDialog({
-          title: 'Amount Required',
-          message: 'Please enter a valid Total Cost or Paid Amount.',
-          confirmText: 'OK',
-          cancelText: 'Cancel',
-          onConfirm: () => {},
-        });
-        return;
-      }
-      triggerHaptic('success');
-      await addPersonEntry({
-        personId: id,
-        title: entryTitle.trim() || 'Service & Bill',
-        totalCost: isNaN(costNum) ? 0 : costNum,
-        paidAmount: isNaN(paidNum) ? 0 : paidNum,
-        channel: entryChannel,
-        date: finalDate,
-        notes: entryNotes.trim(),
-        cardId: effectiveCardId,
-      });
-    } else if (entryMode === 'debit') {
-      if (isNaN(costNum) || costNum <= 0) {
-        showConfirmDialog({
-          title: 'Invalid Amount',
-          message: 'Please enter a valid cost / billed amount.',
-          confirmText: 'OK',
-          cancelText: 'Cancel',
-          onConfirm: () => {},
-        });
-        return;
-      }
-      triggerHaptic('success');
-      await addPersonEntry({
-        personId: id,
-        title: entryTitle.trim() || 'Cost / Billed',
-        totalCost: costNum,
-        paidAmount: 0,
-        channel: entryChannel,
-        date: finalDate,
-        notes: entryNotes.trim(),
-        cardId: effectiveCardId,
-      });
-    } else {
-      // Credit / Payment
-      if (isNaN(paidNum) || paidNum <= 0) {
-        showConfirmDialog({
-          title: 'Invalid Amount',
-          message: 'Please enter a valid payment amount.',
-          confirmText: 'OK',
-          cancelText: 'Cancel',
-          onConfirm: () => {},
-        });
-        return;
-      }
-      triggerHaptic('success');
-      await addPersonEntry({
-        personId: id,
-        title: entryTitle.trim() || 'Payment Received',
-        totalCost: 0,
-        paidAmount: paidNum,
-        channel: entryChannel,
-        date: finalDate,
-        notes: entryNotes.trim(),
-        cardId: effectiveCardId,
-      });
+    let finalDate = new Date().toISOString();
+    if (receiveDateMode === 'yesterday') {
+      const d = new Date();
+      d.setDate(d.getDate() - 1);
+      finalDate = d.toISOString();
+    } else if (receiveDateMode === 'custom') {
+      const p = new Date(receiveCustomDate);
+      if (!isNaN(p.getTime())) finalDate = p.toISOString();
     }
 
-    setAddModalVisible(false);
+    triggerHaptic('success');
+    await addPersonEntry({
+      personId: id,
+      title: 'Payment Received',
+      totalCost: 0,
+      paidAmount: paidNum,
+      channel: receiveChannel,
+      date: finalDate,
+      notes: receiveNotes.trim(),
+      cardId: effectiveCardId,
+      categoryId: receiveCategoryId || undefined,
+    });
+
+    setReceiveModalVisible(false);
+  };
+
+  // -------------------------------------------------------------
+  // Save Add Work / Bill Entry
+  // -------------------------------------------------------------
+  const handleSaveBill = async () => {
+    const costNum = parseFloat(billTotalCost);
+    if (isNaN(costNum) || costNum <= 0) {
+      showConfirmDialog({
+        title: 'Invalid Amount',
+        message: 'Please enter a valid bill / cost amount.',
+        confirmText: 'OK',
+        cancelText: 'Cancel',
+        onConfirm: () => {},
+      });
+      return;
+    }
+
+    const effectiveCardId = billLinkedCardId || (person as any)?.cardId || (dbCards.length > 0 ? dbCards[0].id : undefined);
+    if (!effectiveCardId) {
+      showConfirmDialog({
+        title: 'Budget Envelope Required',
+        message: 'A budget envelope must be created first before recording person transactions.',
+        confirmText: 'OK',
+        cancelText: 'Cancel',
+        onConfirm: () => {},
+      });
+      return;
+    }
+
+    let finalDate = new Date().toISOString();
+    if (billDateMode === 'yesterday') {
+      const d = new Date();
+      d.setDate(d.getDate() - 1);
+      finalDate = d.toISOString();
+    } else if (billDateMode === 'custom') {
+      const p = new Date(billCustomDate);
+      if (!isNaN(p.getTime())) finalDate = p.toISOString();
+    }
+
+    const advanceNum = billShowAdvance ? (parseFloat(billAdvancePaid) || 0) : 0;
+
+    triggerHaptic('success');
+    await addPersonEntry({
+      personId: id,
+      title: billTitle.trim() || 'Service & Bill',
+      totalCost: costNum,
+      paidAmount: advanceNum,
+      channel: billChannel,
+      date: finalDate,
+      notes: billNotes.trim(),
+      cardId: effectiveCardId,
+      categoryId: billCategoryId || undefined,
+    });
+
+    setBillModalVisible(false);
   };
 
   // -------------------------------------------------------------
@@ -398,10 +439,10 @@ export default function PersonLedgerPage() {
     );
   }
 
-  // Calculated Fold delta for the modal
-  const modalCost = parseFloat(entryTotalCost) || 0;
-  const modalPaid = parseFloat(entryPaidAmount) || 0;
-  const modalRemaining = Math.max(0, modalCost - modalPaid);
+  // Calculated Fold delta for the Bill modal
+  const billCost = parseFloat(billTotalCost) || 0;
+  const billAdvance = billShowAdvance ? (parseFloat(billAdvancePaid) || 0) : 0;
+  const billRemaining = Math.max(0, billCost - billAdvance);
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bgPrimary, paddingTop: insets.top }}>
@@ -422,7 +463,7 @@ export default function PersonLedgerPage() {
           <Text style={[styles.headerSub, { color: colors.textMuted }]}>Khata & Fold Tracker</Text>
         </View>
         <TouchableOpacity
-          onPress={() => openAddModal('fold')}
+          onPress={openBillModal}
           style={[styles.addIconBtn, { backgroundColor: colors.matchaLime }]}
           activeOpacity={0.8}
         >
@@ -545,7 +586,7 @@ export default function PersonLedgerPage() {
         {/* Two Clear Options for Person Management */}
         <View style={styles.actionRow}>
           <TouchableOpacity
-            onPress={() => openAddModal('credit')}
+            onPress={openReceiveModal}
             style={[styles.primaryActionBtn, { backgroundColor: colors.matchaLime }]}
             activeOpacity={0.85}
           >
@@ -556,7 +597,7 @@ export default function PersonLedgerPage() {
           </TouchableOpacity>
 
           <TouchableOpacity
-            onPress={() => openAddModal('fold')}
+            onPress={openBillModal}
             style={[styles.secondaryActionBtn, { backgroundColor: colors.cardSecondary, borderColor: colors.borderSubtle }]}
             activeOpacity={0.75}
           >
@@ -729,56 +770,228 @@ export default function PersonLedgerPage() {
       </ScrollView>
 
       {/* ============================================================= */}
-      {/* 1. Add Entry Modal (Fold 2-in-1, Debit, or Credit)            */}
+      {/* 1. Receive Money Modal                                        */}
       {/* ============================================================= */}
       <CozyModal
-        visible={addModalVisible}
-        onClose={() => setAddModalVisible(false)}
-        title={entryMode === 'fold' ? 'Record Service & Bill' : entryMode === 'debit' ? 'Add Debit (You Gave)' : 'Record Payment (You Got)'}
-        subtitle={`Ledger entry for ${person.name}`}
+        visible={receiveModalVisible}
+        onClose={() => setReceiveModalVisible(false)}
+        title={`Receive Money from ${person.name}`}
+        subtitle="Record a payment you received"
+        icon={<Banknote size={20} color={colors.matchaLime} />}
       >
         <View style={{ gap: 14, paddingBottom: 16 }}>
-          {/* Mode Switcher */}
-          <View style={[styles.modeTabsRow, { backgroundColor: colors.cardSecondary, borderColor: colors.borderSubtle }]}>
-            <TouchableOpacity
-              onPress={() => { triggerHaptic('light'); setEntryMode('fold'); }}
-              style={[styles.modeTab, entryMode === 'fold' && [styles.modeTabActive, { backgroundColor: colors.matchaLime }]]}
-              activeOpacity={0.75}
-            >
-              <Text style={[styles.modeTabText, { color: entryMode === 'fold' ? '#141715' : colors.textSecondary }]}>
-                Bill & Pay
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={() => { triggerHaptic('light'); setEntryMode('debit'); }}
-              style={[styles.modeTab, entryMode === 'debit' && [styles.modeTabActive, { backgroundColor: colors.terracotta }]]}
-              activeOpacity={0.75}
-            >
-              <Text style={[styles.modeTabText, { color: entryMode === 'debit' ? '#FFFFFF' : colors.textSecondary }]}>
-                Billed Only
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={() => { triggerHaptic('light'); setEntryMode('credit'); }}
-              style={[styles.modeTab, entryMode === 'credit' && [styles.modeTabActive, { backgroundColor: colors.matchaLime }]]}
-              activeOpacity={0.75}
-            >
-              <Text style={[styles.modeTabText, { color: entryMode === 'credit' ? '#141715' : colors.textSecondary }]}>
-                Paid Only
-              </Text>
-            </TouchableOpacity>
+          {/* Amount Received */}
+          <View style={styles.formGroup}>
+            <Text style={[styles.formLabel, { color: colors.matchaLime }]}>Amount Received ({currencySymbol})</Text>
+            <View style={[styles.inputRow, { backgroundColor: colors.cardSecondary, borderColor: colors.borderSubtle }]}>
+              <Text style={{ color: colors.matchaLime, fontSize: 18, fontWeight: '900', marginRight: 8 }}>{currencySymbol}</Text>
+              <TextInput
+                value={receiveAmount}
+                onChangeText={setReceiveAmount}
+                keyboardType="numeric"
+                placeholder="0.00"
+                placeholderTextColor={colors.textMuted}
+                style={[styles.textInput, { color: colors.textPrimary }]}
+              />
+            </View>
+            {/* Quick Full Due Settlement Pill */}
+            {remainingDue > 0 && (
+              <TouchableOpacity
+                onPress={() => { triggerHaptic('light'); setReceiveAmount(String(remainingDue)); }}
+                style={[styles.quickDuePill, { backgroundColor: isDark ? 'rgba(206,240,74,0.12)' : 'rgba(206,240,74,0.15)', borderColor: colors.matchaLime }]}
+                activeOpacity={0.7}
+              >
+                <Text style={{ color: colors.matchaLime, fontWeight: '800', fontSize: 12 }}>
+                  Settle Full Due: {currencySymbol}{remainingDue.toLocaleString()}
+                </Text>
+              </TouchableOpacity>
+            )}
           </View>
 
-          {/* Quick Suggestions for Title */}
+          {/* Payment Method */}
+          <View style={styles.formGroup}>
+            <Text style={[styles.formLabel, { color: colors.textSecondary }]}>Payment Method</Text>
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              {MODES.map((m) => {
+                const sel = receiveChannel === m;
+                return (
+                  <TouchableOpacity
+                    key={m}
+                    onPress={() => { triggerHaptic('light'); setReceiveChannel(m); }}
+                    style={[
+                      styles.pill,
+                      {
+                        backgroundColor: sel ? colors.matchaLime : colors.cardSecondary,
+                        borderColor: sel ? colors.matchaLime : colors.borderSubtle,
+                      },
+                    ]}
+                    activeOpacity={0.75}
+                  >
+                    <Text style={{ color: sel ? '#141715' : colors.textPrimary, fontWeight: sel ? '800' : '600', fontSize: 12 }}>
+                      {m}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
+
+          {/* Date Selector */}
+          <View style={styles.formGroup}>
+            <Text style={[styles.formLabel, { color: colors.textSecondary }]}>Transaction Date</Text>
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              {DATE_MODES.map((dm) => {
+                const sel = receiveDateMode === dm;
+                const label = dm === 'today' ? 'Today' : dm === 'yesterday' ? 'Yesterday' : 'Custom';
+                return (
+                  <TouchableOpacity
+                    key={dm}
+                    onPress={() => { triggerHaptic('light'); setReceiveDateMode(dm); }}
+                    style={[
+                      styles.pill,
+                      {
+                        flex: 1,
+                        backgroundColor: sel ? colors.matchaLime : colors.cardSecondary,
+                        borderColor: sel ? colors.matchaLime : colors.borderSubtle,
+                      },
+                    ]}
+                    activeOpacity={0.75}
+                  >
+                    <Text style={{ color: sel ? '#141715' : colors.textPrimary, fontWeight: sel ? '800' : '600', fontSize: 12 }}>
+                      {label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+            {receiveDateMode === 'custom' && (
+              <TouchableOpacity
+                onPress={() => { triggerHaptic('light'); setReceiveCalendarVisible(true); }}
+                style={[
+                  styles.inputRow,
+                  {
+                    backgroundColor: isDark ? 'rgba(206, 240, 74, 0.08)' : '#F2F7EA',
+                    borderColor: colors.matchaLime,
+                    marginTop: 6,
+                    justifyContent: 'space-between',
+                  },
+                ]}
+                activeOpacity={0.75}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <Calendar size={15} color={colors.matchaLime} />
+                  <Text style={[styles.textInput, { color: colors.textPrimary, fontFamily: FONTS.monoBold }]}>
+                    {receiveCustomDate}
+                  </Text>
+                </View>
+                <View style={{ backgroundColor: colors.matchaLime, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 }}>
+                  <Text style={{ color: '#141715', fontFamily: FONTS.sansBold, fontSize: 11 }}>
+                    Pick Date
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            )}
+
+            <CalendarPickerModal
+              visible={receiveCalendarVisible}
+              onClose={() => setReceiveCalendarVisible(false)}
+              selectedDate={receiveCustomDate}
+              onSelectDate={(newDate) => {
+                setReceiveCustomDate(newDate);
+                setReceiveDateMode('custom');
+              }}
+              title="Select Payment Date"
+            />
+          </View>
+
+          {/* Tag / Category Selector */}
+          <TagSelectorField
+            selectedCategoryId={receiveCategoryId}
+            onSelectCategory={(cat) => setReceiveCategoryId(cat?.id || null)}
+            label="Tag / Category (Optional)"
+          />
+
+          {/* Notes */}
+          <View style={styles.formGroup}>
+            <Text style={[styles.formLabel, { color: colors.textSecondary }]}>Private Notes (Optional)</Text>
+            <View style={[styles.inputRow, { backgroundColor: colors.cardSecondary, borderColor: colors.borderSubtle }]}>
+              <Tag size={15} color={colors.textMuted} style={{ marginRight: 8 }} />
+              <TextInput
+                value={receiveNotes}
+                onChangeText={setReceiveNotes}
+                placeholder="e.g. partial payment, cash collected at shop"
+                placeholderTextColor={colors.textMuted}
+                style={[styles.textInput, { color: colors.textPrimary }]}
+              />
+            </View>
+          </View>
+
+          {/* Budget Envelope Selector */}
+          {dbCards && dbCards.length > 0 && (
+            <View style={styles.formGroup}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Text style={[styles.formLabel, { color: colors.textSecondary }]}>Link to Budget Envelope *</Text>
+                <Text style={{ color: colors.matchaLime, fontSize: 11, fontWeight: '700' }}>Required</Text>
+              </View>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+                {dbCards.map((card) => {
+                  const isSel = receiveLinkedCardId === card.id;
+                  return (
+                    <TouchableOpacity
+                      key={card.id}
+                      onPress={() => { triggerHaptic('light'); setReceiveLinkedCardId(card.id); }}
+                      style={[
+                        styles.cardChip,
+                        {
+                          backgroundColor: isSel ? 'rgba(206,240,74,0.14)' : colors.cardSecondary,
+                          borderColor: isSel ? colors.matchaLime : colors.borderSubtle,
+                        },
+                      ]}
+                      activeOpacity={0.75}
+                    >
+                      <CreditCard size={12} color={isSel ? colors.matchaLime : colors.textSecondary} />
+                      <Text style={{ color: isSel ? colors.matchaLime : colors.textPrimary, fontSize: 12, fontWeight: isSel ? '800' : '600' }}>
+                        {card.title}
+                      </Text>
+                      {isSel && <Check size={11} color={colors.matchaLime} strokeWidth={3} />}
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            </View>
+          )}
+
+          {/* Save Button */}
+          <TouchableOpacity
+            onPress={handleSaveReceive}
+            style={[styles.saveBtn, { backgroundColor: colors.matchaLime }]}
+            activeOpacity={0.85}
+          >
+            <CheckCircle2 size={18} color="#141715" />
+            <Text style={styles.saveBtnText}>Confirm Payment Received</Text>
+          </TouchableOpacity>
+        </View>
+      </CozyModal>
+
+      {/* ============================================================= */}
+      {/* 2. Add Work / Bill Modal                                      */}
+      {/* ============================================================= */}
+      <CozyModal
+        visible={billModalVisible}
+        onClose={() => setBillModalVisible(false)}
+        title={`Add Work / Bill for ${person.name}`}
+        subtitle="Record a service, cost, or bill"
+        icon={<Hammer size={20} color={colors.terracotta} />}
+      >
+        <View style={{ gap: 14, paddingBottom: 16 }}>
+          {/* Title / Description */}
           <View style={styles.formGroup}>
             <Text style={[styles.formLabel, { color: colors.textSecondary }]}>Title / Description</Text>
             <View style={[styles.inputRow, { backgroundColor: colors.cardSecondary, borderColor: colors.borderSubtle }]}>
               <FileText size={16} color={colors.textMuted} style={{ marginRight: 8 }} />
               <TextInput
-                value={entryTitle}
-                onChangeText={setEntryTitle}
+                value={billTitle}
+                onChangeText={setBillTitle}
                 placeholder="e.g. Cyber Cafe Work, Photocopy, Repair"
                 placeholderTextColor={colors.textMuted}
                 style={[styles.textInput, { color: colors.textPrimary }]}
@@ -788,7 +1001,7 @@ export default function PersonLedgerPage() {
               {QUICK_TITLES.map((t) => (
                 <TouchableOpacity
                   key={t}
-                  onPress={() => { triggerHaptic('light'); setEntryTitle(t); }}
+                  onPress={() => { triggerHaptic('light'); setBillTitle(t); }}
                   style={[styles.quickChip, { backgroundColor: colors.cardSecondary, borderColor: colors.borderSubtle }]}
                   activeOpacity={0.7}
                 >
@@ -798,83 +1011,60 @@ export default function PersonLedgerPage() {
             </ScrollView>
           </View>
 
-          {/* Fold Mode: Both Cost & Paid fields */}
-          {entryMode === 'fold' ? (
-            <View style={{ gap: 10 }}>
-              <View style={{ flexDirection: 'row', gap: 10 }}>
-                <View style={[styles.formGroup, { flex: 1 }]}>
-                  <Text style={[styles.formLabel, { color: colors.terracotta }]}>Total Cost / Bill</Text>
-                  <View style={[styles.inputRow, { backgroundColor: colors.cardSecondary, borderColor: colors.borderSubtle }]}>
-                    <Text style={{ color: colors.terracotta, fontSize: 16, fontWeight: '900', marginRight: 6 }}>{currencySymbol}</Text>
-                    <TextInput
-                      value={entryTotalCost}
-                      onChangeText={setEntryTotalCost}
-                      keyboardType="numeric"
-                      placeholder="500"
-                      placeholderTextColor={colors.textMuted}
-                      style={[styles.textInput, { color: colors.textPrimary }]}
-                    />
-                  </View>
-                </View>
-
-                <View style={[styles.formGroup, { flex: 1 }]}>
-                  <Text style={[styles.formLabel, { color: colors.matchaLime }]}>Paid Now</Text>
-                  <View style={[styles.inputRow, { backgroundColor: colors.cardSecondary, borderColor: colors.borderSubtle }]}>
-                    <Text style={{ color: colors.matchaLime, fontSize: 16, fontWeight: '900', marginRight: 6 }}>{currencySymbol}</Text>
-                    <TextInput
-                      value={entryPaidAmount}
-                      onChangeText={setEntryPaidAmount}
-                      keyboardType="numeric"
-                      placeholder="100"
-                      placeholderTextColor={colors.textMuted}
-                      style={[styles.textInput, { color: colors.textPrimary }]}
-                    />
-                  </View>
-                </View>
-              </View>
-
-              {/* Dynamic Live Balance preview box */}
-              <View style={[styles.previewBox, { backgroundColor: colors.cardElevated, borderColor: colors.borderSubtle }]}>
-                <View style={styles.previewRow}>
-                  <Text style={{ color: colors.textMuted, fontSize: 12 }}>New Cost:</Text>
-                  <Text style={{ color: colors.terracotta, fontWeight: '700', fontSize: 12 }}>{currencySymbol}{modalCost}</Text>
-                </View>
-                <View style={styles.previewRow}>
-                  <Text style={{ color: colors.textMuted, fontSize: 12 }}>Paid by customer:</Text>
-                  <Text style={{ color: colors.matchaLime, fontWeight: '700', fontSize: 12 }}>{currencySymbol}{modalPaid}</Text>
-                </View>
-                <View style={[styles.previewDivider, { backgroundColor: colors.borderSubtle }]} />
-                <View style={styles.previewRow}>
-                  <Text style={{ color: colors.textPrimary, fontWeight: '700', fontSize: 13 }}>Remaining to collect:</Text>
-                  <Text style={{ color: colors.terracotta, fontWeight: '900', fontSize: 14 }}>
-                    {currencySymbol}{modalRemaining}
-                  </Text>
-                </View>
-              </View>
+          {/* Total Bill / Cost */}
+          <View style={styles.formGroup}>
+            <Text style={[styles.formLabel, { color: colors.terracotta }]}>Total Bill / Cost ({currencySymbol})</Text>
+            <View style={[styles.inputRow, { backgroundColor: colors.cardSecondary, borderColor: colors.borderSubtle }]}>
+              <Text style={{ color: colors.terracotta, fontSize: 18, fontWeight: '900', marginRight: 8 }}>{currencySymbol}</Text>
+              <TextInput
+                value={billTotalCost}
+                onChangeText={setBillTotalCost}
+                keyboardType="numeric"
+                placeholder="500.00"
+                placeholderTextColor={colors.textMuted}
+                style={[styles.textInput, { color: colors.textPrimary }]}
+              />
             </View>
-          ) : entryMode === 'debit' ? (
-            <View style={styles.formGroup}>
-              <Text style={[styles.formLabel, { color: colors.terracotta }]}>Billed / Cost Amount ({currencySymbol})</Text>
-              <View style={[styles.inputRow, { backgroundColor: colors.cardSecondary, borderColor: colors.borderSubtle }]}>
-                <Text style={{ color: colors.terracotta, fontSize: 18, fontWeight: '900', marginRight: 8 }}>{currencySymbol}</Text>
-                <TextInput
-                  value={entryTotalCost}
-                  onChangeText={setEntryTotalCost}
-                  keyboardType="numeric"
-                  placeholder="500.00"
-                  placeholderTextColor={colors.textMuted}
-                  style={[styles.textInput, { color: colors.textPrimary }]}
-                />
+          </View>
+
+          {/* Optional Advance Payment Toggle */}
+          <TouchableOpacity
+            onPress={() => { triggerHaptic('light'); setBillShowAdvance(!billShowAdvance); }}
+            style={[
+              styles.advanceToggle,
+              {
+                backgroundColor: billShowAdvance
+                  ? isDark ? 'rgba(206,240,74,0.10)' : 'rgba(206,240,74,0.12)'
+                  : colors.cardSecondary,
+                borderColor: billShowAdvance ? colors.matchaLime : colors.borderSubtle,
+              },
+            ]}
+            activeOpacity={0.75}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <View style={[
+                styles.advanceCheck,
+                {
+                  backgroundColor: billShowAdvance ? colors.matchaLime : 'transparent',
+                  borderColor: billShowAdvance ? colors.matchaLime : colors.textMuted,
+                },
+              ]}>
+                {billShowAdvance && <Check size={11} color="#141715" strokeWidth={3} />}
               </View>
+              <Text style={{ color: colors.textPrimary, fontWeight: '600', fontSize: 13 }}>
+                Customer paid advance / partial
+              </Text>
             </View>
-          ) : (
+          </TouchableOpacity>
+
+          {billShowAdvance && (
             <View style={styles.formGroup}>
-              <Text style={[styles.formLabel, { color: colors.matchaLime }]}>Payment Amount Received ({currencySymbol})</Text>
+              <Text style={[styles.formLabel, { color: colors.matchaLime }]}>Advance / Partial Paid ({currencySymbol})</Text>
               <View style={[styles.inputRow, { backgroundColor: colors.cardSecondary, borderColor: colors.borderSubtle }]}>
                 <Text style={{ color: colors.matchaLime, fontSize: 18, fontWeight: '900', marginRight: 8 }}>{currencySymbol}</Text>
                 <TextInput
-                  value={entryPaidAmount}
-                  onChangeText={setEntryPaidAmount}
+                  value={billAdvancePaid}
+                  onChangeText={setBillAdvancePaid}
                   keyboardType="numeric"
                   placeholder="100.00"
                   placeholderTextColor={colors.textMuted}
@@ -884,17 +1074,40 @@ export default function PersonLedgerPage() {
             </View>
           )}
 
-          {/* Payment Method (for fold or credit) */}
-          {(entryMode === 'fold' || entryMode === 'credit') && (
+          {/* Live Bill Preview Box */}
+          {billCost > 0 && (
+            <View style={[styles.previewBox, { backgroundColor: colors.cardElevated, borderColor: colors.borderSubtle }]}>
+              <View style={styles.previewRow}>
+                <Text style={{ color: colors.textMuted, fontSize: 12 }}>Total Bill:</Text>
+                <Text style={{ color: colors.terracotta, fontWeight: '700', fontSize: 12 }}>{currencySymbol}{billCost}</Text>
+              </View>
+              {billShowAdvance && billAdvance > 0 && (
+                <View style={styles.previewRow}>
+                  <Text style={{ color: colors.textMuted, fontSize: 12 }}>Advance Paid:</Text>
+                  <Text style={{ color: colors.matchaLime, fontWeight: '700', fontSize: 12 }}>{currencySymbol}{billAdvance}</Text>
+                </View>
+              )}
+              <View style={[styles.previewDivider, { backgroundColor: colors.borderSubtle }]} />
+              <View style={styles.previewRow}>
+                <Text style={{ color: colors.textPrimary, fontWeight: '700', fontSize: 13 }}>Remaining to collect:</Text>
+                <Text style={{ color: colors.terracotta, fontWeight: '900', fontSize: 14 }}>
+                  {currencySymbol}{billRemaining}
+                </Text>
+              </View>
+            </View>
+          )}
+
+          {/* Payment Method (if advance is being paid) */}
+          {billShowAdvance && (
             <View style={styles.formGroup}>
               <Text style={[styles.formLabel, { color: colors.textSecondary }]}>Payment Method</Text>
               <View style={{ flexDirection: 'row', gap: 8 }}>
                 {MODES.map((m) => {
-                  const sel = entryChannel === m;
+                  const sel = billChannel === m;
                   return (
                     <TouchableOpacity
                       key={m}
-                      onPress={() => { triggerHaptic('light'); setEntryChannel(m); }}
+                      onPress={() => { triggerHaptic('light'); setBillChannel(m); }}
                       style={[
                         styles.pill,
                         {
@@ -919,12 +1132,12 @@ export default function PersonLedgerPage() {
             <Text style={[styles.formLabel, { color: colors.textSecondary }]}>Transaction Date</Text>
             <View style={{ flexDirection: 'row', gap: 8 }}>
               {DATE_MODES.map((dm) => {
-                const sel = entryDateMode === dm;
+                const sel = billDateMode === dm;
                 const label = dm === 'today' ? 'Today' : dm === 'yesterday' ? 'Yesterday' : 'Custom';
                 return (
                   <TouchableOpacity
                     key={dm}
-                    onPress={() => { triggerHaptic('light'); setEntryDateMode(dm); }}
+                    onPress={() => { triggerHaptic('light'); setBillDateMode(dm); }}
                     style={[
                       styles.pill,
                       {
@@ -942,12 +1155,9 @@ export default function PersonLedgerPage() {
                 );
               })}
             </View>
-            {entryDateMode === 'custom' && (
+            {billDateMode === 'custom' && (
               <TouchableOpacity
-                onPress={() => {
-                  triggerHaptic('light');
-                  setCalendarVisible(true);
-                }}
+                onPress={() => { triggerHaptic('light'); setBillCalendarVisible(true); }}
                 style={[
                   styles.inputRow,
                   {
@@ -962,7 +1172,7 @@ export default function PersonLedgerPage() {
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                   <Calendar size={15} color={colors.matchaLime} />
                   <Text style={[styles.textInput, { color: colors.textPrimary, fontFamily: FONTS.monoBold }]}>
-                    {entryCustomDate}
+                    {billCustomDate}
                   </Text>
                 </View>
                 <View style={{ backgroundColor: colors.matchaLime, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 }}>
@@ -974,25 +1184,32 @@ export default function PersonLedgerPage() {
             )}
 
             <CalendarPickerModal
-              visible={calendarVisible}
-              onClose={() => setCalendarVisible(false)}
-              selectedDate={entryCustomDate}
+              visible={billCalendarVisible}
+              onClose={() => setBillCalendarVisible(false)}
+              selectedDate={billCustomDate}
               onSelectDate={(newDate) => {
-                setEntryCustomDate(newDate);
-                setEntryDateMode('custom');
+                setBillCustomDate(newDate);
+                setBillDateMode('custom');
               }}
-              title="Select Entry Date"
+              title="Select Bill Date"
             />
           </View>
 
-          {/* Notes / Description */}
+          {/* Tag / Category Selector */}
+          <TagSelectorField
+            selectedCategoryId={billCategoryId}
+            onSelectCategory={(cat) => setBillCategoryId(cat?.id || null)}
+            label="Tag / Category (Optional)"
+          />
+
+          {/* Notes */}
           <View style={styles.formGroup}>
             <Text style={[styles.formLabel, { color: colors.textSecondary }]}>Notes / Memo (Optional)</Text>
             <View style={[styles.inputRow, { backgroundColor: colors.cardSecondary, borderColor: colors.borderSubtle }]}>
               <Tag size={15} color={colors.textMuted} style={{ marginRight: 8 }} />
               <TextInput
-                value={entryNotes}
-                onChangeText={setEntryNotes}
+                value={billNotes}
+                onChangeText={setBillNotes}
                 placeholder="e.g. 50 color prints, balance due by Friday"
                 placeholderTextColor={colors.textMuted}
                 style={[styles.textInput, { color: colors.textPrimary }]}
@@ -1000,7 +1217,7 @@ export default function PersonLedgerPage() {
             </View>
           </View>
 
-          {/* Budget Envelope Selector (Mandatory) */}
+          {/* Budget Envelope Selector */}
           {dbCards && dbCards.length > 0 && (
             <View style={styles.formGroup}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -1009,11 +1226,11 @@ export default function PersonLedgerPage() {
               </View>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
                 {dbCards.map((card) => {
-                  const isSel = entryLinkedCardId === card.id;
+                  const isSel = billLinkedCardId === card.id;
                   return (
                     <TouchableOpacity
                       key={card.id}
-                      onPress={() => { triggerHaptic('light'); setEntryLinkedCardId(card.id); }}
+                      onPress={() => { triggerHaptic('light'); setBillLinkedCardId(card.id); }}
                       style={[
                         styles.cardChip,
                         {
@@ -1037,18 +1254,18 @@ export default function PersonLedgerPage() {
 
           {/* Save Button */}
           <TouchableOpacity
-            onPress={handleSaveEntry}
-            style={[styles.saveBtn, { backgroundColor: colors.matchaLime }]}
+            onPress={handleSaveBill}
+            style={[styles.saveBtn, { backgroundColor: colors.terracotta }]}
             activeOpacity={0.85}
           >
-            <CheckCircle2 size={18} color="#141715" />
-            <Text style={styles.saveBtnText}>Save Entry</Text>
+            <Hammer size={18} color="#FFFFFF" />
+            <Text style={[styles.saveBtnText, { color: '#FFFFFF' }]}>Record Work / Bill</Text>
           </TouchableOpacity>
         </View>
       </CozyModal>
 
       {/* ============================================================= */}
-      {/* 2. Edit Transaction Modal                                     */}
+      {/* 3. Edit Transaction Modal                                     */}
       {/* ============================================================= */}
       <CozyModal
         visible={Boolean(editingTx)}
@@ -1617,5 +1834,30 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '800',
     color: '#141715',
+  },
+  quickDuePill: {
+    marginTop: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 12,
+    borderWidth: 1,
+    alignItems: 'center',
+  },
+  advanceToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+  },
+  advanceCheck: {
+    width: 20,
+    height: 20,
+    borderRadius: 6,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

@@ -16,22 +16,50 @@ import {
   Coffee,
   ShoppingBag,
   Utensils,
+  Wine,
+  Apple,
+  Pizza,
   Car,
   Plane,
+  Fuel,
+  Bus,
+  Train,
+  Bike,
   Home,
+  Zap,
+  Wifi,
+  Tv,
+  Flame,
+  Wrench,
   Heart,
   Dumbbell,
+  Activity,
+  Pill,
+  Smile,
   Smartphone,
   Laptop,
-  BookOpen,
+  Camera,
   Film,
   Music,
+  Gamepad2,
+  ShoppingCart,
   Gift,
-  DollarSign,
   Tag,
-  Smile,
-  Shield,
+  Scissors,
+  Shirt,
+  Sparkles,
+  DollarSign,
   Briefcase,
+  CreditCard,
+  Wallet,
+  Landmark,
+  Receipt,
+  BookOpen,
+  GraduationCap,
+  Building,
+  Key,
+  MapPin,
+  Shield,
 } from 'lucide-react-native';
 import { CozyModal } from '../ui/CozyModal';
 import { useAppTheme } from '../../context/theme-context';
@@ -61,25 +89,58 @@ interface CategoryManagerModalProps {
 }
 
 export const CATEGORY_ICONS: Record<string, React.FC<{ size?: number; color?: string }>> = {
-  Coffee,
   ShoppingBag,
+  Coffee,
   Utensils,
+  Wine,
+  Apple,
+  Pizza,
   Car,
   Plane,
+  Fuel,
+  Bus,
+  Train,
+  Bike,
   Home,
+  Zap,
+  Wifi,
+  Tv,
+  Flame,
+  Wrench,
   Heart,
   Dumbbell,
+  Activity,
+  Pill,
+  Smile,
   Smartphone,
   Laptop,
-  BookOpen,
+  Camera,
   Film,
   Music,
+  Gamepad2,
+  ShoppingCart,
   Gift,
-  DollarSign,
   Tag,
-  Smile,
-  Shield,
+  Scissors,
+  Shirt,
+  Sparkles,
+  DollarSign,
   Briefcase,
+  CreditCard,
+  Wallet,
+  Landmark,
+  Receipt,
+  BookOpen,
+  GraduationCap,
+  Building,
+  Key,
+  MapPin,
+  Shield,
+};
+
+export const renderCategoryIcon = (iconName: string, size = 18, color = '#020202') => {
+  const IconComponent = CATEGORY_ICONS[iconName] || Tag;
+  return <IconComponent size={size} color={color} />;
 };
 
 const PASTEL_COLORS = [
@@ -91,6 +152,22 @@ const PASTEL_COLORS = [
   '#5D875F', // Forest Sage
   '#487D91', // Nordic Frost
   '#F0B195', // Soft Tangerine
+  '#E07A5F', // Terracotta
+  '#E9C46A', // Golden Honey
+  '#2A9D8F', // Deep Teal
+  '#E76F51', // Coral Red
+  '#7209B7', // Plum Violet
+  '#4361EE', // Electric Indigo
+  '#52B788', // Mint Jade
+  '#F4A261', // Warm Amber
+  '#4682B4', // Steel Blue
+  '#E5989B', // Rose Quartz
+  '#DDA15E', // Sunset Ochre
+  '#606C38', // Olive Bark
+  '#9B2226', // Crimson Velvet
+  '#1D3557', // Midnight Blue
+  '#A370F7', // Dusty Lavender
+  '#B7A99A', // Warm Taupe
 ];
 
 export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
@@ -199,10 +276,7 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
     });
   };
 
-  const renderIcon = (iconName: string, size = 18, color = colors.black) => {
-    const IconComponent = CATEGORY_ICONS[iconName] || Tag;
-    return <IconComponent size={size} color={color} />;
-  };
+  const renderIcon = renderCategoryIcon;
 
   return (
     <CozyModal
@@ -235,84 +309,43 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
       {mode === 'list' ? (
         <View className="space-y-3 pt-1">
           {activeCategories.length === 0 ? (
-            <View style={{ alignItems: 'center', paddingVertical: 24, paddingHorizontal: 8 }}>
+            <View style={{ alignItems: 'center', paddingVertical: 32, paddingHorizontal: 16 }}>
               <View
                 style={{
-                  width: 54,
-                  height: 54,
-                  borderRadius: 27,
-                  backgroundColor: isDark ? colors.cardElevated : '#F4F4EE',
+                  width: 58,
+                  height: 58,
+                  borderRadius: 29,
+                  backgroundColor: isDark ? 'rgba(227, 151, 116, 0.16)' : '#F4F4EE',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  marginBottom: 12,
+                  marginBottom: 14,
                 }}
               >
-                <FolderPlus size={24} color={colors.matchaLime} />
+                <FolderPlus size={26} color={colors.tangerineDream} />
               </View>
-              <Text style={{ color: colors.textPrimary, fontSize: 16, fontWeight: '800', marginBottom: 4 }}>
-                No Categories Configured
+              <Text style={{ color: colors.textPrimary, fontSize: 16, fontWeight: '800', marginBottom: 6 }}>
+                No Tags Created Yet
               </Text>
-              <Text style={{ color: colors.textSecondary, fontSize: 12.5, textAlign: 'center', lineHeight: 18, marginBottom: 18 }}>
-                Categories act as budgeting envelopes for your expenses and income. Pick a starter suggestion below or create your own custom category:
+              <Text style={{ color: colors.textSecondary, fontSize: 13, textAlign: 'center', lineHeight: 19, marginBottom: 22 }}>
+                Custom tags allow you to group, categorize, and filter your income, expenses, and Khata ledger entries.
               </Text>
-
-              {/* Starter Suggestions */}
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 8, marginBottom: 20 }}>
-                {[
-                  { name: 'Groceries', icon: 'ShoppingBag', color: '#899D78' },
-                  { name: 'Dining Out', icon: 'Utensils', color: '#E39774' },
-                  { name: 'Rent & Home', icon: 'Home', color: '#326273' },
-                  { name: 'Transport', icon: 'Car', color: '#B02E0C' },
-                  { name: 'Wellness', icon: 'Heart', color: '#E39774' },
-                  { name: 'Salary', icon: 'DollarSign', color: '#899D78', type: 'income' as const },
-                ].map((starter) => (
-                  <TouchableOpacity
-                    key={starter.name}
-                    onPress={() => {
-                      triggerHaptic('light');
-                      setName(starter.name);
-                      setSelectedIcon(starter.icon);
-                      setSelectedColor(starter.color);
-                      setType((starter as any).type || 'expense');
-                      setMode('create');
-                    }}
-                    style={{
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      gap: 6,
-                      paddingHorizontal: 12,
-                      paddingVertical: 8,
-                      borderRadius: 14,
-                      backgroundColor: isDark ? colors.cardElevated : '#F4F4EE',
-                      borderWidth: 1,
-                      borderColor: isDark ? colors.borderSubtle : '#EAEAE2',
-                    }}
-                    activeOpacity={0.7}
-                  >
-                    <Plus size={12} color={colors.palmLeaf} />
-                    <Text style={{ color: colors.textPrimary, fontSize: 12, fontWeight: '600' }}>
-                      {starter.name}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
 
               <TouchableOpacity
                 onPress={startCreate}
                 style={{
                   flexDirection: 'row',
                   alignItems: 'center',
-                  gap: 6,
+                  gap: 8,
                   backgroundColor: colors.tangerineDream,
-                  paddingHorizontal: 18,
-                  paddingVertical: 11,
-                  borderRadius: 18,
+                  paddingHorizontal: 22,
+                  paddingVertical: 13,
+                  borderRadius: 20,
                 }}
                 activeOpacity={0.8}
               >
-                <Plus size={15} color={colors.black} />
-                <Text style={{ color: colors.black, fontWeight: '800', fontSize: 13 }}>
-                  Create Custom Category
+                <Plus size={16} color={colors.black} strokeWidth={2.5} />
+                <Text style={{ color: colors.black, fontWeight: '800', fontSize: 14 }}>
+                  Create First Tag
                 </Text>
               </TouchableOpacity>
             </View>
@@ -544,14 +577,14 @@ const styles = StyleSheet.create({
   },
   colorGrid: {
     flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 4,
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 8,
   },
   colorSwatch: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,

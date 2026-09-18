@@ -564,6 +564,8 @@ export async function addPersonEntry(data: {
   date?: string;
   notes?: string;
   cardId?: string;
+  categoryId?: string;
+  tags?: string[];
 }) {
   const finalDate = data.date || new Date().toISOString();
   const person = db.select().from(schema.peopleTable).where(eq(schema.peopleTable.id, data.personId)).all()[0];
@@ -576,7 +578,8 @@ export async function addPersonEntry(data: {
       title: data.title,
       amount: data.totalCost,
       type: 'lend',
-      categoryId: 'Service / Goods',
+      categoryId: data.categoryId || 'Service / Goods',
+      tags: data.tags || (data.categoryId ? [data.categoryId] : []),
       personId: data.personId,
       cardId: targetCardId,
       date: finalDate,
@@ -596,7 +599,8 @@ export async function addPersonEntry(data: {
       title: payTitle,
       amount: data.paidAmount,
       type: 'income',
-      categoryId: 'Khata Settlement',
+      categoryId: data.categoryId || 'Khata Settlement',
+      tags: data.tags || (data.categoryId ? [data.categoryId] : []),
       personId: data.personId,
       cardId: targetCardId,
       date: finalDate,
