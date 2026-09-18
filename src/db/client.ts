@@ -123,7 +123,29 @@ export async function initializeDatabase() {
       // Column already exists
     }
 
-    console.log('[Drizzle/SQLite] Database tables initialized with zero prefilled data.');
+    // Automatically self-heal budget cards and people balances from actual transactions on start
+    try {
+      expoDb.execSync(`
+        UPDATE budget_cards
+        SET spent = COALESCE((
+          SELECT SUM(CASE WHEN type IN ('expense', 'lend') THEN amount WHEN type IN ('income', 'borrow') THEN -amount ELSE 0 END)
+          FROM transactions
+          WHERE transactions.card_id = budget_cards.id
+        ), 0);
+
+        UPDATE people
+        SET total_lent = COALESCE((
+          SELECT SUM(amount) FROM transactions WHERE transactions.person_id = people.id AND transactions.type IN ('lend', 'expense')
+        ), 0),
+        total_borrowed = COALESCE((
+          SELECT SUM(amount) FROM transactions WHERE transactions.person_id = people.id AND transactions.type IN ('income', 'borrow')
+        ), 0);
+      `);
+    } catch (e) {
+      console.warn('[Drizzle/SQLite] Database balance self-healing skipped:', e);
+    }
+
+    console.log('[Drizzle/SQLite] Database tables initialized and balances synchronized.');
   } catch (err) {
     console.error('[Drizzle/SQLite] Initialization error:', err);
   }

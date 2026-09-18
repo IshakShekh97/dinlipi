@@ -77,6 +77,43 @@ export function usePersonTransactionsLive(personId?: string) {
 // 2. TRANSACTION MUTATIONS
 // ==========================================
 
+export function syncCardSpent(cardId: string) {
+  try {
+    const txs = db
+      .select()
+      .from(schema.transactionsTable)
+      .where(eq(schema.transactionsTable.cardId, cardId))
+      .all();
+
+    let netSpent = 0;
+    for (const t of txs) {
+      if (t.type === 'expense' || t.type === 'lend') {
+        netSpent += t.amount;
+      } else if (t.type === 'income' || t.type === 'borrow') {
+        netSpent -= t.amount;
+      }
+    }
+
+    db.update(schema.budgetCardsTable)
+      .set({ spent: netSpent })
+      .where(eq(schema.budgetCardsTable.id, cardId))
+      .run();
+  } catch (e) {
+    console.warn('[Queries] Failed to sync card spent:', e);
+  }
+}
+
+export function syncAllCardBalances() {
+  try {
+    const cards = db.select().from(schema.budgetCardsTable).all();
+    for (const card of cards) {
+      syncCardSpent(card.id);
+    }
+  } catch (e) {
+    console.warn('[Queries] Failed to sync all card balances:', e);
+  }
+}
+
 export function syncPersonBalances(personId: string) {
   try {
     const txs = db
@@ -111,29 +148,10 @@ export function syncPersonBalances(personId: string) {
       .where(eq(schema.peopleTable.id, personId))
       .all()[0];
     if (person) {
-      // If there are no transactions yet but person has an initial balance, record it as Opening Balance
-      if (txs.length === 0 && (person.totalLent || 0) > 0) {
-        const opening = person.totalLent || 0;
-        addTransaction({
-          title: 'Opening Balance',
-          amount: opening,
-          type: 'lend',
-          categoryId: 'Opening Balance',
-          personId: person.id,
-          cardId: person.cardId || undefined,
-          notes: 'Initial balance',
-        });
-        billed = opening;
-      }
-
-      const isReceivable = (person.totalLent || 0) >= (person.totalBorrowed || 0);
-      const totalLent = isReceivable ? billed : (person.totalLent || 0);
-      const totalBorrowed = !isReceivable ? billed : (person.totalBorrowed || 0);
-
       db.update(schema.peopleTable)
         .set({
-          totalLent,
-          totalBorrowed,
+          totalLent: billed,
+          totalBorrowed: paid,
           updatedAt: new Date().toISOString(),
         })
         .where(eq(schema.peopleTable.id, personId))
@@ -164,35 +182,33 @@ export async function addTransaction(data: {
     }
   }
 
+  // Resolve human-readable category name if an ID was passed
+  let resolvedCategory = data.categoryId || 'General';
+  try {
+    if (data.categoryId && data.categoryId.startsWith('cat_')) {
+      const cat = db.select().from(schema.categoriesTable).where(eq(schema.categoriesTable.id, data.categoryId)).all()[0];
+      if (cat?.name) resolvedCategory = cat.name;
+    }
+  } catch {
+    // Keep category
+  }
+
   db.insert(schema.transactionsTable).values({
     id,
     title: data.title,
     amount: data.amount,
     type: data.type,
-    categoryId: data.categoryId || 'General',
+    categoryId: resolvedCategory,
     personId: data.personId,
     cardId: data.cardId,
     timestamp: finalTimestamp,
     notes: data.notes || '',
-    tags: JSON.stringify(data.tags || []),
+    tags: JSON.stringify(data.tags || [resolvedCategory]),
   }).run();
 
-  // If connected to a budget envelope (card), update its spent balance
+  // Atomically update budget envelope spent based on all actual transactions
   if (data.cardId) {
-    try {
-      const cards = db.select().from(schema.budgetCardsTable).where(eq(schema.budgetCardsTable.id, data.cardId)).all();
-      if (cards.length > 0) {
-        const card = cards[0];
-        const delta = (data.type === 'expense' || data.type === 'lend') ? data.amount : (data.type === 'income' || data.type === 'borrow') ? -data.amount : 0;
-        const newSpent = Math.max(0, (card.spent || 0) + delta);
-        db.update(schema.budgetCardsTable)
-          .set({ spent: newSpent })
-          .where(eq(schema.budgetCardsTable.id, data.cardId))
-          .run();
-      }
-    } catch (e) {
-      console.warn('[Queries] Failed to update card spent balance:', e);
-    }
+    syncCardSpent(data.cardId);
   }
 
   // If connected to a person, sync the person balance
@@ -207,22 +223,14 @@ export async function deleteTransaction(id: string) {
   try {
     const tx = db.select().from(schema.transactionsTable).where(eq(schema.transactionsTable.id, id)).all()[0];
     if (tx) {
-      // Reverse budget card spent
-      if (tx.cardId) {
-        const cards = db.select().from(schema.budgetCardsTable).where(eq(schema.budgetCardsTable.id, tx.cardId)).all();
-        if (cards.length > 0) {
-          const card = cards[0];
-          const delta = (tx.type === 'expense' || tx.type === 'lend') ? tx.amount : (tx.type === 'income' || tx.type === 'borrow') ? -tx.amount : 0;
-          const newSpent = Math.max(0, (card.spent || 0) - delta);
-          db.update(schema.budgetCardsTable)
-            .set({ spent: newSpent })
-            .where(eq(schema.budgetCardsTable.id, tx.cardId))
-            .run();
-        }
-      }
-
       db.delete(schema.transactionsTable).where(eq(schema.transactionsTable.id, id)).run();
 
+      // Recalculate card spent directly from remaining transactions
+      if (tx.cardId) {
+        syncCardSpent(tx.cardId);
+      }
+
+      // Recalculate person balance from remaining transactions
       if (tx.personId) {
         syncPersonBalances(tx.personId);
       }
@@ -282,12 +290,24 @@ export async function updateBudgetCard(card: BudgetCardData) {
 }
 
 export async function deleteBudgetCard(id: string) {
+  try {
+    db.update(schema.transactionsTable)
+      .set({ cardId: null })
+      .where(eq(schema.transactionsTable.cardId, id))
+      .run();
+    db.update(schema.peopleTable)
+      .set({ cardId: '' })
+      .where(eq(schema.peopleTable.cardId, id))
+      .run();
+  } catch (e) {
+    console.warn('[Queries] Error unlinking deleted budget card:', e);
+  }
   db.delete(schema.budgetCardsTable).where(eq(schema.budgetCardsTable.id, id)).run();
 }
 
 export async function addPerson(person: PersonData) {
-  const totalLent = person.type === 'receivable' ? person.totalDue : 0;
-  const totalBorrowed = person.type === 'payable' ? person.totalDue : 0;
+  const totalLent = person.type === 'receivable' ? (person.totalDue || 0) : 0;
+  const totalBorrowed = person.type === 'payable' ? (person.totalDue || 0) : 0;
 
   db.insert(schema.peopleTable).values({
     id: person.id,
@@ -303,9 +323,8 @@ export async function addPerson(person: PersonData) {
     updatedAt: new Date().toISOString(),
   }).run();
 
-  // If there is an initial balance due, record it as an Opening Balance transaction
-  // so subsequent new balances increment cleanly on top of it and reflect in the linked budget card
-  if (person.totalDue > 0) {
+  // ONLY if an explicit non-zero opening balance was entered, record opening transaction
+  if (person.totalDue && person.totalDue > 0) {
     await addTransaction({
       title: 'Opening Balance',
       amount: person.totalDue,
@@ -313,7 +332,7 @@ export async function addPerson(person: PersonData) {
       categoryId: 'Opening Balance',
       personId: person.id,
       cardId: person.budgetCardId,
-      notes: 'Initial balance when contact was added',
+      notes: 'Initial balance',
     });
   }
 }
@@ -499,27 +518,29 @@ export async function updateTransaction(data: {
   let oldTx: any = null;
   try {
     oldTx = db.select().from(schema.transactionsTable).where(eq(schema.transactionsTable.id, data.id)).all()[0];
-    if (oldTx?.cardId) {
-      const oldCards = db.select().from(schema.budgetCardsTable).where(eq(schema.budgetCardsTable.id, oldTx.cardId)).all();
-      if (oldCards.length > 0) {
-        const oldDelta = (oldTx.type === 'expense' || oldTx.type === 'lend') ? oldTx.amount : (oldTx.type === 'income' || oldTx.type === 'borrow') ? -oldTx.amount : 0;
-        const reversed = Math.max(0, (oldCards[0].spent || 0) - oldDelta);
-        db.update(schema.budgetCardsTable).set({ spent: reversed }).where(eq(schema.budgetCardsTable.id, oldTx.cardId)).run();
-      }
-    }
   } catch (err) {
-    console.warn('[Queries] Failed to reverse old envelope delta on edit:', err);
+    console.warn('[Queries] Failed to fetch old transaction on update:', err);
+  }
+
+  let resolvedCategory = data.categoryId || 'General';
+  try {
+    if (data.categoryId && data.categoryId.startsWith('cat_')) {
+      const cat = db.select().from(schema.categoriesTable).where(eq(schema.categoriesTable.id, data.categoryId)).all()[0];
+      if (cat?.name) resolvedCategory = cat.name;
+    }
+  } catch {
+    // Keep category
   }
 
   const updatePayload: Record<string, unknown> = {
     title: data.title,
     amount: data.amount,
     type: data.type,
-    categoryId: data.categoryId || 'General',
+    categoryId: resolvedCategory,
     personId: data.personId,
     cardId: data.cardId,
     notes: data.notes || '',
-    tags: JSON.stringify(data.tags || []),
+    tags: JSON.stringify(data.tags || [resolvedCategory]),
   };
 
   if (data.date) {
@@ -534,21 +555,13 @@ export async function updateTransaction(data: {
     .where(eq(schema.transactionsTable.id, data.id))
     .run();
 
-  // Apply new envelope delta if a card is linked
-  if (data.cardId) {
-    try {
-      const newCards = db.select().from(schema.budgetCardsTable).where(eq(schema.budgetCardsTable.id, data.cardId)).all();
-      if (newCards.length > 0) {
-        const newDelta = (data.type === 'expense' || data.type === 'lend') ? data.amount : (data.type === 'income' || data.type === 'borrow') ? -data.amount : 0;
-        const newSpent = Math.max(0, (newCards[0].spent || 0) + newDelta);
-        db.update(schema.budgetCardsTable).set({ spent: newSpent }).where(eq(schema.budgetCardsTable.id, data.cardId)).run();
-      }
-    } catch (err) {
-      console.warn('[Queries] Failed to apply new envelope delta on edit:', err);
-    }
+  if (oldTx?.cardId) {
+    syncCardSpent(oldTx.cardId);
+  }
+  if (data.cardId && data.cardId !== oldTx?.cardId) {
+    syncCardSpent(data.cardId);
   }
 
-  // Sync person balance
   const targetPersonId = data.personId || oldTx?.personId;
   if (targetPersonId) {
     syncPersonBalances(targetPersonId);
@@ -557,7 +570,7 @@ export async function updateTransaction(data: {
 
 export async function addPersonEntry(data: {
   personId: string;
-  title: string;
+  title?: string;
   totalCost?: number;     // Debit / Billed amount
   paidAmount?: number;    // Credit / Paid amount
   channel?: 'Cash' | 'UPI' | 'Bank';
@@ -572,14 +585,25 @@ export async function addPersonEntry(data: {
   const personName = person?.name || 'Customer';
   const targetCardId = data.cardId || (person?.cardId ? person.cardId : undefined);
 
+  let resolvedCat = data.categoryId;
+  if (data.categoryId && data.categoryId.startsWith('cat_')) {
+    try {
+      const cat = db.select().from(schema.categoriesTable).where(eq(schema.categoriesTable.id, data.categoryId)).all()[0];
+      if (cat?.name) resolvedCat = cat.name;
+    } catch {}
+  }
+
   // 1. If there's a billed amount / total cost, record a debit entry ('lend')
   if (data.totalCost && data.totalCost > 0) {
+    const billTitle = data.title && data.title.trim() ? data.title.trim() : 'service and goods';
+    const categoryToUse = resolvedCat || 'service and goods';
+
     await addTransaction({
-      title: data.title,
+      title: billTitle,
       amount: data.totalCost,
       type: 'lend',
-      categoryId: data.categoryId || 'Service / Goods',
-      tags: data.tags || (data.categoryId ? [data.categoryId] : []),
+      categoryId: categoryToUse,
+      tags: [categoryToUse],
       personId: data.personId,
       cardId: targetCardId,
       date: finalDate,
@@ -590,17 +614,18 @@ export async function addPersonEntry(data: {
   // 2. If there's a paid amount, record a credit entry ('income')
   if (data.paidAmount && data.paidAmount > 0) {
     const payTitle = data.totalCost && data.totalCost > 0
-      ? `Payment for ${data.title}`
-      : `Payment: ${data.title}`;
+      ? `Payment for ${data.title && data.title.trim() ? data.title.trim() : 'service and goods'}`
+      : `Payment: ${data.title && data.title.trim() ? data.title.trim() : 'Payment Received'}`;
     const mode = data.channel || 'Cash';
     const memo = data.notes ? `${mode} - ${data.notes}` : `Paid via ${mode}`;
+    const payCategory = resolvedCat || 'Khata Settlement';
 
     await addTransaction({
       title: payTitle,
       amount: data.paidAmount,
       type: 'income',
-      categoryId: data.categoryId || 'Khata Settlement',
-      tags: data.tags || (data.categoryId ? [data.categoryId] : []),
+      categoryId: payCategory,
+      tags: [payCategory],
       personId: data.personId,
       cardId: targetCardId,
       date: finalDate,
@@ -624,8 +649,10 @@ export async function addPersonEntry(data: {
     }).run();
   }
 
-  // 3. Keep person balance synchronized
   syncPersonBalances(data.personId);
+  if (targetCardId) {
+    syncCardSpent(targetCardId);
+  }
 }
 
 export async function settlePersonDebt(personId: string) {

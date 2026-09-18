@@ -26,6 +26,9 @@ import { getCurrencySymbol } from '../../utils/currency';
 import {
   CURATED_MESH_PRESETS,
   generateRandomMeshPalette,
+  generateRandomVibrantGradient,
+  generateRandomShapeOnly,
+  ALL_SHAPE_PATTERNS,
   getHexLuminance,
 } from '../../utils/meshGenerator';
 
@@ -105,7 +108,28 @@ export const BudgetCardModal: React.FC<BudgetCardModalProps> = ({
     }
   }, [visible, initialData]);
 
-  // Algorithmic Random Mesh Palette Generator
+  // Full-spectrum vibrant color generator
+  const handleGenerateRandomColors = () => {
+    triggerHaptic('medium');
+    const result = generateRandomVibrantGradient();
+    setCustomGradient(result.gradient);
+    setVariant('custom');
+    setRandomPaletteName(result.name);
+  };
+
+  // Random shape pattern generator
+  const handleGenerateRandomShape = () => {
+    triggerHaptic('light');
+    const newShape = generateRandomShapeOnly();
+    setShapePattern(newShape);
+    if (!customGradient) {
+      const currentPreset = CURATED_MESH_PRESETS.find((p) => p.id === variant);
+      setCustomGradient(currentPreset ? currentPreset.gradient : generateRandomVibrantGradient().gradient);
+      setVariant('custom');
+    }
+  };
+
+  // Algorithmic Random Mesh Palette Generator (Color + Shape)
   const handleGenerateRandomPalette = () => {
     triggerHaptic('medium');
     const result = generateRandomMeshPalette();
@@ -113,6 +137,17 @@ export const BudgetCardModal: React.FC<BudgetCardModalProps> = ({
     setShapePattern(result.shape);
     setVariant('custom');
     setRandomPaletteName(result.name);
+  };
+
+  // Select specific shape directly
+  const handleSelectShape = (shape: ShapePatternType) => {
+    triggerHaptic('light');
+    setShapePattern(shape);
+    if (!customGradient) {
+      const currentPreset = CURATED_MESH_PRESETS.find((p) => p.id === variant);
+      setCustomGradient(currentPreset ? currentPreset.gradient : generateRandomVibrantGradient().gradient);
+      setVariant('custom');
+    }
   };
 
   const handleSave = () => {
@@ -270,33 +305,115 @@ export const BudgetCardModal: React.FC<BudgetCardModalProps> = ({
         </View>
       ) : null}
 
-      {/* Section Header: Mesh Backdrop Palette & Random Palette Generator */}
-      <View style={styles.sectionHeadingRow}>
-        <View>
-          <Text style={[styles.inputLabel, { color: colors.textSecondary, marginTop: 0, marginBottom: 0 }]}>
-            Mesh Backdrop Palette
-          </Text>
-          <Text style={{ fontSize: 11, color: colors.textMuted }}>
-            Multi-tone glass gradients
-          </Text>
+      {/* Section Header: Mesh Backdrop Palette & Multi-Generator Controls */}
+      <View style={{ marginTop: 10, marginBottom: 6 }}>
+        <Text style={[styles.inputLabel, { color: colors.textSecondary, marginTop: 0, marginBottom: 2 }]}>
+          Generative Mesh Card Design
+        </Text>
+        <Text style={{ fontSize: 11, color: colors.textMuted }}>
+          Full-spectrum multi-tone glass gradients & dynamic vector shapes
+        </Text>
+
+        {/* 3 Dedicated Random Generator Buttons */}
+        <View style={styles.generatorButtonsRow}>
+          <TouchableOpacity
+            onPress={handleGenerateRandomColors}
+            style={[
+              styles.generatorBtn,
+              {
+                backgroundColor: isDark ? 'rgba(227, 151, 116, 0.16)' : 'rgba(227, 151, 116, 0.22)',
+                borderColor: colors.tangerineDream,
+              },
+            ]}
+            activeOpacity={0.75}
+          >
+            <Sparkles size={12} color={colors.tangerineDream} />
+            <Text style={[styles.generatorBtnText, { color: colors.tangerineDream }]}>
+              Random Color
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={handleGenerateRandomShape}
+            style={[
+              styles.generatorBtn,
+              {
+                backgroundColor: isDark ? 'rgba(92, 118, 141, 0.18)' : 'rgba(92, 118, 141, 0.16)',
+                borderColor: colors.textSecondary,
+              },
+            ]}
+            activeOpacity={0.75}
+          >
+            <Layers size={12} color={colors.textSecondary} />
+            <Text style={[styles.generatorBtnText, { color: colors.textSecondary }]}>
+              Random Shape
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={handleGenerateRandomPalette}
+            style={[
+              styles.generatorBtn,
+              {
+                backgroundColor: isDark ? 'rgba(137, 157, 120, 0.18)' : 'rgba(137, 157, 120, 0.20)',
+                borderColor: colors.palmLeaf,
+              },
+            ]}
+            activeOpacity={0.75}
+          >
+            <Shuffle size={12} color={colors.palmLeaf} />
+            <Text style={[styles.generatorBtnText, { color: colors.palmLeaf }]}>
+              Surprise Me
+            </Text>
+          </TouchableOpacity>
         </View>
 
-        <TouchableOpacity
-          onPress={handleGenerateRandomPalette}
-          style={[
-            styles.randomBtn,
-            {
-              backgroundColor: isDark ? 'rgba(227, 151, 116, 0.16)' : 'rgba(227, 151, 116, 0.22)',
-              borderColor: colors.tangerineDream,
-            },
-          ]}
-          activeOpacity={0.75}
+        {/* Shape Pattern Selection Chips */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.shapeChipsScroll}
         >
-          <Sparkles size={13} color={colors.tangerineDream} />
-          <Text style={[styles.randomBtnText, { color: colors.tangerineDream }]}>
-            Randomize Mesh
-          </Text>
-        </TouchableOpacity>
+          {ALL_SHAPE_PATTERNS.map((pattern) => {
+            const isSelected = shapePattern === pattern.id;
+            return (
+              <TouchableOpacity
+                key={pattern.id}
+                onPress={() => handleSelectShape(pattern.id)}
+                style={[
+                  styles.shapeChip,
+                  {
+                    backgroundColor: isSelected
+                      ? isDark
+                        ? 'rgba(227, 151, 116, 0.25)'
+                        : 'rgba(227, 151, 116, 0.22)'
+                      : isDark
+                      ? 'rgba(255, 255, 255, 0.05)'
+                      : '#FFFFFF',
+                    borderColor: isSelected
+                      ? colors.tangerineDream
+                      : isDark
+                      ? 'rgba(255, 255, 255, 0.10)'
+                      : 'rgba(0, 0, 0, 0.08)',
+                  },
+                ]}
+                activeOpacity={0.7}
+              >
+                <Text
+                  style={[
+                    styles.shapeChipText,
+                    {
+                      color: isSelected ? colors.tangerineDream : colors.textMuted,
+                      fontFamily: isSelected ? FONTS.sansBold : FONTS.sansMedium,
+                    },
+                  ]}
+                >
+                  {pattern.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
       </View>
 
       {/* Random Palette Active Status Banner */}
@@ -338,6 +455,11 @@ export const BudgetCardModal: React.FC<BudgetCardModalProps> = ({
           </View>
         </View>
       )}
+
+      {/* Curated Pre-Built Mesh Presets Heading */}
+      <Text style={[styles.inputLabel, { color: colors.textSecondary, marginTop: 4, marginBottom: 6 }]}>
+        Curated Presets
+      </Text>
 
       {/* Curated Pre-Built Mesh Backdrop Swatches */}
       <ScrollView
@@ -617,6 +739,43 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: 4,
+  },
+  generatorButtonsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 8,
+    marginBottom: 8,
+  },
+  generatorBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 5,
+    paddingVertical: 8,
+    paddingHorizontal: 6,
+    borderRadius: 14,
+    borderWidth: 1,
+  },
+  generatorBtnText: {
+    fontSize: 11,
+    fontFamily: FONTS.sansBold,
+  },
+  shapeChipsScroll: {
+    gap: 6,
+    paddingVertical: 4,
+    marginBottom: 8,
+  },
+  shapeChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  shapeChipText: {
+    fontSize: 11,
+    textTransform: 'capitalize',
   },
   randomBtn: {
     flexDirection: 'row',

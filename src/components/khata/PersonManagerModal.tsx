@@ -54,7 +54,7 @@ export const PersonManagerModal: React.FC<PersonManagerModalProps> = ({
   const [tag, setTag] = useState('');
   const [notes, setNotes] = useState('');
   const [type, setType] = useState<'receivable' | 'payable'>('receivable');
-  const [amount, setAmount] = useState('1000');
+  const [amount, setAmount] = useState('');
   const [selectedAvatarId, setSelectedAvatarId] = useState('avatar_matcha_fox');
   const [avatarPickerVisible, setAvatarPickerVisible] = useState(false);
 
@@ -78,7 +78,7 @@ export const PersonManagerModal: React.FC<PersonManagerModalProps> = ({
           setTag(initialData.tag);
           setNotes(initialData.notes || '');
           setType(initialData.type);
-          setAmount(initialData.totalDue.toString());
+          setAmount(initialData.totalDue && initialData.totalDue > 0 ? initialData.totalDue.toString() : '');
           setSelectedAvatarId(initialData.avatarPreset || 'avatar_matcha_fox');
           setBudgetCardId(initialData.budgetCardId || (dbCards.length > 0 ? dbCards[0].id : undefined));
         } else {
@@ -126,16 +126,7 @@ export const PersonManagerModal: React.FC<PersonManagerModalProps> = ({
       return;
     }
 
-    if (!budgetCardId && dbCards.length > 0) {
-      showConfirm({
-        title: 'Budget Envelope Required',
-        message: 'Please select a budget envelope to connect this person ledger to.',
-        confirmText: 'Understood',
-        cancelText: 'Dismiss',
-        onConfirm: () => {},
-      });
-      return;
-    }
+    const effectiveBudgetCardId = budgetCardId || (dbCards.length > 0 ? dbCards[0].id : undefined);
 
     const numAmount = parseFloat(amount) || 0;
     triggerHaptic('success');
@@ -161,7 +152,7 @@ export const PersonManagerModal: React.FC<PersonManagerModalProps> = ({
       paidSoFar: initialData ? initialData.paidSoFar : 0,
       avatarPreset: selectedAvatarId,
       avatarColor: type === 'receivable' ? colors.palmLeaf : colors.oxidizedIron,
-      budgetCardId,
+      budgetCardId: effectiveBudgetCardId,
     };
 
     onSave(personPayload);
@@ -377,9 +368,9 @@ export const PersonManagerModal: React.FC<PersonManagerModalProps> = ({
             />
           </View>
 
-          {/* Starting Balance */}
+          {/* Starting Balance (Optional) */}
           <Text style={[styles.inputLabel, { color: colors.textSecondary, marginTop: 14 }]}>
-            Starting Amount ({currencySymbol})
+            Starting Balance ({currencySymbol}) - Optional
           </Text>
           <View
             style={[
@@ -391,21 +382,21 @@ export const PersonManagerModal: React.FC<PersonManagerModalProps> = ({
               value={amount}
               onChangeText={setAmount}
               keyboardType="numeric"
-              placeholder="0.00"
+              placeholder="0.00 (leave empty to start with 0)"
               placeholderTextColor={colors.textMuted}
               style={[styles.inputText, { color: colors.textPrimary }]}
             />
           </View>
 
-          {/* Link to Budget Envelope (Mandatory) */}
+          {/* Link to Budget Envelope */}
           {dbCards && dbCards.length > 0 && (
             <>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 14 }}>
                 <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>
-                  Link to Budget Envelope *
+                  Connect Budget Envelope
                 </Text>
                 <Text style={{ color: colors.matchaLime, fontSize: 11, fontWeight: '700' }}>
-                  Required
+                  Connected
                 </Text>
               </View>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>

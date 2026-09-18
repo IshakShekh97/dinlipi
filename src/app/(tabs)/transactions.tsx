@@ -57,9 +57,7 @@ export default function TransactionsScreen() {
   const { data: dbCategories = [] } = useCategoriesLive();
   const { data: dbPeople = [] } = usePeopleLive();
 
-  // Optimistic local override states
-  // We keep track of local additions, edits, and deletions so UI updates with 0ms delay
-  const [localAdded, setLocalAdded] = useState<any[]>([]);
+  // Optimistic local override states (for deletions and edits)
   const [localEdited, setLocalEdited] = useState<Map<string, any>>(new Map());
   const [localDeletedIds, setLocalDeletedIds] = useState<Set<string>>(new Set());
 
@@ -91,6 +89,12 @@ export default function TransactionsScreen() {
     return map;
   }, [dbCards]);
 
+  const categoriesMap = useMemo(() => {
+    const map = new Map<string, string>();
+    dbCategories.forEach((c) => map.set(c.id, c.name));
+    return map;
+  }, [dbCategories]);
+
   const personCardMap = useMemo(() => {
     const map = new Map<string, string>();
     dbPeople.forEach((p) => {
@@ -113,26 +117,19 @@ export default function TransactionsScreen() {
     }));
   }, [dbCards]);
 
-  // Combine DB data with optimistic local state
+  // Combine DB data with optimistic local state (without synthetic duplicate IDs)
   const rawMergedTransactions = useMemo(() => {
     // 1. Filter out deleted
     const filteredDb = dbTx.filter((t) => !localDeletedIds.has(t.id));
 
     // 2. Apply edits
-    const editedList = filteredDb.map((t) => {
+    return filteredDb.map((t) => {
       if (localEdited.has(t.id)) {
         return { ...t, ...localEdited.get(t.id) };
       }
       return t;
     });
-
-    // 3. Prepend newly added (optimistic) that aren't yet in dbTx
-    const nonDuplicatedAdded = localAdded.filter(
-      (la) => !editedList.some((t) => t.id === la.id)
-    );
-
-    return [...nonDuplicatedAdded, ...editedList];
-  }, [dbTx, localAdded, localEdited, localDeletedIds]);
+  }, [dbTx, localEdited, localDeletedIds]);
 
   // Filtered transactions
   const filteredTransactions = useMemo(() => {
@@ -164,9 +161,12 @@ export default function TransactionsScreen() {
         }
       }
 
-      // 3. Category filter
-      if (selectedCategory && tx.categoryId !== selectedCategory) {
-        return false;
+      // 3. Category filter (matches name or ID)
+      if (selectedCategory) {
+        const resolvedName = categoriesMap.get(tx.categoryId || '') || tx.categoryId;
+        if (resolvedName !== selectedCategory && tx.categoryId !== selectedCategory) {
+          return false;
+        }
       }
 
       // 4. Time filter
@@ -197,7 +197,7 @@ export default function TransactionsScreen() {
 
       return true;
     });
-  }, [rawMergedTransactions, typeFilter, selectedCardId, selectedCategory, timeFilter, searchQuery, peopleMap, personCardMap]);
+  }, [rawMergedTransactions, typeFilter, selectedCardId, selectedCategory, timeFilter, searchQuery, peopleMap, personCardMap, categoriesMap]);
 
   // Summary Metrics
   const { totalInflow, totalOutflow, netBalance } = useMemo(() => {
@@ -352,23 +352,7 @@ export default function TransactionsScreen() {
           notes: entry.channel,
         });
       } else {
-        // Optimistic Add
-        const tempId = `tx_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
-        const newObj = {
-          id: tempId,
-          title: entry.title,
-          amount: entry.amount,
-          type: entry.type,
-          categoryId: entry.categoryId || entry.category || 'General',
-          cardId: entry.cardId,
-          timestamp: entry.date ? new Date(entry.date).toISOString() : new Date().toISOString(),
-          notes: entry.channel || 'Cash',
-          tags: JSON.stringify(entry.tags || (entry.categoryId ? [entry.categoryId] : [])),
-        };
-
-        setLocalAdded((prev) => [newObj, ...prev]);
-
-        // Persist in background
+        // Direct add via Drizzle reactive live queries
         await addTransaction({
           title: entry.title,
           amount: entry.amount,
@@ -753,7 +737,7 @@ export default function TransactionsScreen() {
 
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4, flexWrap: 'wrap' }}>
                         <Text style={[styles.categoryTag, { color: colors.textSecondary }]}>
-                          {t.categoryId || 'General'}
+                          {categoriesMap.get(t.categoryId || '') || t.categoryId || 'General'}
                         </Text>
 
                         {personName && (

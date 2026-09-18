@@ -1,12 +1,7 @@
 /**
  * Dynamic Mesh & Backdrop Generator
- * Inspired by modern glassmorphic Finnish & Apple FinTech aesthetics.
- * Palette anchored on:
- * - Black (#020202)
- * - Blue Slate (#326273)
- * - Tangerine Dream (#E39774)
- * - Oxidized Iron (#B02E0C)
- * - Palm Leaf (#899D78)
+ * Supports full-spectrum multi-tone glassmorphic FinTech aesthetics across ALL colors,
+ * with dedicated generators for colors, mesh gradients, and shapes.
  */
 
 export type ShapePatternType =
@@ -18,6 +13,16 @@ export type ShapePatternType =
   | 'aurora'
   | 'fluid';
 
+export const ALL_SHAPE_PATTERNS: { id: ShapePatternType; label: string }[] = [
+  { id: 'aurora', label: 'Aurora' },
+  { id: 'waves', label: 'Waves' },
+  { id: 'fluid', label: 'Fluid' },
+  { id: 'orbs', label: 'Orbs' },
+  { id: 'arcs', label: 'Arcs' },
+  { id: 'ribbons', label: 'Ribbons' },
+  { id: 'geometry', label: 'Geometry' },
+];
+
 export interface MeshPreset {
   id: string;
   label: string;
@@ -27,81 +32,114 @@ export interface MeshPreset {
 }
 
 /**
- * Curated Pre-Built Mesh Backdrop Palettes
- * Each preset is a multi-tone harmonic mesh gradient blending the 5 palette anchors.
+ * Curated Pre-Built Mesh Backdrop Palettes spanning all color spectra
  */
 export const CURATED_MESH_PRESETS: MeshPreset[] = [
   {
     id: 'tangerineAurora',
     label: 'Tangerine Aurora',
-    description: 'Warm Tangerine Dream shifting into deep Blue Slate and Obsidian',
+    description: 'Warm Tangerine shifting into deep Slate and Obsidian',
     gradient: ['#E39774', '#326273', '#020202'],
     shape: 'aurora',
   },
   {
+    id: 'cyberpunkNeon',
+    label: 'Cyberpunk Neon',
+    description: 'Electric fuchsia blending into vivid purple and midnight obsidian',
+    gradient: ['#FF007F', '#7928CA', '#08061A'],
+    shape: 'fluid',
+  },
+  {
+    id: 'emeraldMatrix',
+    label: 'Emerald Aura',
+    description: 'Luminous mint neon into deep sea teal and rich forest dark',
+    gradient: ['#00F5A0', '#00D9F5', '#041B1F'],
+    shape: 'waves',
+  },
+  {
+    id: 'solarGold',
+    label: 'Solar Radiance',
+    description: 'Warm golden amber blending into coral sunset and mahogany',
+    gradient: ['#FFE259', '#FFA751', '#2C0E00'],
+    shape: 'arcs',
+  },
+  {
+    id: 'royalAmethyst',
+    label: 'Royal Amethyst',
+    description: 'Deep violet aura transitioning into neon magenta and deep galaxy',
+    gradient: ['#8E2DE2', '#F000FF', '#120024'],
+    shape: 'orbs',
+  },
+  {
+    id: 'electricOcean',
+    label: 'Electric Ocean',
+    description: 'Vibrant cyan shifting into royal sapphire and abyssal navy',
+    gradient: ['#00C9FF', '#92FE9D', '#031424'],
+    shape: 'ribbons',
+  },
+  {
+    id: 'crimsonVelvet',
+    label: 'Crimson Flame',
+    description: 'Fiery ruby shifting into warm apricot and espresso',
+    gradient: ['#FF416C', '#8A2387', '#1A0010'],
+    shape: 'geometry',
+  },
+  {
     id: 'blueNordic',
-    label: 'Blue Slate Nordic',
+    label: 'Nordic Slate',
     description: 'Crisp arctic slate with specular frost accents',
     gradient: ['#326273', '#5D99B0', '#12252D'],
     shape: 'waves',
   },
   {
-    id: 'oxidizedSunset',
-    label: 'Oxidized Sunset',
-    description: 'Velvet iron embers blending into warm apricot glow',
-    gradient: ['#B02E0C', '#E39774', '#020202'],
-    shape: 'fluid',
+    id: 'sakuraDawn',
+    label: 'Sakura Petal',
+    description: 'Soft rose glow shifting into violet dusk and plum dark',
+    gradient: ['#FF9A8B', '#FF6A88', '#2D0B1E'],
+    shape: 'aurora',
   },
   {
-    id: 'palmAurora',
-    label: 'Palm Aurora',
-    description: 'Tranquil Palm Leaf with Nordic slate depths',
-    gradient: ['#899D78', '#326273', '#0E1714'],
-    shape: 'orbs',
+    id: 'hyperCitrus',
+    label: 'Hyper Citrus',
+    description: 'Zesty lemon lime shifting into electric tangerine and plum',
+    gradient: ['#F9D423', '#FF4E50', '#200438'],
+    shape: 'fluid',
   },
   {
     id: 'obsidianGlass',
     label: 'Obsidian Minimal',
-    description: 'Smoked graphite glass with specular sheen',
+    description: 'Smoked graphite glass with specular metallic sheen',
     gradient: ['#28343C', '#12191D', '#020202'],
     shape: 'geometry',
   },
   {
-    id: 'terracottaDawn',
-    label: 'Terracotta Dawn',
-    description: 'Apricot dawn transitioning into deep terracotta velvet',
-    gradient: ['#E39774', '#B02E0C', '#4F1505'],
-    shape: 'ribbons',
-  },
-  {
-    id: 'slateMist',
-    label: 'Slate & Palm Mist',
-    description: 'Subtle balance between Blue Slate and Palm Leaf sage',
-    gradient: ['#326273', '#899D78', '#17272E'],
-    shape: 'arcs',
-  },
-  {
-    id: 'ironFlame',
-    label: 'Iron Velvet Flame',
-    description: 'Bold oxidized iron infused with Tangerine highlights',
-    gradient: ['#B02E0C', '#E39774', '#661601'],
-    shape: 'waves',
+    id: 'mintOasis',
+    label: 'Mint Horizon',
+    description: 'Refreshing seafoam green blending into aqua marine and ink',
+    gradient: ['#A8FF78', '#78FFD6', '#0A2027'],
+    shape: 'orbs',
   },
 ];
 
 /**
- * Anchor palette shades with harmonic variants for generative mesh synthesis.
+ * Converts HSL to Hex color string
  */
-const HARMONIC_ANCHORS = {
-  tangerine: ['#E39774', '#F5B495', '#C47754', '#FFD1BF', '#9E4E2C'],
-  slate: ['#326273', '#4A8094', '#214754', '#6AA9C2', '#122830'],
-  iron: ['#B02E0C', '#D44822', '#851E05', '#EB633E', '#521000'],
-  palm: ['#899D78', '#A2B591', '#667A55', '#BDCEB0', '#4A5B3B'],
-  obsidian: ['#020202', '#12181C', '#1E272D', '#2B373F', '#090C0E'],
-};
+export function hslToHex(h: number, s: number, l: number): string {
+  const normL = l / 100;
+  const normS = s / 100;
+  const a = normS * Math.min(normL, 1 - normL);
+  const f = (n: number) => {
+    const k = (n + h / 30) % 12;
+    const color = normL - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
+    return Math.round(255 * color)
+      .toString(16)
+      .padStart(2, '0');
+  };
+  return `#${f(0)}${f(8)}${f(4)}`.toUpperCase();
+}
 
 /**
- * Helper to calculate perceptual luminance for contrast checks.
+ * Calculates perceptual luminance for contrast checks.
  */
 export function getHexLuminance(hex: string): number {
   const clean = hex.replace('#', '');
@@ -113,15 +151,70 @@ export function getHexLuminance(hex: string): number {
 }
 
 /**
- * Generates an algorithmic, harmonious random mesh palette guaranteed
- * to harmonize with the 5-tone design system and provide contrast.
+ * Generates an algorithmic, full-spectrum 3-stop gradient across ANY hue.
  */
-export function generateRandomMeshPalette(): {
+export function generateRandomVibrantGradient(): {
   gradient: [string, string, string];
-  shape: ShapePatternType;
   name: string;
-  isLightText: boolean;
 } {
+  // Broad palette color families
+  const HUE_FAMILIES = [
+    { name: 'Neon Emerald', hue: 155 },
+    { name: 'Electric Cyan', hue: 188 },
+    { name: 'Sapphire Galaxy', hue: 218 },
+    { name: 'Royal Indigo', hue: 250 },
+    { name: 'Violet Cyber', hue: 280 },
+    { name: 'Magenta Flare', hue: 315 },
+    { name: 'Crimson Rose', hue: 345 },
+    { name: 'Sunset Amber', hue: 22 },
+    { name: 'Golden Sun', hue: 45 },
+    { name: 'Lime Electric', hue: 90 },
+    { name: 'Aqua Mint', hue: 168 },
+    { name: 'Deep Cosmic', hue: 270 },
+  ];
+
+  const pickFamily = HUE_FAMILIES[Math.floor(Math.random() * HUE_FAMILIES.length)];
+  // Add subtle random jitter to base hue (+- 15 degrees)
+  const baseHue = (pickFamily.hue + Math.floor(Math.random() * 30 - 15) + 360) % 360;
+
+  // 4 harmonic color schemes
+  const schemeType = Math.floor(Math.random() * 4);
+  let stop1: string;
+  let stop2: string;
+  let stop3: string;
+
+  if (schemeType === 0) {
+    // Analogous Flow (vibrant top, harmonic mid, ultra-rich deep base)
+    stop1 = hslToHex(baseHue, 88 + Math.random() * 10, 56);
+    stop2 = hslToHex((baseHue + 35) % 360, 80 + Math.random() * 12, 42);
+    stop3 = hslToHex((baseHue + 60) % 360, 75, 12);
+  } else if (schemeType === 1) {
+    // Complementary Pop (electric primary, contrasting accent, deep shadow)
+    stop1 = hslToHex(baseHue, 92, 58);
+    stop2 = hslToHex((baseHue + 175) % 360, 85, 45);
+    stop3 = hslToHex((baseHue + 20) % 360, 80, 10);
+  } else if (schemeType === 2) {
+    // Triadic Neon Shift
+    stop1 = hslToHex(baseHue, 95, 60);
+    stop2 = hslToHex((baseHue + 120) % 360, 85, 48);
+    stop3 = hslToHex((baseHue + 240) % 360, 78, 14);
+  } else {
+    // Specular Glow on Obsidian
+    stop1 = hslToHex(baseHue, 94, 62);
+    stop2 = hslToHex((baseHue + 40) % 360, 86, 38);
+    stop3 = '#040608';
+  }
+
+  return {
+    gradient: [stop1, stop2, stop3],
+    name: `${pickFamily.name} Mesh`,
+  };
+}
+
+/**
+ * Returns a random shape pattern.
+ */
+export function generateRandomShapeOnly(): ShapePatternType {
   const shapeOptions: ShapePatternType[] = [
     'waves',
     'orbs',
@@ -131,63 +224,26 @@ export function generateRandomMeshPalette(): {
     'aurora',
     'fluid',
   ];
-  const selectedShape = shapeOptions[Math.floor(Math.random() * shapeOptions.length)];
+  return shapeOptions[Math.floor(Math.random() * shapeOptions.length)];
+}
 
-  // Harmonic mood strategies:
-  // 1. Tangerine & Slate (Warm & Cool contrast)
-  // 2. Iron & Tangerine (Fiery Sunset)
-  // 3. Slate & Palm (Nordic Organic)
-  // 4. Obsidian Minimal (Deep Glass)
-  // 5. Palm & Tangerine (Dawn Oasis)
-  const strategies = [
-    () => {
-      const top = HARMONIC_ANCHORS.tangerine[Math.floor(Math.random() * HARMONIC_ANCHORS.tangerine.length)];
-      const mid = HARMONIC_ANCHORS.slate[Math.floor(Math.random() * HARMONIC_ANCHORS.slate.length)];
-      const base = HARMONIC_ANCHORS.obsidian[Math.floor(Math.random() * HARMONIC_ANCHORS.obsidian.length)];
-      return { gradient: [top, mid, base] as [string, string, string], name: 'Aurora Sunset' };
-    },
-    () => {
-      const top = HARMONIC_ANCHORS.slate[Math.floor(Math.random() * HARMONIC_ANCHORS.slate.length)];
-      const mid = HARMONIC_ANCHORS.slate[1];
-      const base = HARMONIC_ANCHORS.obsidian[1];
-      return { gradient: [top, mid, base] as [string, string, string], name: 'Nordic Frost' };
-    },
-    () => {
-      const top = HARMONIC_ANCHORS.iron[Math.floor(Math.random() * HARMONIC_ANCHORS.iron.length)];
-      const mid = HARMONIC_ANCHORS.tangerine[Math.floor(Math.random() * HARMONIC_ANCHORS.tangerine.length)];
-      const base = HARMONIC_ANCHORS.iron[4];
-      return { gradient: [top, mid, base] as [string, string, string], name: 'Oxidized Velvet' };
-    },
-    () => {
-      const top = HARMONIC_ANCHORS.palm[Math.floor(Math.random() * HARMONIC_ANCHORS.palm.length)];
-      const mid = HARMONIC_ANCHORS.slate[Math.floor(Math.random() * HARMONIC_ANCHORS.slate.length)];
-      const base = HARMONIC_ANCHORS.obsidian[1];
-      return { gradient: [top, mid, base] as [string, string, string], name: 'Sage Horizon' };
-    },
-    () => {
-      const top = HARMONIC_ANCHORS.obsidian[3];
-      const mid = HARMONIC_ANCHORS.slate[2];
-      const base = HARMONIC_ANCHORS.obsidian[0];
-      return { gradient: [top, mid, base] as [string, string, string], name: 'Obsidian Sheen' };
-    },
-    () => {
-      const top = HARMONIC_ANCHORS.tangerine[0];
-      const mid = HARMONIC_ANCHORS.iron[1];
-      const base = HARMONIC_ANCHORS.obsidian[0];
-      return { gradient: [top, mid, base] as [string, string, string], name: 'Solar Ember' };
-    },
-  ];
-
-  const strategy = strategies[Math.floor(Math.random() * strategies.length)];
-  const { gradient, name } = strategy();
-
+/**
+ * Generates both random full-spectrum colors and random shape.
+ */
+export function generateRandomMeshPalette(): {
+  gradient: [string, string, string];
+  shape: ShapePatternType;
+  name: string;
+  isLightText: boolean;
+} {
+  const { gradient, name } = generateRandomVibrantGradient();
+  const shape = generateRandomShapeOnly();
   const lum = getHexLuminance(gradient[0]);
-  const isLightText = lum < 140;
 
   return {
     gradient,
-    shape: selectedShape,
+    shape,
     name,
-    isLightText,
+    isLightText: lum < 145,
   };
 }

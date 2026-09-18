@@ -12,7 +12,6 @@ import {
   Bell,
   ArrowDownLeft,
   ArrowUpRight,
-  Plus,
   CreditCard,
   Users,
   ShieldCheck,
@@ -174,6 +173,12 @@ export default function DaybookScreen() {
     return [];
   }, [dbCards, userProfile.name]);
 
+  const categoryMap = useMemo(() => {
+    const map = new Map<string, string>();
+    (dbCategories || []).forEach((c) => map.set(c.id, c.name));
+    return map;
+  }, [dbCategories]);
+
   const transactions: DashboardTxItem[] = useMemo(() => {
     if (dbTx && dbTx.length > 0) {
       return dbTx.map((t) => {
@@ -192,10 +197,11 @@ export default function DaybookScreen() {
         }
 
         const isOutflow = t.type === "expense" || t.type === "lend";
+        const catName = categoryMap.get(t.categoryId || '') || t.categoryId || 'General';
         return {
           id: t.id,
           title: t.title,
-          category: t.categoryId || "General",
+          category: catName,
           time: displayTime,
           amount: t.amount,
           isExpense: isOutflow,
@@ -205,7 +211,7 @@ export default function DaybookScreen() {
       });
     }
     return [];
-  }, [dbTx, colors.oxidizedIron, colors.palmLeaf]);
+  }, [dbTx, categoryMap, colors.oxidizedIron, colors.palmLeaf]);
 
   const categories: CategoryItem[] = useMemo(() => {
     if (dbCategories && dbCategories.length > 0) {
@@ -240,10 +246,17 @@ export default function DaybookScreen() {
   }, [dbRecurring]);
 
   // Total balance and utilization calculation
-  const totalBalance = useMemo(
-    () => budgetCards.reduce((acc, c) => acc + (c.limit - c.spent), 0),
-    [budgetCards],
-  );
+  const totalBalance = useMemo(() => {
+    const cardsBalance = budgetCards.reduce((acc, c) => acc + (c.limit - c.spent), 0);
+    const unlinkedNet = (dbTx || [])
+      .filter((t) => !t.cardId)
+      .reduce((acc, t) => {
+        if (t.type === 'income' || t.type === 'borrow') return acc + t.amount;
+        if (t.type === 'expense' || t.type === 'lend') return acc - t.amount;
+        return acc;
+      }, 0);
+    return cardsBalance + unlinkedNet;
+  }, [budgetCards, dbTx]);
   const totalLimit = useMemo(
     () => budgetCards.reduce((acc, c) => acc + c.limit, 0),
     [budgetCards],
@@ -467,7 +480,7 @@ export default function DaybookScreen() {
           currencySymbol={currencySymbol}
         />
 
-        {/* 3 Agile Action Pill Buttons matching Image 2 Reference: Receive, Transfer, + */}
+        {/* 2 Agile Action Pill Buttons: Receive (Deposit/Income) and Transfer (Withdrawal/Expense) */}
         <View style={styles.actionPillsRow}>
           <AppButton
             title="Receive"
@@ -482,7 +495,7 @@ export default function DaybookScreen() {
 
           <AppButton
             title="Transfer"
-            onPress={() => openQuickEntry("transfer")}
+            onPress={() => openQuickEntry("expense")}
             variant="accent"
             size="pill"
             iconLeft={
@@ -490,26 +503,6 @@ export default function DaybookScreen() {
             }
             style={{ flex: 1 }}
           />
-
-          <TouchableOpacity
-            style={[
-              styles.plusCircleBtn,
-              {
-                backgroundColor: isDark ? "#FFFFFF" : "#020202",
-                borderColor: isDark
-                  ? "rgba(255, 255, 255, 0.25)"
-                  : "rgba(0, 0, 0, 0.08)",
-              },
-            ]}
-            onPress={() => openQuickEntry("expense")}
-            activeOpacity={0.85}
-          >
-            <Plus
-              size={22}
-              color={isDark ? "#020202" : "#FFFFFF"}
-              strokeWidth={2.5}
-            />
-          </TouchableOpacity>
         </View>
 
         {/* 2x2 Bento Factors Grid with 5-tone palette directly from Reference Images */}

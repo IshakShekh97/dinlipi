@@ -49,13 +49,13 @@ export function TagSelectorField({
   // Selected category object lookup
   const selectedCategory = useMemo(() => {
     if (!selectedCategoryId) return null;
-    return categories.find((c) => c.id === selectedCategoryId) ?? null;
+    return categories.find((c) => c.id === selectedCategoryId || c.name === selectedCategoryId) ?? null;
   }, [categories, selectedCategoryId]);
 
   // Handle toggling category selection
   const handleToggle = (cat: CategoryItem) => {
     triggerHaptic('light');
-    if (selectedCategoryId === cat.id) {
+    if (selectedCategoryId === cat.id || selectedCategoryId === cat.name) {
       onSelectCategory(null);
     } else {
       onSelectCategory(cat);
@@ -135,7 +135,7 @@ export function TagSelectorField({
           contentContainerStyle={styles.chipsScrollContent}
         >
           {inlineSuggestions.map((cat) => {
-            const isSelected = selectedCategoryId === cat.id;
+            const isSelected = selectedCategoryId === cat.id || selectedCategoryId === cat.name;
             return (
               <TouchableOpacity
                 key={cat.id}
@@ -279,7 +279,7 @@ export function TagSelectorField({
             ) : (
               <View style={{ gap: 8 }}>
                 {searchFiltered.map((cat) => {
-                  const isSelected = selectedCategoryId === cat.id;
+                  const isSelected = selectedCategoryId === cat.id || selectedCategoryId === cat.name;
                   return (
                     <TouchableOpacity
                       key={cat.id}

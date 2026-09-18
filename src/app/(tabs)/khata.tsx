@@ -127,7 +127,8 @@ export default function KhataScreen() {
               }))
           : [];
 
-        const paidSoFar = personInstallments.reduce((acc, i) => acc + i.amount, 0);
+        const installmentsPaid = personInstallments.reduce((acc, i) => acc + i.amount, 0);
+        const paidSoFar = Math.max(p.totalBorrowed || 0, installmentsPaid);
 
         return {
           id: p.id,

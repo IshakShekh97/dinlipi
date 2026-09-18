@@ -161,7 +161,11 @@ function QuickEntryForm({
     return new Date().toISOString();
   };
 
-  const handleSave = () => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSave = async () => {
+    if (isSubmitting) return;
+
     const parsedAmount = parseFloat(amount);
     if (!title.trim()) {
       setErrorMessage('Please enter a description for this entry.');
@@ -179,30 +183,38 @@ function QuickEntryForm({
       return;
     }
 
+    setIsSubmitting(true);
     triggerHaptic('success');
-    onSave({
-      id: initialData?.id,
-      title: title.trim(),
-      amount: parsedAmount,
-      type: initialData ? initialData.type : type,
-      category: selectedCategoryName || initialData?.category || (type === 'income' ? 'Income' : 'General'),
-      categoryId: selectedCategoryId,
-      tags: selectedCategoryId ? [selectedCategoryId] : [],
-      channel,
-      cardId: selectedCardId,
-      date: computeFinalDate(),
-    });
 
-    useUIStore.getState().triggerConfetti();
+    const finalCat = selectedCategoryName || initialData?.category || (type === 'income' ? 'Income' : 'General');
 
-    // Reset local state fields
-    setTitle('');
-    setAmount('');
-    setErrorMessage('');
-    setDateMode('today');
-    setCustomDateText(new Date().toISOString().split('T')[0]);
+    try {
+      await onSave({
+        id: initialData?.id,
+        title: title.trim(),
+        amount: parsedAmount,
+        type: initialData ? initialData.type : type,
+        category: finalCat,
+        categoryId: finalCat,
+        tags: [finalCat],
+        channel,
+        cardId: selectedCardId,
+        date: computeFinalDate(),
+      });
 
-    onClose();
+      useUIStore.getState().triggerConfetti();
+
+      // Reset local state fields
+      setTitle('');
+      setAmount('');
+      setErrorMessage('');
+      setDateMode('today');
+      setCustomDateText(new Date().toISOString().split('T')[0]);
+
+      onClose();
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (!cards || cards.length === 0) {
@@ -567,19 +579,21 @@ function QuickEntryForm({
       {/* Action Button */}
       <TouchableOpacity
         onPress={handleSave}
+        disabled={isSubmitting}
         style={[
           styles.saveBtn,
           {
             backgroundColor: colors.tangerineDream,
             shadowColor: '#000',
             shadowOpacity: 0.15,
+            opacity: isSubmitting ? 0.6 : 1,
           },
         ]}
         activeOpacity={0.85}
       >
         <Sparkles size={16} color={colors.black} />
         <Text style={styles.saveBtnText}>
-          {initialData ? 'Update Entry' : 'Record Transaction'}
+          {isSubmitting ? 'Saving...' : initialData ? 'Update Entry' : 'Record Transaction'}
         </Text>
       </TouchableOpacity>
     </View>

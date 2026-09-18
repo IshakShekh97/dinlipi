@@ -150,10 +150,6 @@ export default function PersonLedgerPage() {
     let billed = 0;
     let paid = 0;
 
-    const hasOpeningTx = allPersonTxs.some(
-      (t) => t.title.toLowerCase().includes('opening') || t.title.toLowerCase().includes('initial')
-    );
-
     allPersonTxs.forEach((t) => {
       if (t.type === 'lend' || t.type === 'expense') {
         billed += t.amount;
@@ -161,11 +157,6 @@ export default function PersonLedgerPage() {
         paid += t.amount;
       }
     });
-
-    // If person has initial totalLent and no explicit opening transaction was recorded, add it so it is never overshadowed!
-    if (!hasOpeningTx && person && (person.totalLent ?? 0) > 0) {
-      billed += (person.totalLent ?? 0);
-    }
 
     const remaining = Math.max(0, billed - paid);
     const prog = billed > 0 ? Math.min(1, paid / billed) : 1;
@@ -176,7 +167,7 @@ export default function PersonLedgerPage() {
       isSettled: remaining <= 0,
       progress: prog,
     };
-  }, [allPersonTxs, person]);
+  }, [allPersonTxs]);
 
   // Filtered transactions
   const filteredTxs = useMemo(() => {
@@ -247,16 +238,6 @@ export default function PersonLedgerPage() {
     }
 
     const effectiveCardId = receiveLinkedCardId || (person as any)?.cardId || (dbCards.length > 0 ? dbCards[0].id : undefined);
-    if (!effectiveCardId) {
-      showConfirmDialog({
-        title: 'Budget Envelope Required',
-        message: 'A budget envelope must be created first before recording person transactions.',
-        confirmText: 'OK',
-        cancelText: 'Cancel',
-        onConfirm: () => {},
-      });
-      return;
-    }
 
     let finalDate = new Date().toISOString();
     if (receiveDateMode === 'yesterday') {
@@ -271,14 +252,14 @@ export default function PersonLedgerPage() {
     triggerHaptic('success');
     await addPersonEntry({
       personId: id,
-      title: 'Payment Received',
+      title: receiveNotes.trim() ? receiveNotes.trim() : 'Payment Received',
       totalCost: 0,
       paidAmount: paidNum,
       channel: receiveChannel,
       date: finalDate,
-      notes: receiveNotes.trim(),
+      notes: receiveNotes.trim() || `Payment via ${receiveChannel}`,
       cardId: effectiveCardId,
-      categoryId: receiveCategoryId || undefined,
+      categoryId: receiveCategoryId || 'Khata Settlement',
     });
 
     setReceiveModalVisible(false);
@@ -301,16 +282,6 @@ export default function PersonLedgerPage() {
     }
 
     const effectiveCardId = billLinkedCardId || (person as any)?.cardId || (dbCards.length > 0 ? dbCards[0].id : undefined);
-    if (!effectiveCardId) {
-      showConfirmDialog({
-        title: 'Budget Envelope Required',
-        message: 'A budget envelope must be created first before recording person transactions.',
-        confirmText: 'OK',
-        cancelText: 'Cancel',
-        onConfirm: () => {},
-      });
-      return;
-    }
 
     let finalDate = new Date().toISOString();
     if (billDateMode === 'yesterday') {
@@ -327,14 +298,14 @@ export default function PersonLedgerPage() {
     triggerHaptic('success');
     await addPersonEntry({
       personId: id,
-      title: billTitle.trim() || 'Service & Bill',
+      title: billTitle.trim() || 'service and goods',
       totalCost: costNum,
       paidAmount: advanceNum,
       channel: billChannel,
       date: finalDate,
       notes: billNotes.trim(),
       cardId: effectiveCardId,
-      categoryId: billCategoryId || undefined,
+      categoryId: billCategoryId || 'service and goods',
     });
 
     setBillModalVisible(false);
@@ -907,7 +878,7 @@ export default function PersonLedgerPage() {
           {/* Tag / Category Selector */}
           <TagSelectorField
             selectedCategoryId={receiveCategoryId}
-            onSelectCategory={(cat) => setReceiveCategoryId(cat?.id || null)}
+            onSelectCategory={(cat) => setReceiveCategoryId(cat?.name || cat?.id || null)}
             label="Tag / Category (Optional)"
           />
 
@@ -1198,7 +1169,7 @@ export default function PersonLedgerPage() {
           {/* Tag / Category Selector */}
           <TagSelectorField
             selectedCategoryId={billCategoryId}
-            onSelectCategory={(cat) => setBillCategoryId(cat?.id || null)}
+            onSelectCategory={(cat) => setBillCategoryId(cat?.name || cat?.id || null)}
             label="Tag / Category (Optional)"
           />
 
