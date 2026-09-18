@@ -8,6 +8,7 @@ import {
   StyleSheet,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { router } from 'expo-router';
 import {
   Search,
   X,
@@ -15,7 +16,6 @@ import {
   TrendingUp,
   CreditCard,
   Plus,
-  Receipt,
   User,
   Tag,
   ChevronRight,
@@ -42,6 +42,7 @@ import {
   QuickEntryModal,
   QuickEntryData,
 } from '../../components/ledger/QuickEntryModal';
+import { EmptyStateView } from '../../components/ui/EmptyStateView';
 import { BudgetCardData } from '../../components/cards/BudgetCardModal';
 
 export default function TransactionsScreen() {
@@ -317,6 +318,7 @@ export default function TransactionsScreen() {
     async (entry: QuickEntryData) => {
       setEntryModalVisible(false);
       triggerHaptic('success');
+      useUIStore.getState().triggerConfetti();
 
       if (entry.id) {
         // Optimistic Edit
@@ -423,17 +425,17 @@ export default function TransactionsScreen() {
             style={[styles.headerBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : '#FFFFFF', borderColor: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.06)' }]}
             activeOpacity={0.75}
           >
-            <TrendingUp size={16} color={colors.matchaLime} />
+            <TrendingUp size={16} color={colors.palmLeaf} />
             <Text style={[styles.headerBtnText, { color: colors.textPrimary }]}>Income</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             onPress={() => handleOpenAdd('expense')}
-            style={[styles.headerBtn, { backgroundColor: colors.matchaLime, borderColor: colors.matchaLime }]}
+            style={[styles.headerBtn, { backgroundColor: colors.tangerineDream, borderColor: colors.tangerineDream }]}
             activeOpacity={0.75}
           >
-            <Plus size={16} color="#141715" />
-            <Text style={[styles.headerBtnText, { color: '#141715', fontWeight: '800' }]}>Expense</Text>
+            <Plus size={16} color={colors.black} />
+            <Text style={[styles.headerBtnText, { color: colors.black, fontWeight: '800' }]}>Expense</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -442,11 +444,21 @@ export default function TransactionsScreen() {
         contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 130 }}
         showsVerticalScrollIndicator={false}
       >
-        {/* Nested Dark Glass Hero Card directly from Reference Image 2 */}
-        <View style={[styles.kpiCard, { backgroundColor: isDark ? 'rgba(22, 25, 24, 0.82)' : '#FFFFFF', borderColor: isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0,0,0,0.06)' }]}>
+        {/* Nested Claymorphic 3D Card directly from Reference Image 2 */}
+        <View
+          style={[
+            styles.kpiCard,
+            {
+              backgroundColor: isDark ? '#11171A' : '#FFFFFF',
+              borderColor: isDark ? 'rgba(255, 255, 255, 0.10)' : 'rgba(0,0,0,0.06)',
+              borderTopColor: isDark ? 'rgba(255, 255, 255, 0.20)' : 'rgba(255, 255, 255, 0.95)',
+              borderWidth: 1,
+            },
+          ]}
+        >
           <View style={styles.kpiCol}>
             <Text style={[styles.kpiLabel, { color: colors.textMuted }]}>Total Inflow</Text>
-            <Text style={[styles.kpiAmount, { color: colors.matchaLime }]}>
+            <Text style={[styles.kpiAmount, { color: colors.palmLeaf }]}>
               +{currencySymbol}{totalInflow.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
             </Text>
           </View>
@@ -455,7 +467,7 @@ export default function TransactionsScreen() {
 
           <View style={styles.kpiCol}>
             <Text style={[styles.kpiLabel, { color: colors.textMuted }]}>Total Outflow</Text>
-            <Text style={[styles.kpiAmount, { color: colors.terracotta }]}>
+            <Text style={[styles.kpiAmount, { color: colors.oxidizedIron }]}>
               -{currencySymbol}{totalOutflow.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
             </Text>
           </View>
@@ -464,7 +476,7 @@ export default function TransactionsScreen() {
 
           <View style={styles.kpiCol}>
             <Text style={[styles.kpiLabel, { color: colors.textMuted }]}>Net Balance</Text>
-            <Text style={[styles.kpiAmount, { color: netBalance >= 0 ? colors.matchaLime : colors.terracotta }]}>
+            <Text style={[styles.kpiAmount, { color: netBalance >= 0 ? colors.palmLeaf : colors.oxidizedIron }]}>
               {netBalance >= 0 ? '+' : '-'}{currencySymbol}{Math.abs(netBalance).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
             </Text>
           </View>
@@ -620,7 +632,7 @@ export default function TransactionsScreen() {
           </View>
         )}
 
-        {/* Category Filter Chips */}
+        {/* Tag Filter Chips (Categories are strictly tags for filtering) */}
         {dbCategories.length > 0 && (
           <ScrollView
             horizontal
@@ -640,7 +652,7 @@ export default function TransactionsScreen() {
             >
               <Tag size={11} color={!selectedCategory ? colors.matchaLime : colors.textMuted} />
               <Text style={{ fontSize: 11, fontWeight: !selectedCategory ? '800' : '600', color: !selectedCategory ? colors.matchaLime : colors.textSecondary }}>
-                All Categories
+                All Tags
               </Text>
             </TouchableOpacity>
 
@@ -671,17 +683,23 @@ export default function TransactionsScreen() {
 
         {/* Grouped Transactions List */}
         {groupedByDate.length === 0 ? (
-          <View style={[styles.emptyCard, { backgroundColor: colors.cardSecondary, borderColor: colors.borderSubtle }]}>
-            <Receipt size={36} color={colors.textMuted} style={{ marginBottom: 10 }} />
-            <Text style={{ fontSize: 16, fontWeight: '800', color: colors.textPrimary, marginBottom: 4 }}>
-              No Transactions Found
-            </Text>
-            <Text style={{ fontSize: 13, color: colors.textMuted, textAlign: 'center', maxWidth: 280 }}>
-              {searchQuery || typeFilter !== 'all' || timeFilter !== 'all' || selectedCardId
-                ? 'Try adjusting your filters or search terms.'
-                : 'No transactions recorded yet. Tap "+ Expense" or "Income" above to record your first transaction.'}
-            </Text>
-          </View>
+          <EmptyStateView
+            type={
+              searchQuery || typeFilter !== 'all' || timeFilter !== 'all' || selectedCardId
+                ? 'no_search_results'
+                : 'no_transactions'
+            }
+            onPrimaryAction={() => {
+              if (searchQuery || typeFilter !== 'all' || timeFilter !== 'all' || selectedCardId) {
+                setSearchQuery('');
+                setTypeFilter('all');
+                setTimeFilter('all');
+                setSelectedCardId(null);
+              } else {
+                handleOpenAdd('expense');
+              }
+            }}
+          />
         ) : (
           groupedByDate.map(([dateStr, txs]) => (
             <View key={dateStr} style={{ marginBottom: 16 }}>
@@ -692,7 +710,7 @@ export default function TransactionsScreen() {
 
               {txs.map((t) => {
                 const isExpense = t.type === 'expense' || t.type === 'lend';
-                const itemColor = isExpense ? colors.terracotta : colors.matchaLime;
+                const itemColor = isExpense ? colors.oxidizedIron : colors.palmLeaf;
                 const personName = t.personId ? peopleMap.get(t.personId) : null;
                 const cardName = t.cardId ? cardsMap.get(t.cardId) : null;
 
@@ -703,8 +721,10 @@ export default function TransactionsScreen() {
                     style={[
                       styles.txRow,
                       {
-                        backgroundColor: isDark ? 'rgba(32, 35, 34, 0.85)' : '#FFFFFF',
+                        backgroundColor: isDark ? '#11171A' : '#FFFFFF',
                         borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.05)',
+                        borderTopColor: isDark ? 'rgba(255, 255, 255, 0.14)' : 'rgba(255, 255, 255, 0.95)',
+                        borderWidth: 1,
                       },
                     ]}
                     activeOpacity={0.78}
@@ -720,9 +740,9 @@ export default function TransactionsScreen() {
                       ]}
                     >
                       {isExpense ? (
-                        <TrendingDown size={18} color={colors.terracotta} strokeWidth={2.2} />
+                        <TrendingDown size={18} color={colors.oxidizedIron} strokeWidth={2.2} />
                       ) : (
-                        <TrendingUp size={18} color={colors.matchaLime} strokeWidth={2.2} />
+                        <TrendingUp size={18} color={colors.palmLeaf} strokeWidth={2.2} />
                       )}
                     </View>
 
@@ -800,6 +820,7 @@ export default function TransactionsScreen() {
         initialData={editingEntryData}
         cards={budgetCardsData}
         currencySymbol={currencySymbol}
+        onCreateBudget={() => router.push('/(tabs)/vault' as any)}
         onClose={() => setEntryModalVisible(false)}
         onSave={handleSaveEntry}
       />

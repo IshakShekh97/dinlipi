@@ -63,8 +63,8 @@ export const CozyModal: React.FC<CozyModalProps> = ({
           style={[
             styles.sheetContainer,
             {
-              backgroundColor: isDark ? 'rgba(25, 29, 27, 0.98)' : 'rgba(255, 255, 255, 0.98)',
-              borderColor: isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.08)',
+              backgroundColor: isDark ? 'rgba(12, 16, 19, 0.98)' : 'rgba(255, 255, 255, 0.98)',
+              borderColor: isDark ? 'rgba(255, 255, 255, 0.14)' : 'rgba(0, 0, 0, 0.08)',
               paddingBottom: Math.max(insets.bottom + 16, 28),
             },
           ]}
@@ -74,7 +74,7 @@ export const CozyModal: React.FC<CozyModalProps> = ({
             <View
               style={[
                 styles.handlePill,
-                { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.12)' },
+                { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.18)' : 'rgba(0, 0, 0, 0.12)' },
               ]}
             />
           </View>
@@ -88,8 +88,8 @@ export const CozyModal: React.FC<CozyModalProps> = ({
                     style={[
                       styles.iconBadge,
                       {
-                        backgroundColor: isDark ? '#262928' : '#F4F4F0',
-                        borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
+                        backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : '#F4F7F9',
+                        borderColor: isDark ? 'rgba(255, 255, 255, 0.10)' : 'rgba(0, 0, 0, 0.06)',
                       },
                     ]}
                   >
@@ -126,8 +126,8 @@ export const CozyModal: React.FC<CozyModalProps> = ({
                   style={[
                     styles.closeBtn,
                     {
-                      backgroundColor: isDark ? '#262928' : '#F5F5F0',
-                      borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
+                      backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : '#F4F7F9',
+                      borderColor: isDark ? 'rgba(255, 255, 255, 0.10)' : 'rgba(0, 0, 0, 0.06)',
                     },
                   ]}
                   activeOpacity={0.7}

@@ -28,32 +28,32 @@ export function AppLogo({
   showSubtitle = true,
   style,
 }: AppLogoProps) {
-  const { isDark } = useAppTheme();
+  const { colors, isDark } = useAppTheme();
   const dim = SIZE_MAP[size];
 
   // Dynamic colors
-  const primaryBrand = color || '#CEF04A'; // Matcha Lime
-  const textColor = isDark ? '#FFFFFF' : '#121413';
-  const subtextColor = isDark ? 'rgba(255,255,255,0.5)' : 'rgba(18,20,19,0.5)';
-  const containerBg = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(18,20,19,0.04)';
-  const borderColor = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(18,20,19,0.08)';
+  const primaryBrand = color || colors.tangerineDream;
+  const textColor = isDark ? '#FFFFFF' : '#020202';
+  const subtextColor = isDark ? 'rgba(255, 255, 255, 0.55)' : 'rgba(2, 2, 2, 0.55)';
+  const containerBg = isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.04)';
+  const borderColor = isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.08)';
 
   // SVG Glyphs: Modern geometric interpretation of Bengali "দ" combined with ledger currency loop
   const renderGlyph = (iconSize: number) => {
     return (
       <Svg width={iconSize} height={iconSize} viewBox="0 0 100 100" fill="none">
         <Defs>
-          {/* Main Gradient */}
+          {/* Main 5-Tone Gradient */}
           <LinearGradient id="dinlipiGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-            <Stop offset="0%" stopColor="#CEF04A" />
-            <Stop offset="60%" stopColor="#81B29A" />
-            <Stop offset="100%" stopColor="#F2CC8F" />
+            <Stop offset="0%" stopColor="#E39774" />
+            <Stop offset="50%" stopColor="#326273" />
+            <Stop offset="100%" stopColor="#899D78" />
           </LinearGradient>
 
           {/* Accent Glow Gradient */}
           <LinearGradient id="glowGrad" x1="20%" y1="10%" x2="80%" y2="90%">
-            <Stop offset="0%" stopColor="#CEF04A" stopOpacity={0.8} />
-            <Stop offset="100%" stopColor="#CEF04A" stopOpacity={0.0} />
+            <Stop offset="0%" stopColor="#E39774" stopOpacity={0.8} />
+            <Stop offset="100%" stopColor="#326273" stopOpacity={0.0} />
           </LinearGradient>
         </Defs>
 
@@ -64,13 +64,13 @@ export function AppLogo({
           width="92"
           height="92"
           rx="26"
-          fill={isDark ? '#1C1F1D' : '#F7F6F1'}
+          fill={isDark ? 'rgba(255, 255, 255, 0.05)' : '#FFFFFF'}
           stroke={borderColor}
-          strokeWidth="2"
+          strokeWidth="1.5"
         />
 
         {/* Outer subtle glow */}
-        <Circle cx="50" cy="50" r="38" fill="url(#glowGrad)" opacity={0.15} />
+        <Circle cx="50" cy="50" r="38" fill="url(#glowGrad)" opacity={0.18} />
 
         {/* The 'দ' Emblem & Cozy Ledger Loop */}
         <G transform="translate(18, 18)">

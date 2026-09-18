@@ -91,8 +91,8 @@ export const BentoFactorCard: React.FC<BentoFactorCardProps> = ({
       style={[
         styles.cardContainer,
         {
-          backgroundColor: isDark ? 'rgba(32, 35, 34, 0.85)' : '#FFFFFF',
-          borderColor: isDark ? 'rgba(255, 255, 255, 0.10)' : 'rgba(0, 0, 0, 0.05)',
+          backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 255, 255, 0.90)',
+          borderColor: isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.06)',
         },
       ]}
     >
@@ -102,8 +102,8 @@ export const BentoFactorCard: React.FC<BentoFactorCardProps> = ({
           style={[
             styles.iconCircle,
             {
-              backgroundColor: isDark ? 'rgba(255, 255, 255, 0.06)' : '#F5F5F0',
-              borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.04)',
+              backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(50, 98, 115, 0.08)',
+              borderColor: isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(50, 98, 115, 0.12)',
             },
           ]}
         >

@@ -5,18 +5,27 @@
 @import "nativewind/theme";
 
 @theme {
-  --color-forest: #2D6A4F;
-  --color-emerald: #40916C;
-  --color-sage: #74C69D;
-  --color-mint: #95D5B2;
+  --color-obsidian: #020202;
+  --color-blue-slate: #326273;
+  --color-tangerine: #E39774;
+  --color-oxidized-iron: #B02E0C;
+  --color-palm-leaf: #899D78;
 
-  --color-pine-dark: #0C0F0D;
-  --color-pine-surface: #151916;
-  --color-pine-card: #1B211C;
-  --color-pine-border: #273029;
+  --color-dark-void: #020202;
+  --color-dark-surface: #0C1013;
+  --color-dark-card: #12181C;
+  --color-dark-card-elevated: #182025;
+  --color-dark-border: rgba(255, 255, 255, 0.08);
 
-  --color-pine-light: #F6F8F6;
-  --color-pine-surface-light: #FFFFFF;
-  --color-pine-card-light: #EDF2EE;
-  --color-pine-border-light: #DCE4DD;
+  --color-light-void: #FFFFFF;
+  --color-light-surface: #F4F7F9;
+  --color-light-card: #FFFFFF;
+  --color-light-card-elevated: #EDF2F5;
+  --color-light-border: rgba(0, 0, 0, 0.06);
+
+  /* Backward compatibility */
+  --color-forest: #326273;
+  --color-emerald: #899D78;
+  --color-sage: #899D78;
+  --color-mint: #E39774;
 }

@@ -1,18 +1,15 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo } from "react";
 import {
   View,
   Text,
   ScrollView,
   TouchableOpacity,
-  TextInput,
   StyleSheet,
-} from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { router } from "expo-router";
 import {
   Bell,
-  Search,
-  X,
   ArrowDownLeft,
   ArrowUpRight,
   Plus,
@@ -21,34 +18,42 @@ import {
   ShieldCheck,
   TrendingUp,
   Repeat,
-} from 'lucide-react-native';
-import { useAppTheme } from '../../context/theme-context';
-import { FONTS, triggerHaptic } from '../../constants/theme';
-import { UserAvatar } from '../../components/ui/UserAvatar';
-import { AmbientGlowBackground } from '../../components/ui/AmbientGlowBackground';
-import { BentoFactorCard } from '../../components/ui/BentoFactorCard';
-import { UserProfileModal, UserProfile } from '../../components/profile/UserProfileModal';
-import { PermissionsModal } from '../../components/security/PermissionsModal';
+} from "lucide-react-native";
+import { useAppTheme } from "../../context/theme-context";
+import { FONTS, triggerHaptic } from "../../constants/theme";
+import { UserAvatar } from "../../components/ui/UserAvatar";
+import { AmbientGlowBackground } from "../../components/ui/AmbientGlowBackground";
+import { BentoFactorCard } from "../../components/ui/BentoFactorCard";
+import { AppButton } from "../../components/ui/AppButton";
+import { ConfettiCelebration } from "../../components/ui/ConfettiCelebration";
+import type { UserProfile } from "../../components/profile/UserProfileModal";
+import { PermissionsModal } from "../../components/security/PermissionsModal";
 import {
   TransactionDetailModal,
   TransactionItemData,
-} from '../../components/ledger/TransactionDetailModal';
+} from "../../components/ledger/TransactionDetailModal";
 import {
   BudgetCardModal,
   BudgetCardData,
-} from '../../components/cards/BudgetCardModal';
+} from "../../components/cards/BudgetCardModal";
 import {
   CategoryManagerModal,
   CategoryItem,
-} from '../../components/categories/CategoryManagerModal';
+} from "../../components/categories/CategoryManagerModal";
 import {
   RecurringManagerModal,
   RecurringTransaction,
-} from '../../components/recurring/RecurringManagerModal';
-import { BudgetCardStack } from '../../components/cards/BudgetCardStack';
-import { TransactionList, DashboardTxItem } from '../../components/ledger/TransactionList';
-import { CategoryCarousel } from '../../components/categories/CategoryCarousel';
-import { QuickEntryModal, QuickEntryData } from '../../components/ledger/QuickEntryModal';
+} from "../../components/recurring/RecurringManagerModal";
+import { BudgetCardStack } from "../../components/cards/BudgetCardStack";
+import {
+  TransactionList,
+  DashboardTxItem,
+} from "../../components/ledger/TransactionList";
+import { CategoryCarousel } from "../../components/categories/CategoryCarousel";
+import {
+  QuickEntryModal,
+  QuickEntryData,
+} from "../../components/ledger/QuickEntryModal";
 import {
   useTransactionsLive,
   useBudgetCardsLive,
@@ -66,10 +71,9 @@ import {
   updateCategory,
   deleteCategory,
   addRecurring,
-  updateUserProfile,
-} from '../../db/queries';
-import { useUIStore } from '../../store/ui-store';
-import { getCurrencySymbol } from '../../utils/currency';
+} from "../../db/queries";
+import { useUIStore } from "../../store/ui-store";
+import { getCurrencySymbol } from "../../utils/currency";
 
 export default function DaybookScreen() {
   const insets = useSafeAreaInsets();
@@ -82,8 +86,6 @@ export default function DaybookScreen() {
     setActiveCardIndex,
     dashboardTimeFilter,
     setDashboardTimeFilter,
-    dashboardSearchQuery,
-    setDashboardSearchQuery,
     selectedTx,
     setSelectedTx,
     detailModalVisible,
@@ -100,13 +102,14 @@ export default function DaybookScreen() {
     setRecurringModalVisible,
     entryModalVisible,
     setEntryModalVisible,
-    profileModalVisible,
-    setProfileModalVisible,
     permissionsModalVisible,
     setPermissionsModalVisible,
+    triggerConfetti,
   } = useUIStore();
 
-  const [quickEntryType, setQuickEntryType] = useState<'expense' | 'income' | 'transfer'>('expense');
+  const [quickEntryType, setQuickEntryType] = useState<
+    "expense" | "income" | "transfer"
+  >("expense");
 
   // Drizzle Reactive Live Queries
   const { data: dbCards = [] } = useBudgetCardsLive();
@@ -122,16 +125,16 @@ export default function DaybookScreen() {
       const u = dbUsers[0];
       return {
         name: u.name,
-        phone: u.phone || '',
-        avatar: u.avatar || 'avatar_matcha_fox',
-        currency: u.currency || '₹ INR',
+        phone: u.phone || "",
+        avatar: u.avatar || "avatar_matcha_fox",
+        currency: u.currency || "₹ INR",
       };
     }
     return {
-      name: '',
-      phone: '',
-      avatar: 'avatar_matcha_fox',
-      currency: '₹ INR',
+      name: "",
+      phone: "",
+      avatar: "avatar_matcha_fox",
+      currency: "₹ INR",
     };
   }, [dbUsers]);
 
@@ -158,13 +161,13 @@ export default function DaybookScreen() {
           tabLabel,
           limit: c.totalLimit,
           spent: c.spent || 0,
-          cardNum: '•••• ' + c.id.slice(-4),
-          variant: ((c as any).gradientType as any) || 'violetGlow',
+          cardNum: "•••• " + c.id.slice(-4),
+          variant: ((c as any).gradientType as any) || "violetGlow",
           customGradient,
           shapePattern,
-          holder: userProfile.name || 'Personal Vault',
-          expiry: 'Monthly',
-          cardType: ((c as any).cardType as any) || 'DEBIT',
+          holder: userProfile.name || "Personal Vault",
+          expiry: "Monthly",
+          cardType: ((c as any).cardType as any) || "DEBIT",
         };
       });
     }
@@ -174,13 +177,13 @@ export default function DaybookScreen() {
   const transactions: DashboardTxItem[] = useMemo(() => {
     if (dbTx && dbTx.length > 0) {
       return dbTx.map((t) => {
-        let displayTime = 'Today';
+        let displayTime = "Today";
         try {
           const dateObj = new Date(t.timestamp);
           if (!isNaN(dateObj.getTime())) {
             displayTime = dateObj.toLocaleTimeString([], {
-              hour: '2-digit',
-              minute: '2-digit',
+              hour: "2-digit",
+              minute: "2-digit",
               hour12: true,
             });
           }
@@ -188,21 +191,21 @@ export default function DaybookScreen() {
           displayTime = t.timestamp;
         }
 
-        const isOutflow = t.type === 'expense' || t.type === 'lend';
+        const isOutflow = t.type === "expense" || t.type === "lend";
         return {
           id: t.id,
           title: t.title,
-          category: t.categoryId || 'General',
+          category: t.categoryId || "General",
           time: displayTime,
           amount: t.amount,
           isExpense: isOutflow,
-          channel: (t.notes as any) || 'Cash',
-          color: isOutflow ? colors.terracotta : colors.matchaLime,
+          channel: (t.notes as any) || "Cash",
+          color: isOutflow ? colors.oxidizedIron : colors.palmLeaf,
         };
       });
     }
     return [];
-  }, [dbTx, colors.matchaLime, colors.terracotta]);
+  }, [dbTx, colors.oxidizedIron, colors.palmLeaf]);
 
   const categories: CategoryItem[] = useMemo(() => {
     if (dbCategories && dbCategories.length > 0) {
@@ -213,7 +216,7 @@ export default function DaybookScreen() {
         color: c.color,
         budget: c.budgetLimit || 0,
         spent: 0,
-        type: (c.type as any) || 'expense',
+        type: (c.type as any) || "expense",
       }));
     }
     return [];
@@ -225,12 +228,12 @@ export default function DaybookScreen() {
         id: r.id,
         name: r.title,
         amount: r.amount,
-        frequency: (r.frequency as any) || 'monthly',
-        category: r.categoryId || 'General',
+        frequency: (r.frequency as any) || "monthly",
+        category: r.categoryId || "General",
         nextBillingDate: r.nextDueDate,
         active: Boolean(r.isActive),
-        iconName: 'tv',
-        color: '#CEF04A',
+        iconName: "tv",
+        color: "#CEF04A",
       }));
     }
     return [];
@@ -239,34 +242,25 @@ export default function DaybookScreen() {
   // Total balance and utilization calculation
   const totalBalance = useMemo(
     () => budgetCards.reduce((acc, c) => acc + (c.limit - c.spent), 0),
-    [budgetCards]
+    [budgetCards],
   );
   const totalLimit = useMemo(
     () => budgetCards.reduce((acc, c) => acc + c.limit, 0),
-    [budgetCards]
+    [budgetCards],
   );
   const totalSpent = useMemo(
     () => budgetCards.reduce((acc, c) => acc + c.spent, 0),
-    [budgetCards]
+    [budgetCards],
   );
-  const budgetUtilization = totalLimit > 0 ? Math.round((totalSpent / totalLimit) * 100) : 0;
+  const budgetUtilization =
+    totalLimit > 0 ? Math.round((totalSpent / totalLimit) * 100) : 0;
 
-  // Search filtered transactions
-  const filteredTx = useMemo(() => {
-    if (!dashboardSearchQuery.trim()) return transactions;
-    const q = dashboardSearchQuery.toLowerCase();
-    return transactions.filter(
-      (tx) =>
-        tx.title.toLowerCase().includes(q) ||
-        tx.category.toLowerCase().includes(q) ||
-        tx.channel.toLowerCase().includes(q)
-    );
-  }, [transactions, dashboardSearchQuery]);
-
-  const currencySymbol = getCurrencySymbol(userProfile.currency || activeCurrency);
+  const currencySymbol = getCurrencySymbol(
+    userProfile.currency || activeCurrency,
+  );
 
   // Quick Action handler
-  const openQuickEntry = (type: 'expense' | 'income' | 'transfer') => {
+  const openQuickEntry = (type: "expense" | "income" | "transfer") => {
     triggerHaptic();
     setEditingTx(null);
     setQuickEntryType(type);
@@ -279,7 +273,7 @@ export default function DaybookScreen() {
         id: entry.id,
         title: entry.title,
         amount: entry.amount,
-        type: entry.type === 'income' ? 'income' : 'expense',
+        type: entry.type === "income" ? "income" : "expense",
         categoryId: entry.category,
         cardId: entry.cardId,
         date: entry.date,
@@ -289,12 +283,13 @@ export default function DaybookScreen() {
       await addTransaction({
         title: entry.title,
         amount: entry.amount,
-        type: entry.type === 'income' ? 'income' : 'expense',
+        type: entry.type === "income" ? "income" : "expense",
         categoryId: entry.category,
         cardId: entry.cardId,
         date: entry.date,
         notes: entry.channel,
       });
+      triggerConfetti();
     }
     setEditingTx(null);
   };
@@ -306,8 +301,8 @@ export default function DaybookScreen() {
 
   const handleEditTransaction = (tx: TransactionItemData) => {
     setEditingTx(tx);
-    const normalizedType: 'expense' | 'income' =
-      tx.type === 'income' || tx.type === 'borrow' ? 'income' : 'expense';
+    const normalizedType: "expense" | "income" =
+      tx.type === "income" || tx.type === "borrow" ? "income" : "expense";
     setQuickEntryType(normalizedType);
     setEntryModalVisible(true);
   };
@@ -318,6 +313,7 @@ export default function DaybookScreen() {
     } else {
       await addBudgetCard(cardData);
       setActiveCardIndex(0);
+      triggerConfetti();
     }
     setEditingBudgetCard(null);
   };
@@ -339,27 +335,20 @@ export default function DaybookScreen() {
     await addRecurring(rec);
   };
 
-  const handleSaveProfile = async (newProfile: UserProfile) => {
-    await updateUserProfile({
-      name: newProfile.name,
-      phone: newProfile.phone,
-      avatar: newProfile.avatar,
-      currency: newProfile.currency,
-    });
-  };
-
   const openTxDetail = (tx: DashboardTxItem) => {
-    triggerHaptic('light');
+    triggerHaptic("light");
     const modalData: TransactionItemData = {
       id: tx.id,
       title: tx.title,
       category: tx.category,
       amount: tx.amount,
-      type: tx.isExpense ? 'expense' : 'income',
-      channel: (['Cash', 'UPI', 'Bank'].includes(tx.channel) ? tx.channel : 'Cash') as 'Cash' | 'UPI' | 'Bank',
-      envelope: 'General Budget',
+      type: tx.isExpense ? "expense" : "income",
+      channel: (["Cash", "UPI", "Bank"].includes(tx.channel)
+        ? tx.channel
+        : "Cash") as "Cash" | "UPI" | "Bank",
+      envelope: "General Budget",
       time: tx.time,
-      date: 'Today',
+      date: "Today",
     };
     setSelectedTx(modalData);
     setDetailModalVisible(true);
@@ -373,7 +362,10 @@ export default function DaybookScreen() {
         paddingTop: Math.max(insets.top + 6, 28),
       }}
     >
-      {/* Ambient Diffuse Background Glow (Reference Image 1, 2, 3) */}
+      {/* Global Confetti Celebration Animation Overlay */}
+      <ConfettiCelebration />
+
+      {/* Ambient Diffuse Background Glow */}
       <AmbientGlowBackground />
 
       {/* Top Bar: Profile avatar, greeting, notifications button (Reference Image 3) */}
@@ -381,8 +373,8 @@ export default function DaybookScreen() {
         <TouchableOpacity
           style={styles.profileRow}
           onPress={() => {
-            triggerHaptic('light');
-            setProfileModalVisible(true);
+            triggerHaptic("light");
+            router.push("/profile" as any);
           }}
           activeOpacity={0.8}
         >
@@ -394,10 +386,12 @@ export default function DaybookScreen() {
           />
           <View>
             <Text style={[styles.greetingSub, { color: colors.textSecondary }]}>
-              {userProfile.name ? `Good Morning,` : 'Welcome Back,'}
+              {userProfile.name ? `Good Morning,` : "Welcome Back,"}
             </Text>
             <Text style={[styles.greetingTitle, { color: colors.textPrimary }]}>
-              {userProfile.name ? userProfile.name.split(' ')[0] : 'Personal Vault'}
+              {userProfile.name
+                ? userProfile.name.split(" ")[0]
+                : "Personal Vault"}
             </Text>
           </View>
         </TouchableOpacity>
@@ -407,12 +401,16 @@ export default function DaybookScreen() {
             style={[
               styles.topIconBtn,
               {
-                backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : '#FFFFFF',
-                borderColor: isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.06)',
+                backgroundColor: isDark
+                  ? "rgba(255, 255, 255, 0.08)"
+                  : "#FFFFFF",
+                borderColor: isDark
+                  ? "rgba(255, 255, 255, 0.12)"
+                  : "rgba(0, 0, 0, 0.06)",
               },
             ]}
             onPress={() => {
-              triggerHaptic('light');
+              triggerHaptic("light");
               setPermissionsModalVisible(true);
             }}
             activeOpacity={0.8}
@@ -421,7 +419,7 @@ export default function DaybookScreen() {
             <View
               style={[
                 styles.notifDot,
-                { backgroundColor: colors.coralRose || colors.matchaLime },
+                { backgroundColor: colors.oxidizedIron },
               ]}
             />
           </TouchableOpacity>
@@ -430,11 +428,19 @@ export default function DaybookScreen() {
 
       {/* "Your Balance" Headline directly from Image 3 Reference */}
       <View style={styles.balanceHeaderWrap}>
-        <Text style={[styles.balanceHeaderLabel, { color: colors.textSecondary }]}>
+        <Text
+          style={[styles.balanceHeaderLabel, { color: colors.textSecondary }]}
+        >
           Your Balance
         </Text>
-        <Text style={[styles.balanceHeaderAmount, { color: colors.textPrimary }]}>
-          {currencySymbol}{totalBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+        <Text
+          style={[styles.balanceHeaderAmount, { color: colors.textPrimary }]}
+        >
+          {currencySymbol}
+          {totalBalance.toLocaleString(undefined, {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          })}
         </Text>
       </View>
 
@@ -459,78 +465,68 @@ export default function DaybookScreen() {
           currencySymbol={currencySymbol}
         />
 
-        {/* 3 Agile Action Pill Buttons matching Image 3 Reference: Receive, Transfer, + */}
+        {/* 3 Agile Action Pill Buttons matching Image 2 Reference: Receive, Transfer, + */}
         <View style={styles.actionPillsRow}>
-          <TouchableOpacity
-            style={[
-              styles.receivePillBtn,
-              {
-                backgroundColor: isDark ? 'rgba(32, 50, 38, 0.88)' : 'rgba(238, 246, 240, 0.96)',
-                borderColor: isDark ? 'rgba(206, 240, 74, 0.28)' : 'rgba(56, 102, 65, 0.22)',
-              },
-            ]}
-            onPress={() => openQuickEntry('income')}
-            activeOpacity={0.85}
-          >
-            <ArrowDownLeft size={18} color={colors.matchaLime} strokeWidth={2.5} />
-            <Text
-              style={[
-                styles.actionPillText,
-                { color: isDark ? '#E8F5E9' : '#1E3A24', fontFamily: FONTS.sansSemiBold },
-              ]}
-            >
-              Receive
-            </Text>
-          </TouchableOpacity>
+          <AppButton
+            title="Receive"
+            onPress={() => openQuickEntry("income")}
+            variant="pill"
+            size="pill"
+            iconLeft={
+              <ArrowDownLeft size={18} color="#020202" strokeWidth={2.5} />
+            }
+            style={{ flex: 1 }}
+          />
 
-          <TouchableOpacity
-            style={[
-              styles.transferPillBtn,
-              {
-                backgroundColor: colors.matchaLime,
-              },
-            ]}
-            onPress={() => openQuickEntry('transfer')}
-            activeOpacity={0.85}
-          >
-            <ArrowUpRight size={18} color="#141715" strokeWidth={2.5} />
-            <Text style={[styles.actionPillText, { color: '#141715', fontFamily: FONTS.sansBold }]}>
-              Transfer
-            </Text>
-          </TouchableOpacity>
+          <AppButton
+            title="Transfer"
+            onPress={() => openQuickEntry("transfer")}
+            variant="accent"
+            size="pill"
+            iconLeft={
+              <ArrowUpRight size={18} color="#FFFFFF" strokeWidth={2.5} />
+            }
+            style={{ flex: 1 }}
+          />
 
           <TouchableOpacity
             style={[
               styles.plusCircleBtn,
               {
-                backgroundColor: isDark ? 'rgba(255, 255, 255, 0.12)' : '#FFFFFF',
-                borderColor: isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.08)',
+                backgroundColor: isDark ? "#FFFFFF" : "#020202",
+                borderColor: isDark
+                  ? "rgba(255, 255, 255, 0.25)"
+                  : "rgba(0, 0, 0, 0.08)",
               },
             ]}
-            onPress={() => openQuickEntry('expense')}
+            onPress={() => openQuickEntry("expense")}
             activeOpacity={0.85}
           >
-            <Plus size={22} color={colors.textPrimary} strokeWidth={2.5} />
+            <Plus
+              size={22}
+              color={isDark ? "#020202" : "#FFFFFF"}
+              strokeWidth={2.5}
+            />
           </TouchableOpacity>
         </View>
 
-        {/* 2x2 Bento Factors Grid directly from Image 1 Reference */}
+        {/* 2x2 Bento Factors Grid with 5-tone palette directly from Reference Images */}
         <View style={styles.bentoSectionWrap}>
           <View style={styles.bentoRow}>
             <BentoFactorCard
               title="Budget Spent"
               value={`${budgetUtilization}%`}
               variant="bars"
-              accentColor={budgetUtilization > 85 ? colors.terracotta : colors.matchaLime}
-              icon={<CreditCard size={18} color={colors.matchaLime} />}
+              accentColor={colors.tangerineDream}
+              icon={<CreditCard size={18} color={colors.tangerineDream} />}
             />
             <BentoFactorCard
               title="Active Accounts"
               value={dbPeople.length}
               variant="dots"
-              accentColor={colors.goldenHoney}
-              icon={<Users size={18} color={colors.goldenHoney} />}
-              onPress={() => router.push('/(tabs)/khata' as any)}
+              accentColor={colors.blueSlate}
+              icon={<Users size={18} color={colors.blueSlate} />}
+              onPress={() => router.push("/(tabs)/khata" as any)}
             />
           </View>
 
@@ -539,49 +535,17 @@ export default function DaybookScreen() {
               title="Payment Health"
               value="100%"
               variant="sparkline"
-              accentColor={colors.mossSage}
-              icon={<ShieldCheck size={18} color={colors.mossSage} />}
+              accentColor={colors.palmLeaf}
+              icon={<ShieldCheck size={18} color={colors.palmLeaf} />}
             />
             <BentoFactorCard
               title="Vault Flow"
               value={`${currencySymbol}${Math.round(totalBalance)}`}
               variant="wave"
-              accentColor={colors.electricViolet}
-              icon={<TrendingUp size={18} color={colors.electricViolet} />}
-              onPress={() => router.push('/(tabs)/analytics' as any)}
+              accentColor={colors.oxidizedIron}
+              icon={<TrendingUp size={18} color={colors.oxidizedIron} />}
+              onPress={() => router.push("/(tabs)/analytics" as any)}
             />
-          </View>
-        </View>
-
-        {/* Sleek Frosted Search Bar */}
-        <View style={styles.searchBarWrapper}>
-          <View
-            style={[
-              styles.searchBarBox,
-              {
-                backgroundColor: isDark ? 'rgba(32, 35, 34, 0.82)' : '#FFFFFF',
-                borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.05)',
-              },
-            ]}
-          >
-            <Search size={16} color={colors.textMuted} />
-            <TextInput
-              value={dashboardSearchQuery}
-              onChangeText={setDashboardSearchQuery}
-              placeholder="Search payments, transactions, channels..."
-              placeholderTextColor={colors.textMuted}
-              style={[styles.searchInputText, { color: colors.textPrimary }]}
-            />
-            {dashboardSearchQuery.length > 0 && (
-              <TouchableOpacity
-                onPress={() => {
-                  triggerHaptic('light');
-                  setDashboardSearchQuery('');
-                }}
-              >
-                <X size={16} color={colors.textSecondary} />
-              </TouchableOpacity>
-            )}
           </View>
         </View>
 
@@ -609,7 +573,11 @@ export default function DaybookScreen() {
             }}
             style={[
               styles.seeAllBtn,
-              { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : '#F4F4EE' },
+              {
+                backgroundColor: isDark
+                  ? "rgba(255, 255, 255, 0.08)"
+                  : "#F4F4EE",
+              },
             ]}
           >
             <Text style={[styles.seeAllText, { color: colors.textPrimary }]}>
@@ -623,8 +591,10 @@ export default function DaybookScreen() {
           style={[
             styles.recurringBanner,
             {
-              backgroundColor: isDark ? 'rgba(32, 35, 34, 0.85)' : '#FFFFFF',
-              borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.05)',
+              backgroundColor: isDark ? "rgba(255, 255, 255, 0.05)" : "#FFFFFF",
+              borderColor: isDark
+                ? "rgba(255, 255, 255, 0.10)"
+                : "rgba(0, 0, 0, 0.05)",
             },
           ]}
           onPress={() => {
@@ -636,43 +606,60 @@ export default function DaybookScreen() {
           <View
             style={[
               styles.recurringBannerIcon,
-              { backgroundColor: colors.matchaLime },
+              { backgroundColor: colors.blueSlate },
             ]}
           >
-            <Repeat size={18} color="#141715" />
+            <Repeat size={18} color="#FFFFFF" />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={[styles.recurringBannerTitle, { color: colors.textPrimary }]}>
-              {recurringList.filter((r) => r.active).length} Active Subscriptions
+            <Text
+              style={[
+                styles.recurringBannerTitle,
+                { color: colors.textPrimary },
+              ]}
+            >
+              {recurringList.filter((r) => r.active).length} Active
+              Subscriptions
             </Text>
-            <Text style={[styles.recurringBannerSub, { color: colors.textSecondary }]}>
-              Next: {recurringList[0]?.name || 'Adobe Cloud'} ({userProfile.currency.split(' ')[0]}{recurringList[0]?.amount || 59.99})
+            <Text
+              style={[
+                styles.recurringBannerSub,
+                { color: colors.textSecondary },
+              ]}
+            >
+              Next: {recurringList[0]?.name || "Adobe Cloud"} (
+              {userProfile.currency.split(" ")[0]}
+              {recurringList[0]?.amount || 59.99})
             </Text>
           </View>
           <View
             style={[
               styles.recurringBadge,
-              { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : '#F4F4EE' },
+              {
+                backgroundColor: isDark
+                  ? "rgba(255, 255, 255, 0.08)"
+                  : "#EDF2F5",
+              },
             ]}
           >
-            <Text style={[styles.recurringBadgeText, { color: colors.matchaLime }]}>
+            <Text
+              style={[styles.recurringBadgeText, { color: colors.blueSlate }]}
+            >
               Auto-Pay
             </Text>
           </View>
         </TouchableOpacity>
 
-        {/* Modular Transactions List matching Image 3 Reference */}
+        {/* Modular Transactions List matching Image 3 Reference (6 Recent Transactions) */}
         <TransactionList
-          transactions={filteredTx}
+          transactions={transactions}
           timeFilter={dashboardTimeFilter}
           onTimeFilterChange={setDashboardTimeFilter}
-          searchQuery={dashboardSearchQuery}
-          onClearSearch={() => setDashboardSearchQuery('')}
           onSelectTx={openTxDetail}
-          onAddTx={() => openQuickEntry('expense')}
+          onAddTx={() => openQuickEntry("expense")}
           onViewMore={() => {
-            triggerHaptic('light');
-            router.push('/(tabs)/transactions' as any);
+            triggerHaptic("light");
+            router.push("/(tabs)/transactions" as any);
           }}
           currencySymbol={currencySymbol}
         />
@@ -712,13 +699,6 @@ export default function DaybookScreen() {
         onClose={() => setPermissionsModalVisible(false)}
       />
 
-      <UserProfileModal
-        visible={profileModalVisible}
-        profile={userProfile}
-        onSave={handleSaveProfile}
-        onClose={() => setProfileModalVisible(false)}
-      />
-
       <TransactionDetailModal
         visible={detailModalVisible}
         transaction={selectedTx}
@@ -731,6 +711,10 @@ export default function DaybookScreen() {
         visible={entryModalVisible}
         type={quickEntryType}
         cards={budgetCards}
+        onCreateBudget={() => {
+          setEntryModalVisible(false);
+          setBudgetModalVisible(true);
+        }}
         onClose={() => {
           setEntryModalVisible(false);
           setEditingTx(null);
@@ -742,10 +726,14 @@ export default function DaybookScreen() {
                 id: editingTx.id,
                 title: editingTx.title,
                 amount: editingTx.amount,
-                type: (editingTx.type === 'income' || editingTx.type === 'borrow' ? 'income' : 'expense') as 'expense' | 'income',
+                type: (editingTx.type === "income" ||
+                editingTx.type === "borrow"
+                  ? "income"
+                  : "expense") as "expense" | "income",
                 category: editingTx.category,
                 channel: editingTx.channel,
                 date: editingTx.date,
+                cardId: (editingTx as any).cardId || undefined,
               }
             : null
         }
@@ -757,15 +745,15 @@ export default function DaybookScreen() {
 
 const styles = StyleSheet.create({
   topBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingHorizontal: 20,
     paddingBottom: 8,
   },
   profileRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 12,
   },
   greetingSub: {
@@ -778,8 +766,8 @@ const styles = StyleSheet.create({
     letterSpacing: -0.4,
   },
   topActionsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 10,
   },
   topIconBtn: {
@@ -787,17 +775,17 @@ const styles = StyleSheet.create({
     height: 44,
     borderRadius: 22,
     borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    position: 'relative',
-    shadowColor: '#000',
+    alignItems: "center",
+    justifyContent: "center",
+    position: "relative",
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 6,
     elevation: 1,
   },
   notifDot: {
-    position: 'absolute',
+    position: "absolute",
     top: 11,
     right: 11,
     width: 7,
@@ -822,8 +810,8 @@ const styles = StyleSheet.create({
     lineHeight: 40,
   },
   actionPillsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 10,
     marginTop: 6,
     marginBottom: 20,
@@ -833,11 +821,11 @@ const styles = StyleSheet.create({
     height: 52,
     borderRadius: 26,
     borderWidth: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     gap: 8,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
@@ -847,28 +835,28 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 52,
     borderRadius: 26,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     gap: 8,
-    shadowColor: '#CEF04A',
+    shadowColor: "#CEF04A",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.22,
     shadowRadius: 10,
     elevation: 3,
   },
   plusCircleBtn: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
     borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.08,
+    shadowOpacity: 0.12,
     shadowRadius: 8,
-    elevation: 2,
+    elevation: 3,
   },
   actionPillText: {
     fontFamily: FONTS.sansBold,
@@ -879,35 +867,13 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   bentoRow: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 12,
   },
-  searchBarWrapper: {
-    marginBottom: 16,
-  },
-  searchBarBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: 20,
-    borderWidth: 1,
-    paddingHorizontal: 14,
-    height: 48,
-    gap: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
-    elevation: 1,
-  },
-  searchInputText: {
-    flex: 1,
-    fontFamily: FONTS.sansRegular,
-    fontSize: 13,
-  },
   sectionHeaderRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 12,
   },
   sectionTitle: {
@@ -930,13 +896,13 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   recurringBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     padding: 16,
     borderRadius: 24,
     borderWidth: 1,
     gap: 12,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.04,
     shadowRadius: 8,
@@ -946,8 +912,8 @@ const styles = StyleSheet.create({
     width: 42,
     height: 42,
     borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   recurringBannerTitle: {
     fontFamily: FONTS.sansBold,

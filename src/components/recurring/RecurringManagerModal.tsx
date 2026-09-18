@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -74,8 +74,27 @@ export const RecurringManagerModal: React.FC<RecurringManagerModalProps> = ({
   const [category, setCategory] = useState('Subscription');
   const [nextBillingDate, setNextBillingDate] = useState('Oct 28, 2026');
   const [active, setActive] = useState(true);
-  const [selectedColor, setSelectedColor] = useState('#CEF04A');
+  const [selectedColor, setSelectedColor] = useState('#E39774');
   const [selectedIcon, setSelectedIcon] = useState('Cloud');
+
+  // Reset form when modal opens
+  useEffect(() => {
+    if (visible) {
+      const timer = setTimeout(() => {
+        setMode('list');
+        setEditingId(null);
+        setName('');
+        setAmount('');
+        setFrequency('monthly');
+        setCategory('Subscription');
+        setNextBillingDate('Oct 28, 2026');
+        setActive(true);
+        setSelectedColor('#E39774');
+        setSelectedIcon('Cloud');
+      }, 0);
+      return () => clearTimeout(timer);
+    }
+  }, [visible]);
 
   const startCreate = () => {
     triggerHaptic();
@@ -86,7 +105,7 @@ export const RecurringManagerModal: React.FC<RecurringManagerModalProps> = ({
     setCategory('Subscription');
     setNextBillingDate('Oct 28, 2026');
     setActive(true);
-    setSelectedColor('#CEF04A');
+    setSelectedColor('#E39774');
     setSelectedIcon('Cloud');
     setMode('create');
   };
@@ -154,6 +173,7 @@ export const RecurringManagerModal: React.FC<RecurringManagerModalProps> = ({
     }
 
     triggerHaptic('success');
+    useUIStore.getState().triggerConfetti();
 
     if (mode === 'edit' && editingId) {
       const updated = recurringList.map((item) =>
@@ -187,22 +207,31 @@ export const RecurringManagerModal: React.FC<RecurringManagerModalProps> = ({
       onSaveList([newItem, ...recurringList]);
     }
 
+    // Reset fields so next open is clean
+    setName('');
+    setAmount('');
+    setFrequency('monthly');
+    setCategory('Subscription');
+    setSelectedColor('#E39774');
+    setSelectedIcon('Cloud');
+    setEditingId(null);
     setMode('list');
   };
 
-  const renderIcon = (nameKey: string, size = 18, color = '#141715') => {
+  const renderIcon = (nameKey: string, size = 18, color = '#020202') => {
     switch (nameKey) {
       case 'Music':
         return <Music size={size} color={color} />;
       case 'Tv':
         return <Tv size={size} color={color} />;
-      case 'Home':
-        return <Home size={size} color={color} />;
+      case 'Cloud':
+        return <Cloud size={size} color={color} />;
       case 'Dumbbell':
         return <Dumbbell size={size} color={color} />;
-      case 'Cloud':
+      case 'Home':
+        return <Home size={size} color={color} />;
       default:
-        return <Cloud size={size} color={color} />;
+        return <Tag size={size} color={color} />;
     }
   };
 
@@ -211,7 +240,7 @@ export const RecurringManagerModal: React.FC<RecurringManagerModalProps> = ({
     return item.frequency === filterFreq;
   });
 
-  const totalMonthlySpend = recurringList
+  const totalMonthlyLoad = recurringList
     .filter((it) => it.active)
     .reduce((acc, it) => {
       if (it.frequency === 'monthly') return acc + it.amount;
@@ -221,7 +250,7 @@ export const RecurringManagerModal: React.FC<RecurringManagerModalProps> = ({
       return acc;
     }, 0);
 
-  const colorsPalette = ['#CEF04A', '#E07A5F', '#81B29A', '#F2CC8F', '#E76F51', '#262928'];
+  const colorsPalette = ['#E39774', '#326273', '#899D78', '#B02E0C', '#020202', '#F0B195'];
   const iconChoices = ['Cloud', 'Music', 'Tv', 'Dumbbell', 'Home'];
 
   return (
@@ -240,7 +269,7 @@ export const RecurringManagerModal: React.FC<RecurringManagerModalProps> = ({
       }
       subtitle={
         mode === 'list'
-          ? `Total Active: ${currencySymbol}${totalMonthlySpend.toFixed(2)}/month`
+          ? `Total Active: ${currencySymbol}${totalMonthlyLoad.toFixed(2)}/month`
           : 'Keep tabs on recurring renewals & automated charges'
       }
     >
@@ -257,10 +286,13 @@ export const RecurringManagerModal: React.FC<RecurringManagerModalProps> = ({
                     styles.filterChip,
                     {
                       backgroundColor: isSelected
-                        ? colors.matchaLime
+                        ? colors.tangerineDream
                         : isDark
                         ? colors.cardElevated
                         : colors.cardSecondary,
+                      borderColor: isSelected
+                        ? colors.tangerineDream
+                        : colors.borderSubtle,
                     },
                   ]}
                   onPress={() => {
@@ -274,7 +306,7 @@ export const RecurringManagerModal: React.FC<RecurringManagerModalProps> = ({
                       styles.filterChipText,
                       {
                         color: isSelected
-                          ? '#141715'
+                          ? colors.black
                           : colors.textSecondary,
                         fontWeight: isSelected ? '700' : '500',
                       },
@@ -302,10 +334,10 @@ export const RecurringManagerModal: React.FC<RecurringManagerModalProps> = ({
             <View
               style={[
                 styles.addIconWrap,
-                { backgroundColor: colors.matchaLime },
+                { backgroundColor: colors.tangerineDream },
               ]}
             >
-              <Plus size={16} color="#141715" />
+              <Plus size={16} color={colors.black} />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={[styles.addBannerTitle, { color: colors.textPrimary }]}>
@@ -333,7 +365,7 @@ export const RecurringManagerModal: React.FC<RecurringManagerModalProps> = ({
                     marginBottom: 12,
                   }}
                 >
-                  <Calendar size={22} color={colors.matchaLime} />
+                  <Calendar size={22} color={colors.tangerineDream} />
                 </View>
                 <Text style={{ color: colors.textPrimary, fontSize: 15, fontWeight: '700', marginBottom: 4 }}>
                   No Scheduled Bills
@@ -361,7 +393,7 @@ export const RecurringManagerModal: React.FC<RecurringManagerModalProps> = ({
                       { backgroundColor: item.color },
                     ]}
                   >
-                    {renderIcon(item.iconName, 18, '#141715')}
+                    {renderIcon(item.iconName, 18, colors.black)}
                   </View>
 
                   <View style={styles.cardDetails}>
@@ -631,7 +663,7 @@ export const RecurringManagerModal: React.FC<RecurringManagerModalProps> = ({
                     }}
                     activeOpacity={0.8}
                   >
-                    {renderIcon(ic, 18, isPicked ? '#141715' : colors.textPrimary)}
+                    {renderIcon(ic, 18, isPicked ? colors.black : colors.textPrimary)}
                   </TouchableOpacity>
                 );
               })}
@@ -658,7 +690,7 @@ export const RecurringManagerModal: React.FC<RecurringManagerModalProps> = ({
             <TouchableOpacity
               style={[
                 styles.saveBtn,
-                { backgroundColor: colors.matchaLime },
+                { backgroundColor: colors.tangerineDream },
               ]}
               onPress={handleSaveForm}
               activeOpacity={0.8}
@@ -681,27 +713,29 @@ const styles = StyleSheet.create({
   filterRow: {
     flexDirection: 'row',
     gap: 8,
+    paddingBottom: 4,
   },
   filterChip: {
     paddingHorizontal: 14,
     paddingVertical: 7,
     borderRadius: 20,
+    borderWidth: 1,
   },
   filterChipText: {
-    fontSize: 13,
+    fontSize: 12,
   },
   addBanner: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 12,
     padding: 14,
     borderRadius: 18,
     borderWidth: 1,
-    gap: 12,
   },
   addIconWrap: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 38,
+    height: 38,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -889,6 +923,6 @@ const styles = StyleSheet.create({
   saveBtnText: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#141715',
+    color: '#020202',
   },
 });

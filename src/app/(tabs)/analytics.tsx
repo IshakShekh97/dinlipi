@@ -106,11 +106,11 @@ export default function AnalyticsScreen() {
       const entries = Object.entries(expenseMap);
       if (entries.length > 0) {
         const palette = [
-          colors.matchaLime,
-          colors.goldenHoney,
-          colors.terracotta,
-          colors.mossSage,
-          colors.darkGraphite,
+          colors.tangerineDream,
+          colors.blueSlate,
+          colors.palmLeaf,
+          colors.oxidizedIron,
+          colors.black,
         ];
         return entries.slice(0, 5).map(([name, amount], index) => {
           const percent = ((amount / totalSpending) * 100).toFixed(1) + '%';
@@ -569,12 +569,12 @@ export default function AnalyticsScreen() {
                   }}
                   style={{
                     backgroundColor: isSelected
-                      ? colors.matchaLime
+                      ? colors.tangerineDream
                       : isDark
                       ? colors.cardSecondary
                       : '#F4F4EE',
                     borderColor: isSelected
-                      ? colors.matchaLime
+                      ? colors.tangerineDream
                       : isDark
                       ? colors.borderSubtle
                       : '#EAEAE2',
@@ -587,7 +587,7 @@ export default function AnalyticsScreen() {
                 >
                   <Text
                     style={{
-                      color: isSelected ? '#141715' : colors.textPrimary,
+                      color: isSelected ? colors.black : colors.textPrimary,
                       fontWeight: isSelected ? '800' : '600',
                       fontSize: 12,
                     }}
@@ -600,13 +600,15 @@ export default function AnalyticsScreen() {
           </ScrollView>
         </View>
 
-        {/* Total Spending Stat Hero (Inspired by Image 2 & 4) */}
+        {/* Total Spending Stat Hero with 3D Claymorphic Depth */}
         <View
           style={[
             styles.heroSpendCard,
             {
-              backgroundColor: isDark ? colors.cardSecondary : '#FFFFFF',
-              borderColor: isDark ? colors.borderSubtle : '#EFEFE8',
+              backgroundColor: isDark ? '#11171A' : '#FFFFFF',
+              borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.05)',
+              borderTopColor: isDark ? 'rgba(255, 255, 255, 0.16)' : 'rgba(255, 255, 255, 0.95)',
+              borderWidth: 1,
             },
           ]}
         >
@@ -622,11 +624,11 @@ export default function AnalyticsScreen() {
             <View
               style={[
                 styles.trendBadge,
-                { backgroundColor: 'rgba(206, 240, 74, 0.18)' },
+                { backgroundColor: 'rgba(137, 157, 120, 0.18)' },
               ]}
             >
-              <TrendingUp size={13} color={colors.matchaLime} />
-              <Text style={[styles.trendText, { color: colors.matchaLime }]}>
+              <TrendingUp size={13} color={colors.palmLeaf} />
+              <Text style={[styles.trendText, { color: colors.palmLeaf }]}>
                 2.46% this month
               </Text>
             </View>
@@ -649,9 +651,9 @@ export default function AnalyticsScreen() {
                         {
                           height: `${b.height}%`,
                           backgroundColor: b.active
-                            ? colors.matchaLime
+                            ? colors.tangerineDream
                             : isDark
-                            ? '#3D4441'
+                            ? colors.blueSlate
                             : '#D1D5DB',
                         },
                       ]}
@@ -681,18 +683,20 @@ export default function AnalyticsScreen() {
             style={[
               styles.cashflowCard,
               {
-                backgroundColor: isDark ? colors.cardSecondary : '#FFFFFF',
-                borderColor: isDark ? colors.borderSubtle : '#EFEFE8',
+                backgroundColor: isDark ? '#11171A' : '#FFFFFF',
+                borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.05)',
+                borderTopColor: isDark ? 'rgba(255, 255, 255, 0.16)' : 'rgba(255, 255, 255, 0.95)',
+                borderWidth: 1,
               },
             ]}
           >
             <View
               style={[
                 styles.cashflowIconBox,
-                { backgroundColor: 'rgba(206, 240, 74, 0.18)' },
+                { backgroundColor: 'rgba(137, 157, 120, 0.18)' },
               ]}
             >
-              <ArrowDownLeft size={16} color={colors.matchaLime} />
+              <ArrowDownLeft size={16} color={colors.palmLeaf} />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={[styles.cashflowLabel, { color: colors.textSecondary }]}>
@@ -709,18 +713,20 @@ export default function AnalyticsScreen() {
             style={[
               styles.cashflowCard,
               {
-                backgroundColor: isDark ? colors.cardSecondary : '#FFFFFF',
-                borderColor: isDark ? colors.borderSubtle : '#EFEFE8',
+                backgroundColor: isDark ? '#11171A' : '#FFFFFF',
+                borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.05)',
+                borderTopColor: isDark ? 'rgba(255, 255, 255, 0.16)' : 'rgba(255, 255, 255, 0.95)',
+                borderWidth: 1,
               },
             ]}
           >
             <View
               style={[
                 styles.cashflowIconBox,
-                { backgroundColor: 'rgba(224, 122, 95, 0.18)' },
+                { backgroundColor: 'rgba(176, 46, 12, 0.18)' },
               ]}
             >
-              <ArrowUpRight size={16} color={colors.terracotta} />
+              <ArrowUpRight size={16} color={colors.oxidizedIron} />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={[styles.cashflowLabel, { color: colors.textSecondary }]}>
@@ -738,8 +744,10 @@ export default function AnalyticsScreen() {
           style={[
             styles.donutCard,
             {
-              backgroundColor: isDark ? colors.cardSecondary : '#FFFFFF',
-              borderColor: isDark ? colors.borderSubtle : '#EFEFE8',
+              backgroundColor: isDark ? '#11171A' : '#FFFFFF',
+              borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.05)',
+              borderTopColor: isDark ? 'rgba(255, 255, 255, 0.16)' : 'rgba(255, 255, 255, 0.95)',
+              borderWidth: 1,
             },
           ]}
         >
@@ -783,48 +791,48 @@ export default function AnalyticsScreen() {
                       strokeWidth="16"
                       fill="none"
                     />
-                    {/* Segment 1: Matcha Lime */}
+                    {/* Segment 1: Palm Leaf */}
                     <Circle
                       cx="90"
                       cy="90"
                       r="66"
-                      stroke={colors.matchaLime}
+                      stroke={colors.palmLeaf}
                       strokeWidth="16"
                       strokeDasharray="136 278"
                       strokeDashoffset="0"
                       fill="none"
                       strokeLinecap="round"
                     />
-                    {/* Segment 2: Golden Honey */}
+                    {/* Segment 2: Tangerine Dream */}
                     <Circle
                       cx="90"
                       cy="90"
                       r="66"
-                      stroke={colors.goldenHoney}
+                      stroke={colors.tangerineDream}
                       strokeWidth="16"
                       strokeDasharray="66 348"
                       strokeDashoffset="-140"
                       fill="none"
                       strokeLinecap="round"
                     />
-                    {/* Segment 3: Terracotta */}
+                    {/* Segment 3: Blue Slate */}
                     <Circle
                       cx="90"
                       cy="90"
                       r="66"
-                      stroke={colors.terracotta}
+                      stroke={colors.blueSlate}
                       strokeWidth="16"
                       strokeDasharray="62 352"
                       strokeDashoffset="-210"
                       fill="none"
                       strokeLinecap="round"
                     />
-                    {/* Segment 4: Moss Sage */}
+                    {/* Segment 4: Oxidized Iron */}
                     <Circle
                       cx="90"
                       cy="90"
                       r="66"
-                      stroke={colors.mossSage}
+                      stroke={colors.oxidizedIron}
                       strokeWidth="16"
                       strokeDasharray="45 369"
                       strokeDashoffset="-276"

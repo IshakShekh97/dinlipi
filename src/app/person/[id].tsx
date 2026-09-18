@@ -193,7 +193,7 @@ export default function PersonLedgerPage() {
     setEntryDateMode('today');
     setEntryCustomDate(new Date().toISOString().split('T')[0]);
     setEntryNotes('');
-    setEntryLinkedCardId((person as any)?.cardId || undefined);
+    setEntryLinkedCardId((person as any)?.cardId || (dbCards.length > 0 ? dbCards[0].id : undefined));
     setAddModalVisible(true);
   };
 
@@ -214,7 +214,18 @@ export default function PersonLedgerPage() {
     const costNum = parseFloat(entryTotalCost);
     const paidNum = parseFloat(entryPaidAmount);
 
-    const effectiveCardId = entryLinkedCardId || (person as any)?.cardId || undefined;
+    const effectiveCardId = entryLinkedCardId || (person as any)?.cardId || (dbCards.length > 0 ? dbCards[0].id : undefined);
+
+    if (!effectiveCardId) {
+      showConfirmDialog({
+        title: 'Budget Envelope Required',
+        message: 'A budget envelope must be created first before recording person transactions.',
+        confirmText: 'OK',
+        cancelText: 'Cancel',
+        onConfirm: () => {},
+      });
+      return;
+    }
 
     if (entryMode === 'fold') {
       if ((isNaN(costNum) || costNum <= 0) && (isNaN(paidNum) || paidNum <= 0)) {
@@ -299,7 +310,7 @@ export default function PersonLedgerPage() {
     setEditType(item.type === 'income' || item.type === 'borrow' ? 'income' : 'lend');
     setEditNotes(item.notes || '');
     setEditDate(item.timestamp.split('T')[0]);
-    setEditCardId(item.cardId || undefined);
+    setEditCardId(item.cardId || (person as any)?.cardId || (dbCards.length > 0 ? dbCards[0].id : undefined));
   };
 
   // -------------------------------------------------------------
@@ -989,25 +1000,14 @@ export default function PersonLedgerPage() {
             </View>
           </View>
 
-          {/* Budget Envelope Selector */}
+          {/* Budget Envelope Selector (Mandatory) */}
           {dbCards && dbCards.length > 0 && (
             <View style={styles.formGroup}>
-              <Text style={[styles.formLabel, { color: colors.textSecondary }]}>Link to Budget Envelope (Optional)</Text>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Text style={[styles.formLabel, { color: colors.textSecondary }]}>Link to Budget Envelope *</Text>
+                <Text style={{ color: colors.matchaLime, fontSize: 11, fontWeight: '700' }}>Required</Text>
+              </View>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
-                <TouchableOpacity
-                  onPress={() => { triggerHaptic('light'); setEntryLinkedCardId(undefined); }}
-                  style={[
-                    styles.cardChip,
-                    {
-                      backgroundColor: !entryLinkedCardId ? colors.cardElevated : colors.cardSecondary,
-                      borderColor: !entryLinkedCardId ? colors.matchaLime : colors.borderSubtle,
-                    },
-                  ]}
-                  activeOpacity={0.75}
-                >
-                  <Text style={{ color: colors.textPrimary, fontSize: 12, fontWeight: '700' }}>None</Text>
-                  {!entryLinkedCardId && <Check size={11} color={colors.matchaLime} strokeWidth={3} />}
-                </TouchableOpacity>
                 {dbCards.map((card) => {
                   const isSel = entryLinkedCardId === card.id;
                   return (
@@ -1178,25 +1178,14 @@ export default function PersonLedgerPage() {
             </View>
           </View>
 
-          {/* Budget Envelope Selector in Edit */}
+          {/* Budget Envelope Selector in Edit (Mandatory) */}
           {dbCards && dbCards.length > 0 && (
             <View style={styles.formGroup}>
-              <Text style={[styles.formLabel, { color: colors.textSecondary }]}>Budget Envelope</Text>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Text style={[styles.formLabel, { color: colors.textSecondary }]}>Budget Envelope *</Text>
+                <Text style={{ color: colors.matchaLime, fontSize: 11, fontWeight: '700' }}>Required</Text>
+              </View>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
-                <TouchableOpacity
-                  onPress={() => { triggerHaptic('light'); setEditCardId(undefined); }}
-                  style={[
-                    styles.cardChip,
-                    {
-                      backgroundColor: !editCardId ? colors.cardElevated : colors.cardSecondary,
-                      borderColor: !editCardId ? colors.matchaLime : colors.borderSubtle,
-                    },
-                  ]}
-                  activeOpacity={0.75}
-                >
-                  <Text style={{ color: colors.textPrimary, fontSize: 12, fontWeight: '700' }}>None</Text>
-                  {!editCardId && <Check size={11} color={colors.matchaLime} strokeWidth={3} />}
-                </TouchableOpacity>
                 {dbCards.map((card) => {
                   const isSel = editCardId === card.id;
                   return (

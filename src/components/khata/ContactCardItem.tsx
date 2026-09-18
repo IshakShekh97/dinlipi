@@ -29,15 +29,17 @@ export function ContactCardItem({
   const isReceivable = contact.type === 'receivable';
   const remaining = Math.max(0, contact.totalDue - contact.paidSoFar);
   const isSettled = remaining <= 0;
-  const accentCol = isReceivable ? colors.matchaLime : colors.terracotta;
+  const accentCol = isReceivable ? colors.palmLeaf : colors.oxidizedIron;
 
   return (
     <TouchableOpacity
       style={[
         styles.contactCard,
         {
-          backgroundColor: isDark ? colors.cardSecondary : '#FFFFFF',
-          borderColor: isDark ? colors.borderSubtle : '#EFEFE8',
+          backgroundColor: isDark ? '#11171A' : '#FFFFFF',
+          borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.05)',
+          borderTopColor: isDark ? 'rgba(255, 255, 255, 0.16)' : 'rgba(255, 255, 255, 0.95)',
+          borderWidth: 1,
         },
       ]}
       onPress={() => onOpenProfile(contact)}
@@ -65,13 +67,13 @@ export function ContactCardItem({
                     styles.aliasPill,
                     {
                       backgroundColor: isDark
-                        ? 'rgba(206, 240, 74, 0.14)'
-                        : 'rgba(206, 240, 74, 0.2)',
+                        ? 'rgba(137, 157, 120, 0.18)'
+                        : 'rgba(137, 157, 120, 0.22)',
                     },
                   ]}
                 >
-                  <Tag size={9} color={colors.matchaLime} />
-                  <Text style={[styles.aliasText, { color: colors.matchaLime }]}>
+                  <Tag size={9} color={colors.palmLeaf} />
+                  <Text style={[styles.aliasText, { color: colors.palmLeaf }]}>
                     {a}
                   </Text>
                 </View>

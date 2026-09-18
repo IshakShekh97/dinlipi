@@ -1,18 +1,14 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ViewStyle } from 'react-native';
 import {
-  SearchX,
-  Receipt,
-  Users,
-  AlertTriangle,
-  PieChart,
   RotateCcw,
   PlusCircle,
   ArrowLeft,
   X,
 } from 'lucide-react-native';
 import { useAppTheme } from '../../context/theme-context';
-import { triggerHaptic } from '../../constants/theme';
+import { triggerHaptic, FONTS } from '../../constants/theme';
+import { SadEmptyAnimation } from './SadEmptyAnimation';
 
 export type EmptyStateType =
   | 'no_transactions'
@@ -49,43 +45,43 @@ export function EmptyStateView({
     no_transactions: {
       defaultTitle: 'No Transactions Yet',
       defaultDesc: 'Your ledger is peaceful and clean. Tap below to log your first coffee, grocery, or salary entry.',
-      icon: Receipt,
-      iconColor: colors.matchaLime,
-      iconBg: 'rgba(206, 240, 74, 0.14)',
+      animVariant: 'empty' as const,
       defaultAction: '+ Record Expense / Income',
+      btnColor: colors.tangerineDream,
+      btnTextColor: '#020202',
     },
     no_search_results: {
       defaultTitle: 'No Matching Results',
       defaultDesc: 'We couldn’t find any transaction, person, or category matching your query. Try another keyword.',
-      icon: SearchX,
-      iconColor: colors.goldenHoney,
-      iconBg: 'rgba(242, 204, 143, 0.16)',
+      animVariant: 'search' as const,
       defaultAction: 'Clear Search Filter',
+      btnColor: colors.blueSlate,
+      btnTextColor: '#FFFFFF',
     },
     no_people: {
       defaultTitle: 'No People in Khata',
       defaultDesc: 'Keep track of friends, shopkeepers, and loans with zero awkwardness and friendly reminders.',
-      icon: Users,
-      iconColor: colors.mossSage,
-      iconBg: 'rgba(129, 178, 154, 0.16)',
+      animVariant: 'empty' as const,
       defaultAction: '+ Add First Contact',
+      btnColor: colors.palmLeaf,
+      btnTextColor: '#FFFFFF',
     },
     error: {
       defaultTitle: 'Unable to Load Data',
       defaultDesc: 'Something unexpected happened while processing your offline data. Please retry or step back.',
-      icon: AlertTriangle,
-      iconColor: colors.terracotta,
-      iconBg: 'rgba(224, 122, 95, 0.16)',
+      animVariant: 'sad' as const,
       defaultAction: 'Retry Action',
       defaultSecondary: 'Go Back',
+      btnColor: colors.oxidizedIron,
+      btnTextColor: '#FFFFFF',
     },
     no_budgets: {
       defaultTitle: 'No Spending Limits Set',
       defaultDesc: 'Establish monthly category limits to get mindful alerts before overspending.',
-      icon: PieChart,
-      iconColor: colors.matchaLime,
-      iconBg: 'rgba(206, 240, 74, 0.14)',
+      animVariant: 'empty' as const,
       defaultAction: '+ Set Category Budget',
+      btnColor: colors.tangerineDream,
+      btnTextColor: '#020202',
     },
   }[type];
 
@@ -94,21 +90,20 @@ export function EmptyStateView({
   const displayPrimary = primaryActionLabel || configs.defaultAction;
   const displaySecondary = secondaryActionLabel || (type === 'error' ? 'Go Back' : undefined);
 
-  const IconComp = configs.icon;
-
   return (
-    <View style={[styles.container, style]}>
-      {/* Illustrated Icon Aura */}
-      <View
-        style={[
-          styles.iconContainer,
-          {
-            backgroundColor: configs.iconBg,
-            borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(18,20,19,0.06)',
-          },
-        ]}
-      >
-        <IconComp size={36} color={configs.iconColor} strokeWidth={1.8} />
+    <View
+      style={[
+        styles.container,
+        {
+          backgroundColor: isDark ? 'rgba(255, 255, 255, 0.03)' : 'rgba(255, 255, 255, 0.85)',
+          borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
+        },
+        style,
+      ]}
+    >
+      {/* Expressive Animated Mascot (Gentle Sway & Floating Tear/Pulse) */}
+      <View style={styles.animWrap}>
+        <SadEmptyAnimation size={105} variant={configs.animVariant} />
       </View>
 
       <Text style={[styles.titleText, { color: colors.textPrimary }]}>{displayTitle}</Text>
@@ -126,26 +121,27 @@ export function EmptyStateView({
             style={[
               styles.primaryBtn,
               {
-                backgroundColor: type === 'error' ? colors.terracotta : colors.matchaLime,
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 3 },
-                shadowOpacity: 0.12,
-                shadowRadius: 8,
+                backgroundColor: configs.btnColor,
+                shadowColor: configs.btnColor,
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.25,
+                shadowRadius: 10,
+                elevation: 4,
               },
             ]}
             activeOpacity={0.85}
           >
             {type === 'error' ? (
-              <RotateCcw size={16} color="#FFFFFF" />
+              <RotateCcw size={16} color={configs.btnTextColor} />
             ) : type === 'no_search_results' ? (
-              <X size={16} color="#121413" />
+              <X size={16} color={configs.btnTextColor} />
             ) : (
-              <PlusCircle size={16} color="#121413" />
+              <PlusCircle size={16} color={configs.btnTextColor} />
             )}
             <Text
               style={[
                 styles.primaryBtnText,
-                { color: type === 'error' ? '#FFFFFF' : '#121413' },
+                { color: configs.btnTextColor },
               ]}
             >
               {displayPrimary}
@@ -162,8 +158,8 @@ export function EmptyStateView({
             style={[
               styles.secondaryBtn,
               {
-                backgroundColor: colors.cardSecondary,
-                borderColor: colors.borderMedium,
+                backgroundColor: isDark ? 'rgba(255, 255, 255, 0.06)' : '#EDF2F5',
+                borderColor: isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.08)',
               },
             ]}
             activeOpacity={0.8}
@@ -183,31 +179,36 @@ const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 28,
-    paddingVertical: 36,
+    paddingHorizontal: 24,
+    paddingVertical: 32,
+    borderRadius: 28,
+    borderWidth: 1.2,
+    marginVertical: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.08,
+    shadowRadius: 14,
+    elevation: 3,
   },
-  iconContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    borderWidth: 1,
+  animWrap: {
+    marginBottom: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 16,
   },
   titleText: {
+    fontFamily: FONTS.sansBold,
     fontSize: 18,
-    fontWeight: '800',
     letterSpacing: -0.4,
     textAlign: 'center',
     marginBottom: 8,
   },
   descText: {
+    fontFamily: FONTS.sansRegular,
     fontSize: 13,
     lineHeight: 19,
     textAlign: 'center',
     marginBottom: 20,
-    maxWidth: 300,
+    maxWidth: 290,
   },
   actionsRow: {
     flexDirection: 'row',
@@ -224,20 +225,20 @@ const styles = StyleSheet.create({
     borderRadius: 24,
   },
   primaryBtnText: {
+    fontFamily: FONTS.sansBold,
     fontSize: 14,
-    fontWeight: '800',
   },
   secondaryBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    paddingHorizontal: 16,
+    paddingHorizontal: 18,
     paddingVertical: 12,
     borderRadius: 24,
     borderWidth: 1,
   },
   secondaryBtnText: {
+    fontFamily: FONTS.sansBold,
     fontSize: 13,
-    fontWeight: '700',
   },
 });

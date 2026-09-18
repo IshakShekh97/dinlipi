@@ -114,8 +114,10 @@ export function TransactionList({
                 style={[
                   styles.txCard,
                   {
-                    backgroundColor: isDark ? 'rgba(32, 35, 34, 0.82)' : '#FFFFFF',
+                    backgroundColor: isDark ? '#11171A' : '#FFFFFF',
                     borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.05)',
+                    borderTopColor: isDark ? 'rgba(255, 255, 255, 0.16)' : 'rgba(255, 255, 255, 0.95)',
+                    borderWidth: 1,
                   },
                 ]}
                 onPress={() => {
@@ -124,20 +126,20 @@ export function TransactionList({
                 }}
                 activeOpacity={0.78}
               >
-                {/* Circular Icon Badge matching Reference Image 3 */}
+                {/* Circular Icon Badge matching Reference Image 2 */}
                 <View
                   style={[
                     styles.txIconCircle,
                     {
-                      backgroundColor: isDark ? '#232725' : '#F4F4EE',
-                      borderColor: isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.04)',
+                      backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(50, 98, 115, 0.08)',
+                      borderColor: isDark ? 'rgba(255, 255, 255, 0.10)' : 'rgba(50, 98, 115, 0.10)',
                     },
                   ]}
                 >
                   {isExp ? (
-                    <ArrowUpRight size={18} color={isDark ? '#E5E7EB' : '#141715'} strokeWidth={2.2} />
+                    <ArrowUpRight size={18} color={isDark ? '#E5E7EB' : '#020202'} strokeWidth={2.2} />
                   ) : (
-                    <ArrowDownLeft size={18} color={colors.matchaLime} strokeWidth={2.2} />
+                    <ArrowDownLeft size={18} color={colors.palmLeaf} strokeWidth={2.2} />
                   )}
                 </View>
 
@@ -157,7 +159,7 @@ export function TransactionList({
                     style={[
                       styles.txAmountText,
                       {
-                        color: isExp ? colors.terracotta : colors.matchaLime,
+                        color: isExp ? colors.oxidizedIron : colors.palmLeaf,
                       },
                     ]}
                   >
@@ -166,6 +168,21 @@ export function TransactionList({
                   <Text style={[styles.txTypeLabel, { color: colors.textMuted }]}>
                     {isExp ? 'Transfer' : 'Received'}
                   </Text>
+                </View>
+
+                {/* Chevron Pill button directly from Reference Image 2 */}
+                <View
+                  style={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: 12,
+                    backgroundColor: isDark ? 'rgba(255, 255, 255, 0.06)' : '#F4F7F9',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginLeft: 10,
+                  }}
+                >
+                  <ChevronRight size={14} color={colors.textMuted} />
                 </View>
               </TouchableOpacity>
             );

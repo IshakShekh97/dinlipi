@@ -86,6 +86,14 @@ function RootContent() {
           }}
         />
         <Stack.Screen
+          name="profile"
+          options={{
+            animation: 'slide_from_right',
+            animationDuration: 300,
+            gestureEnabled: true,
+          }}
+        />
+        <Stack.Screen
           name="person/[id]"
           options={{
             animation: 'slide_from_right',

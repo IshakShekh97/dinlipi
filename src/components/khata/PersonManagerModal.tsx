@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -66,33 +66,38 @@ export const PersonManagerModal: React.FC<PersonManagerModalProps> = ({
   const { data: dbCards = [] } = useBudgetCardsLive();
   const [budgetCardId, setBudgetCardId] = useState<string | undefined>(initialData?.budgetCardId);
 
-  const [prevData, setPrevData] = useState(initialData);
-  if (initialData !== prevData) {
-    setPrevData(initialData);
-    if (initialData) {
-      setName(initialData.name);
-      setPhone(initialData.phone);
-      setAliases(initialData.aliases || []);
-      setAliasInput('');
-      setTag(initialData.tag);
-      setNotes(initialData.notes || '');
-      setType(initialData.type);
-      setAmount(initialData.totalDue.toString());
-      setSelectedAvatarId(initialData.avatarPreset || 'avatar_matcha_fox');
-      setBudgetCardId(initialData.budgetCardId);
-    } else {
-      setName('');
-      setPhone(dialCode); // pre-fill with currency dial code
-      setAliases([]);
-      setAliasInput('');
-      setTag('');
-      setNotes('');
-      setType('receivable');
-      setAmount('');
-      setSelectedAvatarId('avatar_matcha_fox');
-      setBudgetCardId(undefined);
+  // Sync state whenever visible or initialData changes
+  useEffect(() => {
+    if (visible) {
+      const timer = setTimeout(() => {
+        if (initialData) {
+          setName(initialData.name);
+          setPhone(initialData.phone);
+          setAliases(initialData.aliases || []);
+          setAliasInput('');
+          setTag(initialData.tag);
+          setNotes(initialData.notes || '');
+          setType(initialData.type);
+          setAmount(initialData.totalDue.toString());
+          setSelectedAvatarId(initialData.avatarPreset || 'avatar_matcha_fox');
+          setBudgetCardId(initialData.budgetCardId || (dbCards.length > 0 ? dbCards[0].id : undefined));
+        } else {
+          // Reset to clean default values for new person entry
+          setName('');
+          setPhone(dialCode);
+          setAliases([]);
+          setAliasInput('');
+          setTag('');
+          setNotes('');
+          setType('receivable');
+          setAmount('');
+          setSelectedAvatarId('avatar_matcha_fox');
+          setBudgetCardId(dbCards.length > 0 ? dbCards[0].id : undefined);
+        }
+      }, 0);
+      return () => clearTimeout(timer);
     }
-  }
+  }, [visible, initialData, dialCode, dbCards]);
 
   const handleAddAlias = () => {
     if (!aliasInput.trim()) return;
@@ -114,6 +119,17 @@ export const PersonManagerModal: React.FC<PersonManagerModalProps> = ({
       showConfirm({
         title: 'Missing Name',
         message: 'Please enter the contact name.',
+        confirmText: 'Understood',
+        cancelText: 'Dismiss',
+        onConfirm: () => {},
+      });
+      return;
+    }
+
+    if (!budgetCardId && dbCards.length > 0) {
+      showConfirm({
+        title: 'Budget Envelope Required',
+        message: 'Please select a budget envelope to connect this person ledger to.',
         confirmText: 'Understood',
         cancelText: 'Dismiss',
         onConfirm: () => {},
@@ -144,11 +160,22 @@ export const PersonManagerModal: React.FC<PersonManagerModalProps> = ({
       totalDue: numAmount,
       paidSoFar: initialData ? initialData.paidSoFar : 0,
       avatarPreset: selectedAvatarId,
-      avatarColor: type === 'receivable' ? '#CEF04A' : '#E07A5F',
+      avatarColor: type === 'receivable' ? colors.palmLeaf : colors.oxidizedIron,
       budgetCardId,
     };
 
     onSave(personPayload);
+    useUIStore.getState().triggerConfetti();
+
+    // Reset inputs so next creation starts completely clean
+    setName('');
+    setPhone(dialCode);
+    setAliases([]);
+    setAliasInput('');
+    setTag('');
+    setNotes('');
+    setType('receivable');
+    setAmount('');
     onClose();
   };
 
@@ -370,32 +397,18 @@ export const PersonManagerModal: React.FC<PersonManagerModalProps> = ({
             />
           </View>
 
-          {/* Link to Default Budget Envelope (Optional) */}
+          {/* Link to Budget Envelope (Mandatory) */}
           {dbCards && dbCards.length > 0 && (
             <>
-              <Text style={[styles.inputLabel, { color: colors.textSecondary, marginTop: 14 }]}>
-                Link to Budget Envelope (Optional)
-              </Text>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 14 }}>
+                <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>
+                  Link to Budget Envelope *
+                </Text>
+                <Text style={{ color: colors.matchaLime, fontSize: 11, fontWeight: '700' }}>
+                  Required
+                </Text>
+              </View>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
-                <TouchableOpacity
-                  onPress={() => { triggerHaptic('light'); setBudgetCardId(undefined); }}
-                  style={[
-                    styles.inputBox,
-                    {
-                      height: 38,
-                      backgroundColor: !budgetCardId ? colors.cardElevated : colors.cardSecondary,
-                      borderColor: !budgetCardId ? colors.matchaLime : colors.borderSubtle,
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      gap: 6,
-                      paddingHorizontal: 12,
-                    },
-                  ]}
-                  activeOpacity={0.75}
-                >
-                  <Text style={{ color: colors.textPrimary, fontSize: 12, fontWeight: '700' }}>None</Text>
-                  {!budgetCardId && <Check size={11} color={colors.matchaLime} strokeWidth={3} />}
-                </TouchableOpacity>
                 {dbCards.map((card) => {
                   const isSel = budgetCardId === card.id;
                   return (
@@ -454,7 +467,7 @@ export const PersonManagerModal: React.FC<PersonManagerModalProps> = ({
             style={[
               styles.saveButton,
               {
-                backgroundColor: colors.matchaLime,
+                backgroundColor: colors.tangerineDream,
                 shadowColor: '#000',
                 shadowOffset: { width: 0, height: 4 },
                 shadowOpacity: 0.15,
@@ -463,8 +476,8 @@ export const PersonManagerModal: React.FC<PersonManagerModalProps> = ({
             ]}
             activeOpacity={0.85}
           >
-            <Sparkles size={18} color="#121413" />
-            <Text style={[styles.saveButtonText, { color: '#121413' }]}>
+            <Sparkles size={18} color={colors.black} />
+            <Text style={[styles.saveButtonText, { color: colors.black }]}>
               {initialData ? 'Update Person' : 'Save Person to Khata'}
             </Text>
           </TouchableOpacity>

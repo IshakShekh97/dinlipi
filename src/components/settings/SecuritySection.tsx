@@ -65,7 +65,7 @@ export function SecuritySection({ onOpenPasscodeModal }: SecuritySectionProps) {
         showConfirm({
           title: "No Biometrics Enrolled",
           message:
-            "Please register a fingerprint or Face ID in your device system settings first.",
+            "Please register a fingerprint in your device system settings first.",
           confirmText: "Understood",
           cancelText: "Dismiss",
           onConfirm: () => {},

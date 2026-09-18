@@ -119,9 +119,9 @@ export function AnimatedSplashScreen({
 
   if (!isVisible) return null;
 
-  const bgColor = isDark ? '#121413' : '#F7F6F1';
-  const textColor = isDark ? '#FFFFFF' : '#121413';
-  const subtextColor = isDark ? 'rgba(255,255,255,0.45)' : 'rgba(18,20,19,0.45)';
+  const bgColor = isDark ? '#020202' : '#FFFFFF';
+  const textColor = isDark ? '#FFFFFF' : '#020202';
+  const subtextColor = isDark ? 'rgba(255,255,255,0.55)' : 'rgba(2,2,2,0.55)';
 
   return (
     <Animated.View
@@ -137,7 +137,7 @@ export function AnimatedSplashScreen({
         style={[
           styles.aura,
           {
-            backgroundColor: '#CEF04A',
+            backgroundColor: isDark ? 'rgba(227, 151, 116, 0.45)' : 'rgba(50, 98, 115, 0.35)',
           },
           auraAnimatedStyle,
         ]}

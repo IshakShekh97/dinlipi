@@ -2,9 +2,10 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Plus, Wifi, Sparkles } from 'lucide-react-native';
 import { useAppTheme } from '../../context/theme-context';
-import { triggerHaptic } from '../../constants/theme';
+import { triggerHaptic, FONTS } from '../../constants/theme';
 import { CardMeshBackground } from '../ui/CardMeshBackground';
 import { BudgetCardData } from './BudgetCardModal';
+import { getHexLuminance } from '../../utils/meshGenerator';
 
 interface BudgetCardStackProps {
   cards: BudgetCardData[];
@@ -13,15 +14,6 @@ interface BudgetCardStackProps {
   onAddCard: () => void;
   onEditCard: (card: BudgetCardData) => void;
   currencySymbol?: string;
-}
-
-function getHexLuminance(hex: string): number {
-  const clean = hex.replace('#', '');
-  if (clean.length !== 6) return 128;
-  const r = parseInt(clean.substring(0, 2), 16);
-  const g = parseInt(clean.substring(2, 4), 16);
-  const b = parseInt(clean.substring(4, 6), 16);
-  return 0.299 * r + 0.587 * g + 0.114 * b;
 }
 
 export function BudgetCardStack({
@@ -34,7 +26,7 @@ export function BudgetCardStack({
 }: BudgetCardStackProps) {
   const { colors, isDark } = useAppTheme();
 
-  // If there are no budget cards, show an inviting empty state card
+  // Empty state card
   if (cards.length === 0) {
     return (
       <View style={styles.cardsContainer}>
@@ -47,7 +39,7 @@ export function BudgetCardStack({
             styles.emptyCard,
             {
               backgroundColor: isDark ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.02)',
-              borderColor: colors.matchaLime,
+              borderColor: colors.blueSlate,
             },
           ]}
           activeOpacity={0.8}
@@ -56,23 +48,23 @@ export function BudgetCardStack({
             style={[
               styles.emptyIconBadge,
               {
-                backgroundColor: 'rgba(206, 240, 74, 0.16)',
-                borderColor: colors.matchaLime,
+                backgroundColor: isDark ? 'rgba(50, 98, 115, 0.16)' : 'rgba(50, 98, 115, 0.12)',
+                borderColor: colors.blueSlate,
               },
             ]}
           >
-            <Plus size={24} color={colors.matchaLime} strokeWidth={2.5} />
+            <Plus size={24} color={colors.tangerineDream} strokeWidth={2.5} />
           </View>
           <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>
             Create Budget Envelope
           </Text>
           <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
-            Segment cash and track spending without rigid limits
+            Segment cash and track spending with dynamic mesh cards
           </Text>
           <View
             style={[
               styles.emptyAddBtn,
-              { backgroundColor: colors.matchaLime },
+              { backgroundColor: colors.tangerineDream },
             ]}
           >
             <Text style={styles.emptyAddBtnText}>+ Add First Card</Text>
@@ -98,12 +90,12 @@ export function BudgetCardStack({
                 {
                   backgroundColor: isActive
                     ? isDark
-                      ? colors.cardElevated
+                      ? 'rgba(255, 255, 255, 0.12)'
                       : '#FFFFFF'
                     : isDark
-                    ? colors.cardSecondary
-                    : '#EFEFEA',
-                  borderColor: isActive ? colors.matchaLime : 'transparent',
+                    ? 'rgba(255, 255, 255, 0.05)'
+                    : '#EDF2F5',
+                  borderColor: isActive ? colors.tangerineDream : 'transparent',
                 },
               ]}
               onPress={() => {
@@ -136,8 +128,8 @@ export function BudgetCardStack({
           style={[
             styles.plusBtn,
             {
-              backgroundColor: isDark ? colors.cardSecondary : '#EFEFEA',
-              borderColor: isDark ? colors.borderSubtle : '#E5E7EB',
+              backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : '#EDF2F5',
+              borderColor: isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.06)',
             },
           ]}
           activeOpacity={0.7}
@@ -146,7 +138,7 @@ export function BudgetCardStack({
         </TouchableOpacity>
       </View>
 
-      {/* Main Active Card (Pillar-Style) */}
+      {/* Main Active Card (Pillar-Style Stack from Mockup 2) */}
       <View style={styles.cardStackWrapper}>
         {/* Background Card Offset Peek (if multiple cards) */}
         {cards.length > 1 && (
@@ -154,28 +146,28 @@ export function BudgetCardStack({
             style={[
               styles.cardPeekBackdrop,
               {
-                backgroundColor: isDark ? '#141715' : '#D5D5CF',
+                backgroundColor: isDark ? '#141A1E' : '#D0D8DC',
               },
             ]}
           />
         )}
 
-        {/* The Foreground Card */}
+        {/* Foreground Card */}
         {(() => {
           const isLightText = activeCard.customGradient
-            ? getHexLuminance(activeCard.customGradient[0]) < 135
-            : activeCard.variant === 'darkGraphite' || activeCard.variant === 'terracotta' || activeCard.variant === 'mossSage';
-          const cardTextColor = isLightText ? '#FFFFFF' : '#141715';
-          const cardSubTextColor = isLightText ? 'rgba(255, 255, 255, 0.75)' : 'rgba(20, 23, 21, 0.75)';
+            ? getHexLuminance(activeCard.customGradient[0]) < 140
+            : activeCard.variant !== 'porcelain';
+          const cardTextColor = isLightText ? '#FFFFFF' : '#020202';
+          const cardSubTextColor = isLightText ? 'rgba(255, 255, 255, 0.75)' : 'rgba(2, 2, 2, 0.65)';
 
           return (
             <View
               style={[
                 styles.activeCardOuter,
                 {
-                  borderColor: isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.08)',
+                  borderColor: isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.08)',
                   shadowColor: '#000',
-                  shadowOpacity: isDark ? 0.35 : 0.12,
+                  shadowOpacity: isDark ? 0.40 : 0.14,
                 },
               ]}
             >
@@ -187,28 +179,36 @@ export function BudgetCardStack({
               />
 
               <View style={styles.cardContent}>
-                {/* Card Header: Type Badge, Contactless, Edit Pill */}
+                {/* Card Header: Type Badge, Mastercard Circles, Contactless, Customize Pill */}
                 <View style={styles.cardHeaderRow}>
                   <View className="flex-row items-center gap-2">
+                    <View style={styles.mastercardBadge}>
+                      <View style={[styles.mastercardCircle, { backgroundColor: '#EB001B', zIndex: 1 }]} />
+                      <View style={[styles.mastercardCircle, { backgroundColor: '#FF5F00', marginLeft: -7, zIndex: 2 }]} />
+                    </View>
                     <Text style={[styles.cardTypeText, { color: cardTextColor }]}>
                       {activeCard.cardType}
                     </Text>
-                    <Wifi size={18} color={cardTextColor} />
+                    <Wifi size={17} color={cardTextColor} />
                   </View>
 
-                  <View className="flex-row items-center gap-2">
-                    <TouchableOpacity
-                      onPress={() => {
-                        triggerHaptic('light');
-                        onEditCard(activeCard);
-                      }}
-                      style={styles.editCardPill}
-                      activeOpacity={0.8}
-                    >
-                      <Text style={styles.editCardText}>Customize</Text>
-                      <Sparkles size={14} color="#141715" />
-                    </TouchableOpacity>
-                  </View>
+                  <TouchableOpacity
+                    onPress={() => {
+                      triggerHaptic('light');
+                      onEditCard(activeCard);
+                    }}
+                    style={[
+                      styles.editCardPill,
+                      {
+                        backgroundColor: isLightText ? 'rgba(255, 255, 255, 0.22)' : 'rgba(0, 0, 0, 0.12)',
+                        borderColor: isLightText ? 'rgba(255, 255, 255, 0.35)' : 'rgba(0, 0, 0, 0.15)',
+                      },
+                    ]}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={[styles.editCardText, { color: cardTextColor }]}>Customize</Text>
+                    <Sparkles size={13} color={cardTextColor} />
+                  </TouchableOpacity>
                 </View>
 
                 {/* Card Envelope Title & Limit */}
@@ -221,7 +221,7 @@ export function BudgetCardStack({
                   </Text>
                 </View>
 
-                {/* Card Footer: Holder, Expiry & Available Balance */}
+                {/* Card Footer: Holder, Cycle & Available Balance */}
                 <View style={styles.cardFooterRow}>
                   <View>
                     <Text style={[styles.cardFootLabel, { color: cardSubTextColor }]}>Holder</Text>
@@ -249,8 +249,8 @@ export function BudgetCardStack({
 
 const styles = StyleSheet.create({
   cardsContainer: {
-    marginTop: 8,
-    marginBottom: 20,
+    marginTop: 6,
+    marginBottom: 18,
   },
   cardTabsRow: {
     flexDirection: 'row',
@@ -260,12 +260,13 @@ const styles = StyleSheet.create({
   },
   cardTabPill: {
     paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingVertical: 7,
     borderRadius: 20,
     borderWidth: 1,
   },
   cardTabText: {
     fontSize: 12,
+    fontFamily: FONTS.sansMedium,
   },
   plusBtn: {
     width: 32,
@@ -283,18 +284,18 @@ const styles = StyleSheet.create({
     top: 6,
     left: 8,
     right: 8,
-    height: 195,
+    height: 200,
     borderRadius: 28,
-    opacity: 0.5,
+    opacity: 0.55,
   },
   activeCardOuter: {
     width: '100%',
-    height: 205,
+    height: 210,
     borderRadius: 28,
     borderWidth: 1.2,
     overflow: 'hidden',
     shadowOffset: { width: 0, height: 8 },
-    shadowRadius: 16,
+    shadowRadius: 18,
     elevation: 8,
   },
   cardContent: {
@@ -307,39 +308,45 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
+  mastercardBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: 24,
+  },
+  mastercardCircle: {
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+  },
   cardTypeText: {
-    color: '#141715',
-    fontWeight: '900',
-    fontSize: 14,
-    letterSpacing: 1.2,
+    fontFamily: FONTS.sansBold,
+    fontSize: 13,
+    letterSpacing: 0.8,
   },
   editCardPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    backgroundColor: 'rgba(255, 255, 255, 0.45)',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
+    gap: 5,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 14,
+    borderWidth: 1,
   },
   editCardText: {
-    color: '#141715',
     fontSize: 11,
-    fontWeight: '800',
+    fontFamily: FONTS.sansBold,
   },
   cardNumBox: {
     marginVertical: 4,
   },
   cardEnvelopeName: {
-    color: '#141715',
-    fontSize: 20,
-    fontWeight: '900',
-    letterSpacing: -0.5,
+    fontSize: 22,
+    fontFamily: FONTS.sansBold,
+    letterSpacing: -0.6,
   },
   cardLimitText: {
-    color: 'rgba(20, 23, 21, 0.75)',
     fontSize: 12,
-    fontWeight: '700',
+    fontFamily: FONTS.sansMedium,
     marginTop: 2,
   },
   cardFooterRow: {
@@ -348,26 +355,24 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   cardFootLabel: {
-    color: 'rgba(20, 23, 21, 0.65)',
     fontSize: 10,
-    fontWeight: '700',
+    fontFamily: FONTS.sansBold,
     textTransform: 'uppercase',
+    letterSpacing: 0.4,
   },
   cardFootVal: {
-    color: '#141715',
     fontSize: 12,
-    fontWeight: '800',
+    fontFamily: FONTS.sansBold,
     marginTop: 2,
   },
   cardFootBalance: {
-    color: '#141715',
-    fontSize: 18,
-    fontWeight: '900',
-    letterSpacing: -0.3,
+    fontSize: 20,
+    fontFamily: FONTS.sansBold,
+    letterSpacing: -0.4,
   },
   emptyCard: {
     borderRadius: 28,
-    borderWidth: 2,
+    borderWidth: 1.5,
     borderStyle: 'dashed',
     padding: 28,
     alignItems: 'center',
@@ -384,11 +389,12 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontSize: 17,
-    fontWeight: '800',
+    fontFamily: FONTS.sansBold,
     marginBottom: 4,
   },
   emptySubtitle: {
     fontSize: 12,
+    fontFamily: FONTS.sansRegular,
     textAlign: 'center',
     marginBottom: 16,
     maxWidth: 240,
@@ -399,8 +405,8 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
   emptyAddBtnText: {
-    color: '#141715',
+    color: '#020202',
     fontSize: 13,
-    fontWeight: '800',
+    fontFamily: FONTS.sansBold,
   },
 });

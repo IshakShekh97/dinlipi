@@ -87,6 +87,10 @@ interface UIState {
   setInstallmentModalVisible: (visible: boolean) => void;
   selectedKhataContact: ContactLedger | null;
   setSelectedKhataContact: (contact: ContactLedger | null) => void;
+
+  // Celebration Confetti
+  confettiTrigger: number;
+  triggerConfetti: () => void;
 }
 
 const defaultConfirmState: ConfirmDialogState = {
@@ -100,6 +104,10 @@ const defaultConfirmState: ConfirmDialogState = {
 };
 
 export const useUIStore = create<UIState>((set) => ({
+  // Celebration Confetti
+  confettiTrigger: 0,
+  triggerConfetti: () => set((state) => ({ confettiTrigger: state.confettiTrigger + 1 })),
+
   // Global Currency
   activeCurrency: DEFAULT_CURRENCY,
   setActiveCurrency: (currency) => set({ activeCurrency: currency }),

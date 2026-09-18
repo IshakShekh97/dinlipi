@@ -21,76 +21,78 @@ export const FONTS = {
 };
 
 export const THEME = {
-  // Relaxed, cozy, modern Apple-like FinTech palette directly from reference design
+  // Modern Glassmorphism FinTech palette directly from reference design
   // Reference Swatches: Black (#020202), Blue Slate (#326273), Tangerine Dream (#E39774), Oxidized Iron (#B02E0C), Palm Leaf (#899D78)
   dark: {
     bgPrimary: '#020202', // Obsidian black from reference palette
-    bgSecondary: '#0C110E',
-    cardPrimary: '#121815',
-    cardSecondary: '#19221D',
-    cardElevated: '#212D27',
+    bgSecondary: '#0C1013', // Deep slate-obsidian void
+    cardPrimary: '#12181C',
+    cardSecondary: '#182025',
+    cardElevated: '#1F2B32',
     borderSubtle: 'rgba(255, 255, 255, 0.08)',
-    borderMedium: 'rgba(137, 157, 120, 0.25)',
-    borderActive: '#899D78', // Palm Leaf
+    borderMedium: 'rgba(255, 255, 255, 0.14)',
+    borderActive: '#326273', // Blue Slate
 
     // Frosted Glassmorphism Tokens
-    glassBg: 'rgba(18, 24, 21, 0.78)',
+    glassBg: 'rgba(12, 16, 19, 0.78)',
     glassCard: 'rgba(255, 255, 255, 0.05)',
     glassCardElevated: 'rgba(255, 255, 255, 0.09)',
-    glassBorder: 'rgba(255, 255, 255, 0.11)',
-    glassSpecular: 'rgba(255, 255, 255, 0.20)',
+    glassBorder: 'rgba(255, 255, 255, 0.12)',
+    glassSpecular: 'rgba(255, 255, 255, 0.22)',
 
-    // Ambient Diffuse Glow Tones (Warm Apricot / Palm diffuse lighting)
-    ambientWarm: 'rgba(227, 151, 116, 0.18)',
-    ambientHoney: 'rgba(137, 157, 120, 0.18)',
-    ambientTerracotta: 'rgba(227, 151, 116, 0.20)',
-    ambientViolet: 'rgba(50, 98, 115, 0.20)',
+    // Ambient Diffuse Glow Tones (Tangerine Dream, Blue Slate, Palm Leaf diffuse lighting)
+    ambientWarm: 'rgba(227, 151, 116, 0.22)',
+    ambientHoney: 'rgba(227, 151, 116, 0.18)',
+    ambientTerracotta: 'rgba(176, 46, 12, 0.20)',
+    ambientViolet: 'rgba(50, 98, 115, 0.24)',
+    ambientSlate: 'rgba(50, 98, 115, 0.22)',
+    ambientPalm: 'rgba(137, 157, 120, 0.18)',
 
-    // Palette Tokens
+    // Palette Tokens (Exact User Reference Swatches)
     black: '#020202',
-    blueSlate: '#3D7285',
+    blueSlate: '#326273',
     tangerineDream: '#E39774',
-    oxidizedIron: '#C83E1A',
+    oxidizedIron: '#B02E0C',
     palmLeaf: '#899D78',
 
     // Semantic roles & backward compatibility aliases
-    matchaLime: '#899D78', // Palm Leaf Primary Green
+    matchaLime: '#899D78', // Palm Leaf Primary
     terracotta: '#E39774', // Tangerine Dream
     goldenHoney: '#E39774',
     mossSage: '#899D78', // Palm Leaf
-    coralRose: '#C83E1A', // Oxidized Iron
+    coralRose: '#B02E0C', // Oxidized Iron
     darkGraphite: '#020202', // Black
-    electricViolet: '#3D7285', // Blue Slate
+    electricViolet: '#326273', // Blue Slate
     electricMagenta: '#E39774',
 
-    accentPrimary: '#899D78', // Palm Leaf Green
-    accentSecondary: '#3D7285', // Blue Slate
+    accentPrimary: '#326273', // Blue Slate
+    accentSecondary: '#E39774', // Tangerine Dream
     accentSuccess: '#899D78', // Palm Leaf
-    accentDanger: '#C83E1A', // Oxidized Iron
+    accentDanger: '#B02E0C', // Oxidized Iron
     accentWarning: '#E39774', // Tangerine Dream
-    glowAmber: 'rgba(137, 157, 120, 0.14)',
-    glowIndigo: 'rgba(50, 98, 115, 0.14)',
-    glowCyan: 'rgba(137, 157, 120, 0.14)',
-    glowCoral: 'rgba(227, 151, 116, 0.14)',
+    glowAmber: 'rgba(227, 151, 116, 0.16)',
+    glowIndigo: 'rgba(50, 98, 115, 0.18)',
+    glowCyan: 'rgba(50, 98, 115, 0.16)',
+    glowCoral: 'rgba(176, 46, 12, 0.16)',
     glowMint: 'rgba(137, 157, 120, 0.14)',
 
     textPrimary: '#FFFFFF',
-    textSecondary: '#A8B7AA',
-    textMuted: '#68776B',
-    keypadBg: '#121815',
-    keypadKey: '#19221D',
-    dockBg: 'rgba(14, 18, 16, 0.90)',
+    textSecondary: '#9EAFB8', // Sleek Slate Silver
+    textMuted: '#637682',
+    keypadBg: '#12181C',
+    keypadKey: '#182025',
+    dockBg: 'rgba(12, 16, 19, 0.88)',
     dockBorder: 'rgba(255, 255, 255, 0.10)',
   },
   light: {
-    bgPrimary: '#FFFFFF', // Pure White Root Background as requested
-    bgSecondary: '#F7F9F6',
+    bgPrimary: '#FFFFFF', // Pure White Root Background
+    bgSecondary: '#F4F7F9',
     cardPrimary: '#FFFFFF',
-    cardSecondary: '#F2F5F0',
+    cardSecondary: '#EDF2F5',
     cardElevated: '#FFFFFF',
     borderSubtle: 'rgba(0, 0, 0, 0.06)',
-    borderMedium: 'rgba(137, 157, 120, 0.28)',
-    borderActive: '#546846',
+    borderMedium: 'rgba(50, 98, 115, 0.20)',
+    borderActive: '#326273',
 
     // Frosted Glassmorphism Tokens
     glassBg: 'rgba(255, 255, 255, 0.86)',
@@ -100,10 +102,12 @@ export const THEME = {
     glassSpecular: 'rgba(255, 255, 255, 0.95)',
 
     // Ambient Diffuse Glow Tones
-    ambientWarm: 'rgba(227, 151, 116, 0.22)',
-    ambientHoney: 'rgba(137, 157, 120, 0.22)',
-    ambientTerracotta: 'rgba(227, 151, 116, 0.20)',
-    ambientViolet: 'rgba(50, 98, 115, 0.16)',
+    ambientWarm: 'rgba(227, 151, 116, 0.24)',
+    ambientHoney: 'rgba(227, 151, 116, 0.20)',
+    ambientTerracotta: 'rgba(176, 46, 12, 0.18)',
+    ambientViolet: 'rgba(50, 98, 115, 0.18)',
+    ambientSlate: 'rgba(50, 98, 115, 0.16)',
+    ambientPalm: 'rgba(137, 157, 120, 0.18)',
 
     // Palette Tokens
     black: '#020202',
@@ -114,32 +118,32 @@ export const THEME = {
 
     // Semantic roles & backward compatibility aliases (tuned for contrast against white)
     matchaLime: '#546846', // Deep Palm Leaf Green for crisp contrast on white
-    terracotta: '#CF6F47', // Tangerine Dream
-    goldenHoney: '#CF6F47',
+    terracotta: '#D46D42', // Tangerine Dream
+    goldenHoney: '#D46D42',
     mossSage: '#546846', // Deep Palm Leaf
     coralRose: '#B02E0C', // Oxidized Iron
     darkGraphite: '#020202', // Black
     electricViolet: '#326273', // Blue Slate
-    electricMagenta: '#CF6F47',
+    electricMagenta: '#D46D42',
 
-    accentPrimary: '#546846', // Deep Palm Leaf
-    accentSecondary: '#326273', // Blue Slate
+    accentPrimary: '#326273', // Blue Slate
+    accentSecondary: '#D46D42', // Tangerine Dream
     accentSuccess: '#546846', // Deep Palm Leaf
     accentDanger: '#B02E0C', // Oxidized Iron
-    accentWarning: '#CF6F47', // Tangerine Dream
-    glowAmber: 'rgba(137, 157, 120, 0.14)',
-    glowIndigo: 'rgba(50, 98, 115, 0.10)',
-    glowCyan: 'rgba(137, 157, 120, 0.14)',
-    glowCoral: 'rgba(227, 151, 116, 0.14)',
+    accentWarning: '#D46D42', // Tangerine Dream
+    glowAmber: 'rgba(227, 151, 116, 0.14)',
+    glowIndigo: 'rgba(50, 98, 115, 0.12)',
+    glowCyan: 'rgba(50, 98, 115, 0.14)',
+    glowCoral: 'rgba(176, 46, 12, 0.14)',
     glowMint: 'rgba(137, 157, 120, 0.14)',
 
     textPrimary: '#020202', // Black from reference palette for crisp readability
-    textSecondary: '#4D5C52',
-    textMuted: '#79877E',
-    keypadBg: '#F5F7F4',
+    textSecondary: '#4E5F69',
+    textMuted: '#7A8C96',
+    keypadBg: '#F4F7F9',
     keypadKey: '#FFFFFF',
-    dockBg: 'rgba(255, 255, 255, 0.94)',
-    dockBorder: 'rgba(0, 0, 0, 0.07)',
+    dockBg: 'rgba(255, 255, 255, 0.92)',
+    dockBorder: 'rgba(0, 0, 0, 0.08)',
   },
   borderRadius: {
     sm: 12,

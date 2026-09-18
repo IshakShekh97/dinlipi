@@ -6,6 +6,8 @@ export const usersTable = sqliteTable('users', {
   phone: text('phone').default(''),
   avatar: text('avatar').default(''),
   currency: text('currency').default('BDT'),
+  upiId: text('upi_id').default(''),
+  qrCodeUri: text('qr_code_uri').default(''),
   createdAt: text('created_at').notNull(),
   updatedAt: text('updated_at').notNull(),
 });
@@ -80,6 +82,15 @@ export const recurringTable = sqliteTable('recurring', {
   isActive: integer('is_active', { mode: 'boolean' }).default(true),
 });
 
+export const paymentQRsTable = sqliteTable('payment_qrs', {
+  id: text('id').primaryKey(),
+  title: text('title').notNull(),
+  upiId: text('upi_id').default(''),
+  imageUri: text('image_uri').notNull(),
+  isDefault: integer('is_default', { mode: 'boolean' }).default(false),
+  createdAt: text('created_at').notNull(),
+});
+
 export type UserRow = typeof usersTable.$inferSelect;
 export type BudgetCardRow = typeof budgetCardsTable.$inferSelect;
 export type CategoryRow = typeof categoriesTable.$inferSelect;
@@ -87,3 +98,4 @@ export type PersonRow = typeof peopleTable.$inferSelect;
 export type InstallmentRow = typeof installmentsTable.$inferSelect;
 export type TransactionRow = typeof transactionsTable.$inferSelect;
 export type RecurringRow = typeof recurringTable.$inferSelect;
+export type PaymentQRRow = typeof paymentQRsTable.$inferSelect;

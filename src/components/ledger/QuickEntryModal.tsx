@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -35,6 +35,7 @@ interface QuickEntryModalProps {
   initialData?: QuickEntryData | null;
   currencySymbol?: string;
   cards?: BudgetCardData[];
+  onCreateBudget?: () => void;
 }
 
 const CHANNELS: ('Cash' | 'UPI' | 'Bank')[] = ['Cash', 'UPI', 'Bank'];
@@ -47,9 +48,21 @@ export function QuickEntryModal({
   initialData,
   currencySymbol: propCurrencySymbol,
   cards = [],
+  onCreateBudget,
 }: QuickEntryModalProps) {
   const activeCurrency = useUIStore((state) => state.activeCurrency);
   const currencySymbol = propCurrencySymbol || getCurrencySymbol(activeCurrency);
+  const [formKey, setFormKey] = useState(0);
+
+  // When opening modal, increment form key to force fresh reset for new entries
+  useEffect(() => {
+    if (visible) {
+      const timer = setTimeout(() => {
+        setFormKey((prev) => prev + 1);
+      }, 0);
+      return () => clearTimeout(timer);
+    }
+  }, [visible, initialData]);
 
   const titleText = initialData
     ? 'Edit Ledger Entry'
@@ -68,13 +81,14 @@ export function QuickEntryModal({
     >
       {visible ? (
         <QuickEntryForm
-          key={initialData?.id || 'new_entry'}
+          key={`${initialData?.id || 'new'}_${formKey}`}
           type={type}
           initialData={initialData}
           currencySymbol={currencySymbol}
           cards={cards}
           onClose={onClose}
           onSave={onSave}
+          onCreateBudget={onCreateBudget}
         />
       ) : null}
     </CozyModal>
@@ -88,6 +102,7 @@ interface QuickEntryFormProps {
   cards?: BudgetCardData[];
   onClose: () => void;
   onSave: (entry: QuickEntryData) => void;
+  onCreateBudget?: () => void;
 }
 
 function QuickEntryForm({
@@ -97,13 +112,16 @@ function QuickEntryForm({
   cards = [],
   onClose,
   onSave,
+  onCreateBudget,
 }: QuickEntryFormProps) {
   const { colors, isDark } = useAppTheme();
 
   const [title, setTitle] = useState(initialData?.title || '');
   const [amount, setAmount] = useState(initialData?.amount ? initialData.amount.toString() : '');
   const [channel, setChannel] = useState<'Cash' | 'UPI' | 'Bank'>(initialData?.channel || 'Cash');
-  const [selectedCardId, setSelectedCardId] = useState<string | undefined>(initialData?.cardId);
+  const [selectedCardId, setSelectedCardId] = useState<string | undefined>(
+    initialData?.cardId || (cards.length > 0 ? cards[0].id : undefined)
+  );
 
   // Date selection states
   const [dateMode, setDateMode] = useState<'today' | 'yesterday' | 'custom'>(
@@ -146,6 +164,11 @@ function QuickEntryForm({
       triggerHaptic('warning');
       return;
     }
+    if (!selectedCardId) {
+      setErrorMessage('Please select a budget envelope for this transaction.');
+      triggerHaptic('warning');
+      return;
+    }
 
     triggerHaptic('success');
     onSave({
@@ -159,8 +182,85 @@ function QuickEntryForm({
       date: computeFinalDate(),
     });
 
+    useUIStore.getState().triggerConfetti();
+
+    // Reset local state fields
+    setTitle('');
+    setAmount('');
+    setErrorMessage('');
+    setDateMode('today');
+    setCustomDateText(new Date().toISOString().split('T')[0]);
+
     onClose();
   };
+
+  if (!cards || cards.length === 0) {
+    return (
+      <View style={{ paddingVertical: 24, alignItems: 'center', gap: 16 }}>
+        <View
+          style={{
+            width: 58,
+            height: 58,
+            borderRadius: 29,
+            backgroundColor: 'rgba(227, 151, 116, 0.18)',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <CreditCard size={28} color="#E39774" />
+        </View>
+        <View style={{ alignItems: 'center', paddingHorizontal: 20 }}>
+          <Text
+            style={{
+              color: colors.textPrimary,
+              fontFamily: FONTS.sansBold,
+              fontSize: 18,
+              textAlign: 'center',
+              marginBottom: 6,
+            }}
+          >
+            Budget Envelope Required
+          </Text>
+          <Text
+            style={{
+              color: colors.textSecondary,
+              fontFamily: FONTS.sansMedium,
+              fontSize: 14,
+              textAlign: 'center',
+              lineHeight: 20,
+            }}
+          >
+            Every transaction must be linked to a budget envelope. Please create a budget first before recording transactions.
+          </Text>
+        </View>
+        <TouchableOpacity
+          onPress={() => {
+            triggerHaptic('medium');
+            onClose();
+            onCreateBudget?.();
+          }}
+          style={{
+            backgroundColor: colors.tangerineDream,
+            paddingVertical: 14,
+            paddingHorizontal: 26,
+            borderRadius: 16,
+            marginTop: 4,
+          }}
+          activeOpacity={0.85}
+        >
+          <Text
+            style={{
+              color: colors.black,
+              fontFamily: FONTS.sansBold,
+              fontSize: 14,
+            }}
+          >
+            + Create Budget Envelope
+          </Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.entryForm}>
@@ -273,12 +373,12 @@ function QuickEntryForm({
                 }}
                 style={{
                   backgroundColor: isSelected
-                    ? colors.matchaLime
+                    ? colors.palmLeaf
                     : isDark
                     ? colors.cardSecondary
                     : '#F7F7F4',
                   borderColor: isSelected
-                    ? colors.matchaLime
+                    ? colors.palmLeaf
                     : isDark
                     ? colors.borderSubtle
                     : '#E5E7EB',
@@ -288,7 +388,7 @@ function QuickEntryForm({
               >
                 <Text
                   style={{
-                    color: isSelected ? '#141715' : colors.textPrimary,
+                    color: isSelected ? colors.black : colors.textPrimary,
                     fontFamily: isSelected ? FONTS.sansBold : FONTS.sansMedium,
                   }}
                   className="text-xs"
@@ -309,8 +409,8 @@ function QuickEntryForm({
             style={[
               styles.inputWrapper,
               {
-                backgroundColor: isDark ? 'rgba(206, 240, 74, 0.08)' : '#F2F7EA',
-                borderColor: colors.matchaLime,
+                backgroundColor: isDark ? 'rgba(137, 157, 120, 0.14)' : '#F2F7EA',
+                borderColor: colors.palmLeaf,
                 marginTop: 6,
                 justifyContent: 'space-between',
               },
@@ -318,20 +418,20 @@ function QuickEntryForm({
             activeOpacity={0.75}
           >
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-              <Calendar size={18} color={colors.matchaLime} />
+              <Calendar size={18} color={colors.palmLeaf} />
               <Text style={{ color: colors.textPrimary, fontFamily: FONTS.monoBold, fontSize: 14 }}>
                 {customDateText}
               </Text>
             </View>
             <View
               style={{
-                backgroundColor: colors.matchaLime,
+                backgroundColor: colors.palmLeaf,
                 paddingHorizontal: 10,
                 paddingVertical: 4,
                 borderRadius: 8,
               }}
             >
-              <Text style={{ color: '#141715', fontFamily: FONTS.sansBold, fontSize: 11 }}>
+              <Text style={{ color: colors.black, fontFamily: FONTS.sansBold, fontSize: 11 }}>
                 Open Calendar
               </Text>
             </View>
@@ -350,86 +450,61 @@ function QuickEntryForm({
         />
       </View>
 
-      {/* Connect to Budget Envelope (Optional) */}
-      {cards && cards.length > 0 && (
-        <View style={styles.inputGroup}>
-          <View className="flex-row items-center justify-between">
-            <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>
-              Link to Budget Envelope (Optional)
-            </Text>
-            <Text style={{ color: colors.textMuted, fontSize: 11 }}>
-              {selectedCardId ? 'Linked' : 'None'}
-            </Text>
-          </View>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
-            <TouchableOpacity
-              onPress={() => {
-                triggerHaptic('light');
-                setSelectedCardId(undefined);
-              }}
-              style={{
-                backgroundColor: !selectedCardId
-                  ? isDark
-                    ? colors.cardElevated
-                    : '#E5E7EB'
-                  : isDark
-                  ? colors.cardSecondary
-                  : '#F7F7F4',
-                borderColor: !selectedCardId ? colors.matchaLime : 'transparent',
-              }}
-              className="px-3.5 py-2 rounded-2xl border flex-row items-center gap-1.5"
-              activeOpacity={0.75}
-            >
-              <Text style={{ color: colors.textPrimary, fontSize: 12, fontWeight: '700' }}>
-                None (General)
-              </Text>
-              {!selectedCardId && <Check size={12} color={colors.matchaLime} strokeWidth={3} />}
-            </TouchableOpacity>
-
-            {cards.map((card) => {
-              const isSelected = selectedCardId === card.id;
-              return (
-                <TouchableOpacity
-                  key={card.id}
-                  onPress={() => {
-                    triggerHaptic('light');
-                    setSelectedCardId(card.id);
-                  }}
-                  style={{
-                    backgroundColor: isSelected
-                      ? 'rgba(206, 240, 74, 0.16)'
-                      : isDark
-                      ? colors.cardSecondary
-                      : '#F7F7F4',
-                    borderColor: isSelected ? colors.matchaLime : isDark ? colors.borderSubtle : '#E5E7EB',
-                  }}
-                  className="px-3.5 py-2 rounded-2xl border flex-row items-center gap-1.5"
-                  activeOpacity={0.75}
-                >
-                  <CreditCard size={13} color={isSelected ? colors.matchaLime : colors.textSecondary} />
-                  <Text
-                    style={{
-                      color: isSelected ? colors.matchaLime : colors.textPrimary,
-                      fontSize: 12,
-                      fontWeight: isSelected ? '800' : '600',
-                    }}
-                  >
-                    {card.name} ({currencySymbol}{card.limit.toLocaleString()})
-                  </Text>
-                  {isSelected && <Check size={12} color={colors.matchaLime} strokeWidth={3} />}
-                </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
+      {/* Connect to Budget Envelope (Mandatory) */}
+      <View style={styles.inputGroup}>
+        <View className="flex-row items-center justify-between">
+          <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>
+            Budget Envelope *
+          </Text>
+          <Text style={{ color: colors.matchaLime, fontSize: 11, fontWeight: '700' }}>
+            Required
+          </Text>
         </View>
-      )}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+          {cards.map((card) => {
+            const isSelected = selectedCardId === card.id;
+            return (
+              <TouchableOpacity
+                key={card.id}
+                onPress={() => {
+                  triggerHaptic('light');
+                  setSelectedCardId(card.id);
+                  if (errorMessage) setErrorMessage('');
+                }}
+                style={{
+                  backgroundColor: isSelected
+                    ? 'rgba(137, 157, 120, 0.20)'
+                    : isDark
+                    ? colors.cardSecondary
+                    : '#F7F7F4',
+                  borderColor: isSelected ? colors.matchaLime : isDark ? colors.borderSubtle : '#E5E7EB',
+                }}
+                className="px-3.5 py-2 rounded-2xl border flex-row items-center gap-1.5"
+                activeOpacity={0.75}
+              >
+                <CreditCard size={13} color={isSelected ? colors.matchaLime : colors.textSecondary} />
+                <Text
+                  style={{
+                    color: isSelected ? colors.matchaLime : colors.textPrimary,
+                    fontSize: 12,
+                    fontWeight: isSelected ? '800' : '600',
+                  }}
+                >
+                  {card.name} ({currencySymbol}{card.limit.toLocaleString()})
+                </Text>
+                {isSelected && <Check size={12} color={colors.matchaLime} strokeWidth={3} />}
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+      </View>
 
-      {/* Payment Mode (Channel) */}
+      {/* Payment Channel */}
       <View style={styles.inputGroup}>
         <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>
-          Payment Channel
+          Channel
         </Text>
-        <View className="flex-row items-center gap-2">
+        <View className="flex-row gap-2">
           {CHANNELS.map((ch) => {
             const isSelected = channel === ch;
             return (
@@ -441,12 +516,12 @@ function QuickEntryForm({
                 }}
                 style={{
                   backgroundColor: isSelected
-                    ? colors.matchaLime
+                    ? colors.tangerineDream
                     : isDark
                     ? colors.cardSecondary
                     : '#F7F7F4',
                   borderColor: isSelected
-                    ? colors.matchaLime
+                    ? colors.tangerineDream
                     : isDark
                     ? colors.borderSubtle
                     : '#E5E7EB',
@@ -456,7 +531,7 @@ function QuickEntryForm({
               >
                 <Text
                   style={{
-                    color: isSelected ? '#141715' : colors.textPrimary,
+                    color: isSelected ? colors.black : colors.textPrimary,
                     fontWeight: isSelected ? '900' : '600',
                   }}
                   className="text-xs"
@@ -475,14 +550,14 @@ function QuickEntryForm({
         style={[
           styles.saveBtn,
           {
-            backgroundColor: colors.matchaLime,
+            backgroundColor: colors.tangerineDream,
             shadowColor: '#000',
             shadowOpacity: 0.15,
           },
         ]}
         activeOpacity={0.85}
       >
-        <Sparkles size={16} color="#141715" />
+        <Sparkles size={16} color={colors.black} />
         <Text style={styles.saveBtnText}>
           {initialData ? 'Update Entry' : 'Record Transaction'}
         </Text>
@@ -530,7 +605,7 @@ const styles = StyleSheet.create({
   saveBtnText: {
     fontSize: 15,
     fontFamily: FONTS.sansBold,
-    color: '#141715',
+    color: '#020202',
     letterSpacing: -0.2,
   },
 });

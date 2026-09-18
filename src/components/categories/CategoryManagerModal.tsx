@@ -23,19 +23,19 @@ import {
   Dumbbell,
   Smartphone,
   Laptop,
-  Sparkles,
+  BookOpen,
   Film,
-  DollarSign,
-  Wallet,
-  Tag,
+  Music,
   Gift,
-  Book,
+  DollarSign,
+  Tag,
+  Smile,
+  Shield,
   Briefcase,
 } from 'lucide-react-native';
 import { CozyModal } from '../ui/CozyModal';
 import { useAppTheme } from '../../context/theme-context';
 import { triggerHaptic } from '../../constants/theme';
-import { getCurrencySymbol } from '../../utils/currency';
 
 export interface CategoryItem {
   id: string;
@@ -56,7 +56,7 @@ interface CategoryManagerModalProps {
   categoryList?: CategoryItem[];
   onAddCategory?: (category: CategoryItem) => void;
   onEditCategory?: (category: CategoryItem) => void;
-  onDeleteCategory?: (id: string) => void;
+  onDeleteCategory?: (categoryId: string) => void;
   onSaveList?: (categories: CategoryItem[]) => void;
 }
 
@@ -71,25 +71,26 @@ export const CATEGORY_ICONS: Record<string, React.FC<{ size?: number; color?: st
   Dumbbell,
   Smartphone,
   Laptop,
-  Sparkles,
+  BookOpen,
   Film,
-  DollarSign,
-  Wallet,
-  Tag,
+  Music,
   Gift,
-  Book,
+  DollarSign,
+  Tag,
+  Smile,
+  Shield,
   Briefcase,
 };
 
 const PASTEL_COLORS = [
-  '#CEF04A', // Matcha Lime
-  '#E07A5F', // Terracotta
-  '#81B29A', // Moss Sage
-  '#F2CC8F', // Golden Honey
-  '#E76F51', // Coral Rose
-  '#A8D21E', // Chartreuse
-  '#588157', // Forest
-  '#262928', // Dark Graphite
+  '#899D78', // Palm Leaf Green
+  '#326273', // Blue Slate
+  '#E39774', // Tangerine Dream
+  '#B02E0C', // Oxidized Iron
+  '#020202', // Obsidian Black
+  '#5D875F', // Forest Sage
+  '#487D91', // Nordic Frost
+  '#F0B195', // Soft Tangerine
 ];
 
 export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
@@ -103,23 +104,19 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
   onSaveList,
 }) => {
   const { colors, isDark } = useAppTheme();
-  const activeCurrency = useUIStore((state) => state.activeCurrency);
-  const currencySymbol = getCurrencySymbol(activeCurrency);
 
   const activeCategories = categoryList || categories || [];
 
   const [mode, setMode] = useState<'list' | 'create' | 'edit'>('list');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [name, setName] = useState('');
-  const [budget, setBudget] = useState('500');
-  const [selectedIcon, setSelectedIcon] = useState('ShoppingBag');
+  const [selectedIcon, setSelectedIcon] = useState('Tag');
   const [selectedColor, setSelectedColor] = useState(PASTEL_COLORS[0]);
   const [type, setType] = useState<'expense' | 'income'>('expense');
 
   const handleResetForm = () => {
     setName('');
-    setBudget('500');
-    setSelectedIcon('ShoppingBag');
+    setSelectedIcon('Tag');
     setSelectedColor(PASTEL_COLORS[0]);
     setType('expense');
     setEditingId(null);
@@ -134,7 +131,6 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
   const startEdit = (cat: CategoryItem) => {
     setEditingId(cat.id);
     setName(cat.name);
-    setBudget(cat.budget.toString());
     setSelectedIcon(cat.iconName);
     setSelectedColor(cat.color);
     setType(cat.type);
@@ -146,8 +142,8 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
   const handleSave = () => {
     if (!name.trim()) {
       showConfirm({
-        title: 'Missing Title',
-        message: 'Please enter a category title before saving.',
+        title: 'Missing Tag Name',
+        message: 'Please enter a tag name before saving.',
         confirmText: 'Understood',
         cancelText: 'Dismiss',
         onConfirm: () => {},
@@ -155,7 +151,6 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
       return;
     }
 
-    const numBudget = parseFloat(budget) || 200;
     triggerHaptic('success');
 
     if (mode === 'create') {
@@ -164,7 +159,7 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
         name: name.trim(),
         iconName: selectedIcon,
         color: selectedColor,
-        budget: numBudget,
+        budget: 0,
         spent: 0,
         type,
       };
@@ -177,7 +172,7 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
         name: name.trim(),
         iconName: selectedIcon,
         color: selectedColor,
-        budget: numBudget,
+        budget: 0,
         spent: existing ? existing.spent : 0,
         type,
       };
@@ -191,9 +186,9 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
   const handleDelete = (cat: CategoryItem) => {
     triggerHaptic('warning');
     showConfirm({
-      title: 'Delete Category',
-      message: `Are you sure you want to remove "${cat.name}"? Existing transactions will not be deleted.`,
-      confirmText: 'Delete Category',
+      title: 'Delete Tag',
+      message: `Are you sure you want to remove the "${cat.name}" tag? Existing transactions with this tag will not be deleted.`,
+      confirmText: 'Delete Tag',
       cancelText: 'Cancel',
       isDestructive: true,
       onConfirm: () => {
@@ -204,7 +199,7 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
     });
   };
 
-  const renderIcon = (iconName: string, size = 18, color = '#141715') => {
+  const renderIcon = (iconName: string, size = 18, color = colors.black) => {
     const IconComponent = CATEGORY_ICONS[iconName] || Tag;
     return <IconComponent size={size} color={color} />;
   };
@@ -216,24 +211,24 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
         handleResetForm();
         onClose();
       }}
-      title={mode === 'list' ? 'Manage Categories' : mode === 'create' ? 'New Category' : 'Edit Category'}
-      subtitle={mode === 'list' ? `${activeCategories.length} custom categories configured` : 'Customize category icon & budget'}
+      title={mode === 'list' ? 'Transaction Tags' : mode === 'create' ? 'New Tag' : 'Edit Tag'}
+      subtitle={mode === 'list' ? `${activeCategories.length} tags configured for filtering` : 'Customize tag name, icon & color'}
       icon={<FolderPlus size={18} color={colors.accentPrimary} />}
       headerRight={
         mode === 'list' ? (
-          <TouchableOpacity
-            onPress={startCreate}
-            style={[
-              styles.headerAddBtn,
-              { backgroundColor: isDark ? '#CEF04A' : '#141715' },
-            ]}
-            activeOpacity={0.8}
-          >
-            <Plus size={16} color={isDark ? '#141715' : '#FFFFFF'} />
-            <Text style={[styles.headerAddBtnText, { color: isDark ? '#141715' : '#FFFFFF' }]}>
-              Add
-            </Text>
-          </TouchableOpacity>
+            <TouchableOpacity
+              onPress={startCreate}
+              style={[
+                styles.headerAddBtn,
+                { backgroundColor: isDark ? colors.tangerineDream : colors.black },
+              ]}
+              activeOpacity={0.8}
+            >
+              <Plus size={16} color={isDark ? colors.black : '#FFFFFF'} />
+              <Text style={[styles.headerAddBtnText, { color: isDark ? colors.black : '#FFFFFF' }]}>
+                Add
+              </Text>
+            </TouchableOpacity>
         ) : undefined
       }
     >
@@ -264,12 +259,12 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
               {/* Starter Suggestions */}
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 8, marginBottom: 20 }}>
                 {[
-                  { name: 'Groceries', icon: 'ShoppingBag', color: '#CEF04A' },
-                  { name: 'Dining Out', icon: 'Utensils', color: '#E07A5F' },
-                  { name: 'Rent & Home', icon: 'Home', color: '#81B29A' },
-                  { name: 'Transport', icon: 'Car', color: '#F2CC8F' },
-                  { name: 'Wellness', icon: 'Heart', color: '#A8D21E' },
-                  { name: 'Salary', icon: 'DollarSign', color: '#CEF04A', type: 'income' as const },
+                  { name: 'Groceries', icon: 'ShoppingBag', color: '#899D78' },
+                  { name: 'Dining Out', icon: 'Utensils', color: '#E39774' },
+                  { name: 'Rent & Home', icon: 'Home', color: '#326273' },
+                  { name: 'Transport', icon: 'Car', color: '#B02E0C' },
+                  { name: 'Wellness', icon: 'Heart', color: '#E39774' },
+                  { name: 'Salary', icon: 'DollarSign', color: '#899D78', type: 'income' as const },
                 ].map((starter) => (
                   <TouchableOpacity
                     key={starter.name}
@@ -294,7 +289,7 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
                     }}
                     activeOpacity={0.7}
                   >
-                    <Plus size={12} color={colors.matchaLime} />
+                    <Plus size={12} color={colors.palmLeaf} />
                     <Text style={{ color: colors.textPrimary, fontSize: 12, fontWeight: '600' }}>
                       {starter.name}
                     </Text>
@@ -308,22 +303,21 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
                   flexDirection: 'row',
                   alignItems: 'center',
                   gap: 6,
-                  backgroundColor: colors.matchaLime,
+                  backgroundColor: colors.tangerineDream,
                   paddingHorizontal: 18,
                   paddingVertical: 11,
                   borderRadius: 18,
                 }}
                 activeOpacity={0.8}
               >
-                <Plus size={15} color="#141715" />
-                <Text style={{ color: '#141715', fontWeight: '800', fontSize: 13 }}>
+                <Plus size={15} color={colors.black} />
+                <Text style={{ color: colors.black, fontWeight: '800', fontSize: 13 }}>
                   Create Custom Category
                 </Text>
               </TouchableOpacity>
             </View>
           ) : (
             activeCategories.map((cat) => {
-              const pct = cat.budget > 0 ? Math.min(Math.round((cat.spent / cat.budget) * 100), 100) : 0;
               return (
                 <View
                   key={cat.id}
@@ -335,7 +329,7 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
                     },
                   ]}
                 >
-                  <View className="flex-row items-center justify-between mb-2.5">
+                  <View className="flex-row items-center justify-between">
                     <View className="flex-row items-center gap-3">
                       <View
                         style={[
@@ -343,78 +337,47 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
                           { backgroundColor: cat.color, borderColor: 'rgba(0,0,0,0.06)' },
                         ]}
                       >
-                        {renderIcon(cat.iconName, 18, '#141715')}
+                        {renderIcon(cat.iconName, 18, colors.black)}
                       </View>
                       <View>
                         <Text style={[styles.catName, { color: colors.textPrimary }]}>
                           {cat.name}
                         </Text>
                         <Text style={[styles.catBudget, { color: colors.textMuted }]}>
-                          {currencySymbol}{cat.spent} of {currencySymbol}{cat.budget} budget
+                          Tag for filtering & grouping
                         </Text>
                       </View>
                     </View>
 
-                  {/* Actions */}
-                  <View className="flex-row items-center gap-1.5">
-                    <TouchableOpacity
-                      onPress={() => startEdit(cat)}
-                      style={[styles.smallActionBtn, { backgroundColor: colors.cardElevated }]}
-                    >
-                      <Edit2 size={14} color={colors.textSecondary} />
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      onPress={() => handleDelete(cat)}
-                      style={[styles.smallActionBtn, { backgroundColor: 'rgba(231, 111, 81, 0.12)' }]}
-                    >
-                      <Trash2 size={14} color={colors.accentDanger} />
-                    </TouchableOpacity>
+                    {/* Actions */}
+                    <View className="flex-row items-center gap-1.5">
+                      <TouchableOpacity
+                        onPress={() => startEdit(cat)}
+                        style={[styles.smallActionBtn, { backgroundColor: colors.cardElevated }]}
+                      >
+                        <Edit2 size={14} color={colors.textSecondary} />
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        onPress={() => handleDelete(cat)}
+                        style={[styles.smallActionBtn, { backgroundColor: 'rgba(231, 111, 81, 0.12)' }]}
+                      >
+                        <Trash2 size={14} color={colors.accentDanger} />
+                      </TouchableOpacity>
+                    </View>
                   </View>
                 </View>
-
-                {/* Progress Bar */}
-                <View style={[styles.progressBarBg, { backgroundColor: isDark ? '#181A19' : '#EDECE6' }]}>
-                  <View
-                    style={[
-                      styles.progressBarFill,
-                      {
-                        width: `${pct}%`,
-                        backgroundColor: cat.color,
-                      },
-                    ]}
-                  />
-                </View>
-              </View>
             );
           }))}
         </View>
       ) : (
         /* Create / Edit Form */
         <View className="pt-2">
-          {/* Category Name */}
-          <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Category Name</Text>
+          {/* Tag Name */}
+          <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Tag Name *</Text>
           <TextInput
             value={name}
             onChangeText={setName}
-            placeholder="e.g. Fine Dining, Gym & Fitness"
-            placeholderTextColor={colors.textMuted}
-            style={[
-              styles.textInput,
-              {
-                backgroundColor: colors.cardSecondary,
-                color: colors.textPrimary,
-                borderColor: colors.borderSubtle,
-              },
-            ]}
-          />
-
-          {/* Monthly Budget Cap */}
-          <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Monthly Budget Limit ($)</Text>
-          <TextInput
-            value={budget}
-            onChangeText={setBudget}
-            placeholder="500"
-            keyboardType="numeric"
+            placeholder="e.g. Xerox, Walk, Coffee, Service"
             placeholderTextColor={colors.textMuted}
             style={[
               styles.textInput,
@@ -427,7 +390,7 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
           />
 
           {/* Color Palette Picker */}
-          <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Accent Color</Text>
+          <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Tag Color</Text>
           <View style={styles.colorGrid}>
             {PASTEL_COLORS.map((col) => {
               const selected = selectedColor === col;
@@ -442,11 +405,11 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
                     styles.colorSwatch,
                     {
                       backgroundColor: col,
-                      borderColor: selected ? (isDark ? '#FFFFFF' : '#141715') : 'transparent',
+                      borderColor: selected ? (isDark ? '#FFFFFF' : colors.black) : 'transparent',
                     },
                   ]}
                 >
-                  {selected && <Check size={14} color="#141715" strokeWidth={3} />}
+                  {selected && <Check size={14} color={colors.black} strokeWidth={3} />}
                 </TouchableOpacity>
               );
             })}
@@ -468,12 +431,12 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
                     styles.iconPickerBtn,
                     {
                       backgroundColor: isSelected ? selectedColor : colors.cardSecondary,
-                      borderColor: isSelected ? (isDark ? '#FFFFFF' : '#141715') : colors.borderSubtle,
+                      borderColor: isSelected ? (isDark ? '#FFFFFF' : colors.black) : colors.borderSubtle,
                     },
                   ]}
                   activeOpacity={0.7}
                 >
-                  {renderIcon(iconKey, 18, isSelected ? '#141715' : colors.textPrimary)}
+                  {renderIcon(iconKey, 18, isSelected ? colors.black : colors.textPrimary)}
                 </TouchableOpacity>
               );
             })}
@@ -496,11 +459,11 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({
               onPress={handleSave}
               style={[
                 styles.saveBtn,
-                { backgroundColor: isDark ? '#CEF04A' : '#141715' },
+                { backgroundColor: isDark ? colors.tangerineDream : colors.black },
               ]}
               activeOpacity={0.85}
             >
-              <Text style={{ color: isDark ? '#141715' : '#FFFFFF', fontWeight: '800' }}>
+              <Text style={{ color: isDark ? colors.black : '#FFFFFF', fontWeight: '800' }}>
                 {mode === 'create' ? 'Add Category' : 'Save Changes'}
               </Text>
             </TouchableOpacity>

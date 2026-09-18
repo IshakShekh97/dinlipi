@@ -105,7 +105,7 @@ function AnimatedTabItem({
           isFocused && [
             styles.activeCapsule,
             {
-              backgroundColor: isDark ? '#CEF04A' : '#1A1D1C',
+              backgroundColor: isDark ? colors.tangerineDream : '#020202',
             },
           ],
           animatedStyle,
@@ -118,7 +118,7 @@ function AnimatedTabItem({
           styles.tabLabel,
           {
             color: isFocused
-              ? (isDark ? '#CEF04A' : '#1A1D1C')
+              ? (isDark ? colors.tangerineDream : '#020202')
               : colors.textMuted,
             fontWeight: isFocused ? '700' : '500',
           },
@@ -152,11 +152,11 @@ export const FloatingTabBar: React.FC<FloatingTabBarProps> = ({
         style={[
           styles.dockContainer,
           {
-            backgroundColor: isDark ? '#1A1C1B' : '#FFFFFF',
-            borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
+            backgroundColor: isDark ? 'rgba(12, 16, 19, 0.88)' : '#FFFFFF',
+            borderColor: isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.06)',
             shadowColor: '#000000',
-            shadowOpacity: isDark ? 0.3 : 0.06,
-            shadowRadius: 16,
+            shadowOpacity: isDark ? 0.35 : 0.06,
+            shadowRadius: 18,
             shadowOffset: { width: 0, height: 4 },
           },
         ]}

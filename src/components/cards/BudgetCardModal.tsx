@@ -1,18 +1,33 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
   TextInput,
   TouchableOpacity,
   StyleSheet,
+  ScrollView,
 } from 'react-native';
-import { CreditCard, Check, Wifi, Sparkles, Trash2, Shuffle } from 'lucide-react-native';
+import Svg, { Defs, LinearGradient, Stop, Rect } from 'react-native-svg';
+import {
+  CreditCard,
+  Check,
+  Wifi,
+  Sparkles,
+  Trash2,
+  Shuffle,
+  Layers,
+} from 'lucide-react-native';
 import { CozyModal } from '../ui/CozyModal';
 import { CardMeshBackground, CardThemeVariant, ShapePatternType } from '../ui/CardMeshBackground';
 import { useAppTheme } from '../../context/theme-context';
-import { triggerHaptic } from '../../constants/theme';
+import { triggerHaptic, FONTS } from '../../constants/theme';
 import { useUIStore } from '../../store/ui-store';
 import { getCurrencySymbol } from '../../utils/currency';
+import {
+  CURATED_MESH_PRESETS,
+  generateRandomMeshPalette,
+  getHexLuminance,
+} from '../../utils/meshGenerator';
 
 export interface BudgetCardData {
   id: string;
@@ -33,43 +48,8 @@ interface BudgetCardModalProps {
   visible: boolean;
   onClose: () => void;
   onSave: (card: BudgetCardData) => void;
-  onDelete?: (id: string) => void;
+  onDelete?: (cardId: string) => void;
   initialData?: BudgetCardData | null;
-}
-
-const BACKDROP_THEMES: { id: CardThemeVariant; label: string; previewColor: string }[] = [
-  { id: 'palmLeaf', label: 'Palm Leaf', previewColor: '#899D78' },
-  { id: 'blueSlate', label: 'Blue Slate', previewColor: '#326273' },
-  { id: 'tangerine', label: 'Tangerine', previewColor: '#E39774' },
-  { id: 'oxidizedIron', label: 'Oxidized Iron', previewColor: '#B02E0C' },
-  { id: 'obsidian', label: 'Obsidian Black', previewColor: '#020202' },
-  { id: 'matchaLime', label: 'Matcha Lime', previewColor: '#CEF04A' },
-  { id: 'terracotta', label: 'Terracotta', previewColor: '#E07A5F' },
-  { id: 'mossSage', label: 'Moss Sage', previewColor: '#81B29A' },
-];
-
-const CURATED_AESTHETIC_PALETTES: [string, string, string][] = [
-  ['#899D78', '#A2B591', '#4D5F3F'], // Palm Leaf Sage Frosted Glass
-  ['#326273', '#487D91', '#1B3B47'], // Blue Slate Nordic Frost
-  ['#E39774', '#F0B195', '#B55B32'], // Tangerine Glow Glass
-  ['#B02E0C', '#D04620', '#631500'], // Oxidized Iron Velvet
-  ['#181C1A', '#2E3531', '#020202'], // Obsidian Minimal Glass
-  ['#536F63', '#799C8E', '#2B3C35'], // Deep Pine Fog Glass
-  ['#3E5968', '#5E7F91', '#1F3440'], // Pacific Slate Glass
-  ['#D48B6A', '#EBB096', '#944728'], // Warm Terracotta Dawn
-  ['#688A6F', '#8FB096', '#3E5743'], // Matcha Eucalyptus Frost
-  ['#222B29', '#3D4D48', '#0E1312'], // Smoked Carbon Glass
-  ['#7A6F5D', '#A19480', '#4A4134'], // Khaki Linen Glass
-  ['#3D6B78', '#6398A8', '#21424C'], // Polar Ice Glass
-];
-
-function getHexLuminance(hex: string): number {
-  const clean = hex.replace('#', '');
-  if (clean.length !== 6) return 128;
-  const r = parseInt(clean.substring(0, 2), 16);
-  const g = parseInt(clean.substring(2, 4), 16);
-  const b = parseInt(clean.substring(4, 6), 16);
-  return 0.299 * r + 0.587 * g + 0.114 * b;
 }
 
 export const BudgetCardModal: React.FC<BudgetCardModalProps> = ({
@@ -84,48 +64,55 @@ export const BudgetCardModal: React.FC<BudgetCardModalProps> = ({
   const showConfirm = useUIStore((state) => state.showConfirmDialog);
   const currencySymbol = getCurrencySymbol(activeCurrency);
 
-  const [name, setName] = useState(initialData ? initialData.name : '');
-  const [limit, setLimit] = useState(initialData ? initialData.limit.toString() : '2000');
-  const [cardType, setCardType] = useState(initialData ? initialData.cardType : 'Vault');
-  const [holder, setHolder] = useState(initialData ? initialData.holder : 'Cardholder');
-  const [variant, setVariant] = useState<CardThemeVariant>(
-    initialData ? initialData.variant : 'palmLeaf'
-  );
-  const [customGradient, setCustomGradient] = useState<[string, string, string] | undefined>(
-    initialData?.customGradient
-  );
-  const [shapePattern, setShapePattern] = useState<ShapePatternType>(
-    initialData?.shapePattern || 'waves'
-  );
+  const [name, setName] = useState('');
+  const [limit, setLimit] = useState('2000');
+  const [cardType, setCardType] = useState('Vault');
+  const [holder, setHolder] = useState('Cardholder');
+  const [variant, setVariant] = useState<CardThemeVariant>('tangerineAurora');
+  const [customGradient, setCustomGradient] = useState<[string, string, string] | undefined>(undefined);
+  const [shapePattern, setShapePattern] = useState<ShapePatternType>('aurora');
+  const [randomPaletteName, setRandomPaletteName] = useState<string>('');
   const [errorMessage, setErrorMessage] = useState('');
-  const [prevData, setPrevData] = useState(initialData);
 
-  // Sync state if initialData changed
-  if (initialData !== prevData) {
-    setPrevData(initialData);
-    setName(initialData ? initialData.name : '');
-    setLimit(initialData ? initialData.limit.toString() : '2000');
-    setCardType(initialData ? initialData.cardType : 'Vault');
-    setHolder(initialData ? initialData.holder : 'Cardholder');
-    setVariant(initialData ? initialData.variant : 'palmLeaf');
-    setCustomGradient(initialData?.customGradient);
-    setShapePattern(initialData?.shapePattern || 'waves');
-    setErrorMessage('');
-  }
+  // Sync state whenever visible toggles or initialData changes
+  useEffect(() => {
+    if (visible) {
+      const timer = setTimeout(() => {
+        if (initialData) {
+          setName(initialData.name);
+          setLimit(initialData.limit.toString());
+          setCardType(initialData.cardType);
+          setHolder(initialData.holder);
+          setVariant(initialData.variant);
+          setCustomGradient(initialData.customGradient);
+          setShapePattern(initialData.shapePattern || 'aurora');
+          setRandomPaletteName('');
+          setErrorMessage('');
+        } else {
+          // Reset all form inputs to clean default values for new budget card creation
+          setName('');
+          setLimit('2000');
+          setCardType('Vault');
+          setHolder('Cardholder');
+          setVariant('tangerineAurora');
+          setCustomGradient(undefined);
+          setShapePattern('aurora');
+          setRandomPaletteName('');
+          setErrorMessage('');
+        }
+      }, 0);
+      return () => clearTimeout(timer);
+    }
+  }, [visible, initialData]);
 
-  const generateRandomColors = () => {
+  // Algorithmic Random Mesh Palette Generator
+  const handleGenerateRandomPalette = () => {
     triggerHaptic('medium');
-
-    // Pick from aesthetic harmonious palettes inspired by the 5-tone palette
-    const randomIndex = Math.floor(Math.random() * CURATED_AESTHETIC_PALETTES.length);
-    const selectedPalette = CURATED_AESTHETIC_PALETTES[randomIndex];
-
-    const shapeOptions: ShapePatternType[] = ['waves', 'orbs', 'geometry', 'arcs', 'ribbons'];
-    const nextShape = shapeOptions[Math.floor(Math.random() * shapeOptions.length)];
-
-    setCustomGradient(selectedPalette);
-    setShapePattern(nextShape);
+    const result = generateRandomMeshPalette();
+    setCustomGradient(result.gradient);
+    setShapePattern(result.shape);
     setVariant('custom');
+    setRandomPaletteName(result.name);
   };
 
   const handleSave = () => {
@@ -154,6 +141,18 @@ export const BudgetCardModal: React.FC<BudgetCardModalProps> = ({
     };
 
     onSave(cardPayload);
+    useUIStore.getState().triggerConfetti();
+
+    // Reset inputs so next creation starts completely clean
+    setName('');
+    setLimit('2000');
+    setCardType('Vault');
+    setHolder('Cardholder');
+    setVariant('tangerineAurora');
+    setCustomGradient(undefined);
+    setShapePattern('aurora');
+    setRandomPaletteName('');
+    setErrorMessage('');
     onClose();
   };
 
@@ -173,11 +172,12 @@ export const BudgetCardModal: React.FC<BudgetCardModalProps> = ({
     });
   };
 
+  // Determine optimal card text contrast
   const isLightText = customGradient
-    ? getHexLuminance(customGradient[0]) < 135
-    : variant === 'darkGraphite' || variant === 'terracotta' || variant === 'mossSage';
-  const cardTextColor = isLightText ? '#FFFFFF' : '#141715';
-  const cardSubTextColor = isLightText ? 'rgba(255,255,255,0.7)' : 'rgba(20,23,21,0.65)';
+    ? getHexLuminance(customGradient[0]) < 140
+    : variant !== 'porcelain';
+  const cardTextColor = isLightText ? '#FFFFFF' : '#020202';
+  const cardSubTextColor = isLightText ? 'rgba(255, 255, 255, 0.72)' : 'rgba(2, 2, 2, 0.65)';
 
   return (
     <CozyModal
@@ -185,62 +185,72 @@ export const BudgetCardModal: React.FC<BudgetCardModalProps> = ({
       onClose={onClose}
       title={initialData ? 'Customize Budget Card' : 'New Budget Card'}
       subtitle="Design your card & set envelope limit"
-      icon={<CreditCard size={18} color={colors.accentPrimary} />}
+      icon={<CreditCard size={18} color={colors.tangerineDream} />}
       headerRight={
         initialData && onDelete ? (
           <TouchableOpacity
             onPress={handleDelete}
-            style={{
-              width: 32,
-              height: 32,
-              borderRadius: 16,
-              alignItems: 'center',
-              justifyContent: 'center',
-              backgroundColor: 'rgba(224, 122, 95, 0.15)',
-            }}
+            style={[
+              styles.deleteIconBtn,
+              {
+                backgroundColor: 'rgba(176, 46, 12, 0.15)',
+                borderColor: 'rgba(176, 46, 12, 0.3)',
+              },
+            ]}
             activeOpacity={0.7}
           >
-            <Trash2 size={16} color="#E07A5F" />
+            <Trash2 size={16} color={colors.oxidizedIron} />
           </TouchableOpacity>
         ) : null
       }
     >
-      {/* Live Interactive Card Preview */}
+      {/* Live Interactive Card Preview matching Mockup 2 & 4 */}
       <View style={styles.previewContainer}>
-        <View style={[styles.cardPreview, { borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)' }]}>
+        <View style={[styles.cardPreview, { borderColor: isDark ? 'rgba(255, 255, 255, 0.14)' : 'rgba(0, 0, 0, 0.08)' }]}>
           <CardMeshBackground
             variant={variant}
             customGradient={customGradient}
             shapePattern={shapePattern}
-            borderRadius={24}
+            borderRadius={26}
           />
 
-          {/* Card Header */}
+          {/* Card Header: Type Badge, Mastercard Circles, Wifi */}
           <View className="flex-row items-center justify-between">
-            <Text style={{ color: cardTextColor, fontWeight: '900', fontSize: 13, letterSpacing: 1 }}>
-              {cardType}
-            </Text>
+            <View className="flex-row items-center gap-2">
+              {/* Mastercard circles indicator from Mockup 2 */}
+              <View style={styles.mastercardBadge}>
+                <View style={[styles.mastercardCircle, { backgroundColor: '#EB001B', zIndex: 1 }]} />
+                <View style={[styles.mastercardCircle, { backgroundColor: '#FF5F00', marginLeft: -8, zIndex: 2 }]} />
+              </View>
+              <Text style={{ color: cardTextColor, fontWeight: '800', fontSize: 13, letterSpacing: 0.5 }}>
+                {cardType}
+              </Text>
+            </View>
             <Wifi size={18} color={cardTextColor} />
           </View>
 
-          {/* Card Center - Budget Limit */}
-          <View className="my-3">
-            <Text style={{ color: cardSubTextColor, fontSize: 10, fontWeight: '700', textTransform: 'uppercase' }}>
+          {/* Card Center - Budget Limit & Envelope Title */}
+          <View className="my-2">
+            <Text style={{ color: cardSubTextColor, fontSize: 10.5, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.8 }}>
               {name.trim() || 'Budget Envelope'}
             </Text>
-            <Text style={{ color: cardTextColor, fontSize: 24, fontWeight: '900', letterSpacing: -0.5 }}>
+            <Text style={{ color: cardTextColor, fontSize: 26, fontWeight: '900', letterSpacing: -0.6 }}>
               {currencySymbol}{(parseFloat(limit) || 0).toLocaleString()}
             </Text>
           </View>
 
-          {/* Card Footer */}
+          {/* Card Footer: Holder, Expiry & Chip */}
           <View className="flex-row items-center justify-between">
-            <Text style={{ color: cardTextColor, fontSize: 11, fontWeight: '700', fontVariant: ['tabular-nums'] }}>
-              {holder}
-            </Text>
-            <Text style={{ color: cardSubTextColor, fontSize: 11, fontWeight: '600' }}>
-              02/28
-            </Text>
+            <View>
+              <Text style={{ color: cardTextColor, fontSize: 11, fontWeight: '700', fontVariant: ['tabular-nums'] }}>
+                {holder}
+              </Text>
+              <Text style={{ color: cardSubTextColor, fontSize: 10, fontWeight: '600' }}>
+                Monthly Envelope
+              </Text>
+            </View>
+            {/* Minimal EMV Chip simulator */}
+            <View style={styles.emvChip} />
           </View>
         </View>
       </View>
@@ -249,93 +259,154 @@ export const BudgetCardModal: React.FC<BudgetCardModalProps> = ({
       {errorMessage ? (
         <View
           style={{
-            backgroundColor: 'rgba(224, 122, 95, 0.15)',
-            borderColor: 'rgba(224, 122, 95, 0.35)',
+            backgroundColor: 'rgba(176, 46, 12, 0.15)',
+            borderColor: 'rgba(176, 46, 12, 0.35)',
           }}
-          className="p-3 rounded-2xl border mb-2"
+          className="p-3 rounded-2xl border mb-3"
         >
-          <Text style={{ color: '#E07A5F' }} className="text-xs font-bold text-center">
+          <Text style={{ color: colors.oxidizedIron }} className="text-xs font-bold text-center">
             {errorMessage}
           </Text>
         </View>
       ) : null}
 
-      {/* Backdrop Themes & Random Color Generator */}
-      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 12, marginBottom: 8 }}>
-        <Text style={[styles.inputLabel, { color: colors.textSecondary, marginTop: 0, marginBottom: 0 }]}>
-          Backdrop Palette
-        </Text>
+      {/* Section Header: Mesh Backdrop Palette & Random Palette Generator */}
+      <View style={styles.sectionHeadingRow}>
+        <View>
+          <Text style={[styles.inputLabel, { color: colors.textSecondary, marginTop: 0, marginBottom: 0 }]}>
+            Mesh Backdrop Palette
+          </Text>
+          <Text style={{ fontSize: 11, color: colors.textMuted }}>
+            Multi-tone glass gradients
+          </Text>
+        </View>
+
         <TouchableOpacity
-          onPress={generateRandomColors}
+          onPress={handleGenerateRandomPalette}
           style={[
             styles.randomBtn,
             {
-              backgroundColor: isDark ? 'rgba(206, 240, 74, 0.14)' : 'rgba(206, 240, 74, 0.2)',
-              borderColor: colors.matchaLime,
+              backgroundColor: isDark ? 'rgba(227, 151, 116, 0.16)' : 'rgba(227, 151, 116, 0.22)',
+              borderColor: colors.tangerineDream,
             },
           ]}
           activeOpacity={0.75}
         >
-          <Shuffle size={12} color={colors.textPrimary} />
-          <Text style={[styles.randomBtnText, { color: colors.textPrimary }]}>
-            Random Palette
+          <Sparkles size={13} color={colors.tangerineDream} />
+          <Text style={[styles.randomBtnText, { color: colors.tangerineDream }]}>
+            Randomize Mesh
           </Text>
         </TouchableOpacity>
       </View>
 
-      <View style={styles.swatchGrid}>
-        {BACKDROP_THEMES.map((theme) => {
-          const isSelected = variant === theme.id && !customGradient;
+      {/* Random Palette Active Status Banner */}
+      {customGradient && (
+        <View
+          style={[
+            styles.customPaletteBanner,
+            {
+              backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : '#F5F8F9',
+              borderColor: colors.tangerineDream,
+            },
+          ]}
+        >
+          <View className="flex-row items-center gap-2">
+            <Layers size={14} color={colors.tangerineDream} />
+            <Text style={[styles.customBannerTitle, { color: colors.textPrimary }]}>
+              {randomPaletteName || 'Custom Mesh'}
+            </Text>
+            <Text style={{ fontSize: 10, color: colors.textMuted, textTransform: 'capitalize' }}>
+              ({shapePattern})
+            </Text>
+          </View>
+
+          {/* Color swatches preview */}
+          <View className="flex-row items-center gap-1.5">
+            {customGradient.map((hex, i) => (
+              <View
+                key={`custom-stop-${i}`}
+                style={[styles.colorDot, { backgroundColor: hex }]}
+              />
+            ))}
+            <TouchableOpacity
+              onPress={handleGenerateRandomPalette}
+              style={styles.rerollBtn}
+              activeOpacity={0.7}
+            >
+              <Shuffle size={12} color={colors.textSecondary} />
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
+
+      {/* Curated Pre-Built Mesh Backdrop Swatches */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.meshSwatchesScroll}
+      >
+        {CURATED_MESH_PRESETS.map((preset) => {
+          const isSelected = variant === preset.id && !customGradient;
+          const [c1, c2, c3] = preset.gradient;
+
           return (
             <TouchableOpacity
-              key={theme.id}
+              key={preset.id}
               onPress={() => {
                 triggerHaptic('light');
-                setVariant(theme.id);
+                setVariant(preset.id);
+                setShapePattern(preset.shape);
                 setCustomGradient(undefined);
+                setRandomPaletteName('');
               }}
               style={[
-                styles.swatchItem,
+                styles.meshSwatchCard,
                 {
-                  backgroundColor: theme.previewColor,
-                  borderColor: isSelected ? colors.matchaLime : 'transparent',
+                  borderColor: isSelected ? colors.tangerineDream : isDark ? 'rgba(255, 255, 255, 0.10)' : 'rgba(0, 0, 0, 0.06)',
+                  borderWidth: isSelected ? 2 : 1,
+                  backgroundColor: isDark ? 'rgba(255, 255, 255, 0.04)' : '#FFFFFF',
                 },
               ]}
               activeOpacity={0.8}
             >
-              {isSelected && (
-                <Check
-                  size={18}
-                  color={theme.id === 'matchaLime' || theme.id === 'goldenHoney' || theme.id === 'porcelain' ? '#141715' : '#FFFFFF'}
-                  strokeWidth={3}
-                />
-              )}
+              {/* Mini SVG Mesh Gradient */}
+              <View style={styles.miniMeshPreview}>
+                <Svg width="100%" height="100%" viewBox="0 0 60 40">
+                  <Defs>
+                    <LinearGradient id={`presetGrad-${preset.id}`} x1="0%" y1="0%" x2="100%" y2="100%">
+                      <Stop offset="0%" stopColor={c1} />
+                      <Stop offset="50%" stopColor={c2} />
+                      <Stop offset="100%" stopColor={c3} />
+                    </LinearGradient>
+                  </Defs>
+                  <Rect x="0" y="0" width="60" height="40" rx="8" fill={`url(#presetGrad-${preset.id})`} />
+                </Svg>
+                {isSelected && (
+                  <View style={styles.selectedBadge}>
+                    <Check size={12} color="#FFFFFF" strokeWidth={3} />
+                  </View>
+                )}
+              </View>
+
+              <Text
+                style={[
+                  styles.meshSwatchLabel,
+                  {
+                    color: isSelected ? colors.textPrimary : colors.textSecondary,
+                    fontWeight: isSelected ? '800' : '600',
+                  },
+                ]}
+                numberOfLines={1}
+              >
+                {preset.label}
+              </Text>
             </TouchableOpacity>
           );
         })}
-        {customGradient && (
-          <TouchableOpacity
-            onPress={() => {
-              triggerHaptic('light');
-              setVariant('custom');
-            }}
-            style={[
-              styles.swatchItem,
-              {
-                backgroundColor: customGradient[0],
-                borderColor: colors.matchaLime,
-                borderWidth: 2.5,
-              },
-            ]}
-            activeOpacity={0.8}
-          >
-            <Check size={18} color="#FFFFFF" strokeWidth={3} />
-          </TouchableOpacity>
-        )}
-      </View>
+      </ScrollView>
 
       {/* Card Details Inputs */}
-      <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>
+      <Text style={[styles.inputLabel, { color: colors.textSecondary, marginTop: 16 }]}>
         Envelope / Card Title *
       </Text>
       <TextInput
@@ -349,8 +420,8 @@ export const BudgetCardModal: React.FC<BudgetCardModalProps> = ({
         style={[
           styles.textInput,
           {
-            backgroundColor: isDark ? colors.cardSecondary : '#F7F7F4',
-            borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
+            backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : '#F4F7F9',
+            borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
             color: colors.textPrimary,
           },
         ]}
@@ -369,8 +440,8 @@ export const BudgetCardModal: React.FC<BudgetCardModalProps> = ({
         style={[
           styles.textInput,
           {
-            backgroundColor: isDark ? colors.cardSecondary : '#F7F7F4',
-            borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
+            backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : '#F4F7F9',
+            borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
             color: colors.textPrimary,
           },
         ]}
@@ -388,8 +459,8 @@ export const BudgetCardModal: React.FC<BudgetCardModalProps> = ({
         style={[
           styles.textInput,
           {
-            backgroundColor: isDark ? colors.cardSecondary : '#F7F7F4',
-            borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
+            backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : '#F4F7F9',
+            borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
             color: colors.textPrimary,
           },
         ]}
@@ -403,20 +474,20 @@ export const BudgetCardModal: React.FC<BudgetCardModalProps> = ({
       <TextInput
         value={cardType}
         onChangeText={setCardType}
-        placeholder="e.g. Vault, Personal Property, Emergency Reserve"
+        placeholder="e.g. Vault, Property, Emergency, Savings"
         placeholderTextColor={colors.textMuted}
         style={[
           styles.textInput,
           {
-            backgroundColor: isDark ? colors.cardSecondary : '#F7F7F4',
-            borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
+            backgroundColor: isDark ? 'rgba(255, 255, 255, 0.05)' : '#F4F7F9',
+            borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
             color: colors.textPrimary,
           },
         ]}
         returnKeyType="done"
       />
       <View style={styles.tagRow}>
-        {['Vault', 'Personal Property', 'Reserve', 'Savings'].map((tag) => {
+        {['Vault', 'Property', 'Reserve', 'Savings', 'Mastercard'].map((tag) => {
           const isSelected = cardType.toLowerCase() === tag.toLowerCase();
           return (
             <TouchableOpacity
@@ -429,15 +500,15 @@ export const BudgetCardModal: React.FC<BudgetCardModalProps> = ({
                 styles.tagChip,
                 {
                   backgroundColor: isSelected
-                    ? colors.matchaLime
+                    ? colors.blueSlate
                     : isDark
-                    ? colors.cardSecondary
-                    : '#F4F4F0',
+                    ? 'rgba(255, 255, 255, 0.06)'
+                    : '#EDF2F5',
                   borderColor: isSelected
-                    ? colors.matchaLime
+                    ? colors.blueSlate
                     : isDark
-                    ? 'rgba(255,255,255,0.08)'
-                    : 'rgba(0,0,0,0.06)',
+                    ? 'rgba(255, 255, 255, 0.08)'
+                    : 'rgba(0, 0, 0, 0.06)',
                 },
               ]}
               activeOpacity={0.7}
@@ -446,7 +517,7 @@ export const BudgetCardModal: React.FC<BudgetCardModalProps> = ({
                 style={{
                   fontSize: 11,
                   fontWeight: isSelected ? '800' : '600',
-                  color: isSelected ? '#141715' : colors.textSecondary,
+                  color: isSelected ? '#FFFFFF' : colors.textSecondary,
                 }}
               >
                 {tag}
@@ -457,20 +528,20 @@ export const BudgetCardModal: React.FC<BudgetCardModalProps> = ({
       </View>
 
       {/* Action Buttons */}
-      <View className="flex-row items-center gap-3">
+      <View className="flex-row items-center gap-3 mt-2">
         {initialData && onDelete && (
           <TouchableOpacity
             onPress={handleDelete}
             style={[
               styles.deleteButton,
               {
-                backgroundColor: 'rgba(224, 122, 95, 0.15)',
-                borderColor: 'rgba(224, 122, 95, 0.3)',
+                backgroundColor: 'rgba(176, 46, 12, 0.15)',
+                borderColor: 'rgba(176, 46, 12, 0.3)',
               },
             ]}
             activeOpacity={0.8}
           >
-            <Trash2 size={18} color="#E07A5F" />
+            <Trash2 size={18} color={colors.oxidizedIron} />
           </TouchableOpacity>
         )}
 
@@ -479,14 +550,14 @@ export const BudgetCardModal: React.FC<BudgetCardModalProps> = ({
           style={[
             styles.saveButton,
             {
-              backgroundColor: isDark ? '#CEF04A' : '#141715',
+              backgroundColor: isDark ? colors.tangerineDream : colors.black,
               flex: 1,
             },
           ]}
           activeOpacity={0.85}
         >
-          <Sparkles size={16} color={isDark ? '#141715' : '#FFFFFF'} />
-          <Text style={[styles.saveButtonText, { color: isDark ? '#141715' : '#FFFFFF' }]}>
+          <Sparkles size={16} color={isDark ? '#020202' : '#FFFFFF'} />
+          <Text style={[styles.saveButtonText, { color: isDark ? '#020202' : '#FFFFFF' }]}>
             {initialData ? 'Update Budget Card' : 'Create Budget Card'}
           </Text>
         </TouchableOpacity>
@@ -498,67 +569,146 @@ export const BudgetCardModal: React.FC<BudgetCardModalProps> = ({
 const styles = StyleSheet.create({
   previewContainer: {
     alignItems: 'center',
-    marginVertical: 10,
+    marginVertical: 8,
   },
   cardPreview: {
     width: '100%',
-    height: 155,
-    borderRadius: 24,
+    height: 165,
+    borderRadius: 26,
     padding: 16,
     justifyContent: 'space-between',
-    borderWidth: 1,
+    borderWidth: 1.2,
     overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.18,
+    shadowRadius: 14,
+    elevation: 4,
   },
-  inputLabel: {
-    fontSize: 12,
-    fontWeight: '700',
-    marginTop: 12,
-    marginBottom: 6,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
+  mastercardBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: 28,
   },
-  swatchGrid: {
+  mastercardCircle: {
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    opacity: 0.9,
+  },
+  emvChip: {
+    width: 26,
+    height: 20,
+    borderRadius: 5,
+    backgroundColor: 'rgba(255, 255, 255, 0.35)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.5)',
+  },
+  sectionHeadingRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 4,
+    marginTop: 10,
+    marginBottom: 8,
   },
-  swatchItem: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2.5,
-  },
-  textInput: {
-    height: 48,
-    borderRadius: 16,
-    paddingHorizontal: 16,
-    fontSize: 14,
-    fontWeight: '600',
-    borderWidth: 1,
+  inputLabel: {
+    fontSize: 12,
+    fontFamily: FONTS.sansBold,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
     marginBottom: 4,
   },
   randomBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 14,
     borderWidth: 1,
   },
   randomBtnText: {
     fontSize: 11,
-    fontWeight: '700',
+    fontFamily: FONTS.sansBold,
+  },
+  customPaletteBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 14,
+    borderWidth: 1,
+    marginBottom: 10,
+  },
+  customBannerTitle: {
+    fontSize: 12,
+    fontFamily: FONTS.sansBold,
+  },
+  colorDot: {
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+  },
+  rerollBtn: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    marginLeft: 4,
+  },
+  meshSwatchesScroll: {
+    gap: 10,
+    paddingVertical: 2,
+  },
+  meshSwatchCard: {
+    width: 90,
+    padding: 6,
+    borderRadius: 14,
+    alignItems: 'center',
+  },
+  miniMeshPreview: {
+    width: 76,
+    height: 48,
+    borderRadius: 10,
+    overflow: 'hidden',
+    position: 'relative',
+    marginBottom: 6,
+  },
+  selectedBadge: {
+    position: 'absolute',
+    top: 4,
+    right: 4,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: 'rgba(2, 2, 2, 0.75)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  meshSwatchLabel: {
+    fontSize: 10,
+    textAlign: 'center',
+  },
+  textInput: {
+    height: 48,
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    fontSize: 14,
+    fontFamily: FONTS.sansMedium,
+    borderWidth: 1,
+    marginBottom: 6,
   },
   tagRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
     marginTop: 4,
-    marginBottom: 16,
+    marginBottom: 14,
   },
   tagChip: {
     paddingHorizontal: 12,
@@ -573,12 +723,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    marginTop: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+    elevation: 3,
   },
   saveButtonText: {
     fontSize: 15,
-    fontWeight: '800',
+    fontFamily: FONTS.sansBold,
     letterSpacing: -0.2,
+  },
+  deleteIconBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
   },
   deleteButton: {
     width: 52,
@@ -587,6 +749,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    marginTop: 10,
   },
 });

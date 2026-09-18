@@ -24,10 +24,10 @@ export function CategoryCarousel({
       <View style={styles.sectionHeaderRow}>
         <View>
           <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>
-            Categories
+            Transaction Tags
           </Text>
           <Text style={[styles.sectionSub, { color: colors.textSecondary }]}>
-            Monthly Budget Envelopes
+            Filter & categorize ledger movements
           </Text>
         </View>
         <TouchableOpacity
@@ -65,27 +65,27 @@ export function CategoryCarousel({
           <View
             style={[
               styles.emptyIconCircle,
-              { backgroundColor: isDark ? 'rgba(206, 240, 74, 0.15)' : 'rgba(206, 240, 74, 0.25)' },
+              { backgroundColor: isDark ? 'rgba(137, 157, 120, 0.15)' : 'rgba(137, 157, 120, 0.25)' },
             ]}
           >
-            <Sparkles size={18} color={colors.matchaLime} />
+            <Sparkles size={18} color={colors.palmLeaf} />
           </View>
           <View style={{ flex: 1 }}>
             <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>
-              No Budget Categories
+              No Custom Tags Yet
             </Text>
             <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
-              Create envelopes for Groceries, Bills, or Dining to organize your ledger.
+              Create tags like Xerox, Walk, Service, or Tea to label and filter entries.
             </Text>
           </View>
           <View
             style={[
               styles.addPill,
-              { backgroundColor: colors.matchaLime },
+              { backgroundColor: colors.palmLeaf },
             ]}
           >
             <Plus size={14} color="#141715" />
-            <Text style={styles.addPillText}>New</Text>
+            <Text style={styles.addPillText}>New Tag</Text>
           </View>
         </TouchableOpacity>
       ) : (
@@ -94,7 +94,7 @@ export function CategoryCarousel({
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.categoryScroll}
         >
-          {categories.slice(0, 6).map((cat) => (
+          {categories.map((cat) => (
             <TouchableOpacity
               key={cat.id}
               style={[
@@ -116,7 +116,7 @@ export function CategoryCarousel({
                   { backgroundColor: cat.color },
                 ]}
               >
-                <Tag size={16} color="#141715" />
+                <Tag size={15} color="#141715" />
               </View>
               <Text
                 style={[styles.catName, { color: colors.textPrimary }]}
@@ -124,11 +124,8 @@ export function CategoryCarousel({
               >
                 {cat.name}
               </Text>
-              <Text style={[styles.catSpent, { color: colors.textPrimary }]}>
-                {currencySymbol}{cat.spent.toFixed(0)}
-              </Text>
               <Text style={[styles.catBudget, { color: colors.textMuted }]}>
-                of {currencySymbol}{cat.budget.toFixed(0)}
+                Tag
               </Text>
             </TouchableOpacity>
           ))}

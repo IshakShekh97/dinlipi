@@ -156,7 +156,7 @@ export interface BiometricCapabilities {
   hasHardware: boolean;
   isEnrolled: boolean;
   supportedTypes: LocalAuthentication.AuthenticationType[];
-  biometricName: "Fingerprint" | "Face ID" | "Biometrics";
+  biometricName: "Fingerprint" | "Biometrics";
 }
 
 export interface SecuritySettings {
@@ -173,7 +173,7 @@ let lockoutTimestamp: number | null = null;
 
 export const SecurityService = {
   /**
-   * Inspect device hardware support for fingerprint or face authentication
+   * Inspect device hardware support for fingerprint authentication
    */
   async checkBiometricCapabilities(): Promise<BiometricCapabilities> {
     try {
@@ -185,21 +185,9 @@ export const SecurityService = {
         ? await LocalAuthentication.supportedAuthenticationTypesAsync()
         : [];
 
-      let biometricName: "Fingerprint" | "Face ID" | "Biometrics" =
-        "Biometrics";
-      if (
-        supportedTypes.includes(
-          LocalAuthentication.AuthenticationType.FACIAL_RECOGNITION,
-        )
-      ) {
-        biometricName = "Face ID";
-      } else if (
-        supportedTypes.includes(
-          LocalAuthentication.AuthenticationType.FINGERPRINT,
-        )
-      ) {
-        biometricName = "Fingerprint";
-      }
+      const biometricName: "Fingerprint" | "Biometrics" = hasHardware
+        ? "Fingerprint"
+        : "Biometrics";
 
       return {
         hasHardware,
@@ -219,7 +207,7 @@ export const SecurityService = {
   },
 
   /**
-   * Prompts user with native biometric dialog (Fingerprint or Face ID)
+   * Prompts user with native biometric dialog (Fingerprint)
    */
   async authenticateWithBiometrics(
     promptMessage = "Unlock Dinlipi Ledger",

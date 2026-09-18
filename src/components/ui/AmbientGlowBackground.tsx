@@ -14,39 +14,78 @@ interface AmbientGlowProps {
 
 export const AmbientGlowBackground: React.FC<AmbientGlowProps> = ({
   glowColor,
-  glowHeight = 360,
-  topOffset = -60,
+  glowHeight = 420,
+  topOffset = -50,
   intensity = 1,
 }) => {
   const { isDark } = useAppTheme();
 
-  // Reference design palette: warm amber/apricot glow in light, deep sunset ember in dark
-  const color1 = glowColor || (isDark ? '#E07A5F' : '#F4A261');
-  const color2 = isDark ? '#D97706' : '#F2CC8F';
-  const opacity1 = (isDark ? 0.26 : 0.42) * intensity;
-  const opacity2 = (isDark ? 0.12 : 0.18) * intensity;
+  // Unified 5-Tone Glassmorphism Palette:
+  // Tangerine Dream (#E39774), Blue Slate (#326273), Palm Leaf (#899D78)
+  const tangerine = '#E39774';
+  const slate = '#326273';
+  const palmLeaf = '#899D78';
+
+  const opTangerine = (isDark ? 0.26 : 0.36) * intensity;
+  const opSlate = (isDark ? 0.22 : 0.28) * intensity;
+  const opPalm = (isDark ? 0.14 : 0.20) * intensity;
 
   return (
     <View style={[styles.container, { height: glowHeight, top: topOffset }]} pointerEvents="none">
       <Svg height="100%" width="100%">
         <Defs>
+          {/* Top-right warm luminous Tangerine Dream aura */}
           <RadialGradient
-            id="ambientWarmGlow"
-            cx="50%"
-            cy="25%"
-            rx="75%"
-            ry="65%"
-            fx="50%"
-            fy="20%"
+            id="ambientTangerine"
+            cx="80%"
+            cy="18%"
+            rx="65%"
+            ry="60%"
+            fx="80%"
+            fy="12%"
             gradientUnits="userSpaceOnUse"
           >
-            <Stop offset="0%" stopColor={color1} stopOpacity={opacity1} />
-            <Stop offset="45%" stopColor={color2} stopOpacity={opacity2} />
-            <Stop offset="85%" stopColor={color2} stopOpacity="0.04" />
-            <Stop offset="100%" stopColor={color1} stopOpacity="0" />
+            <Stop offset="0%" stopColor={glowColor || tangerine} stopOpacity={opTangerine} />
+            <Stop offset="50%" stopColor={glowColor || tangerine} stopOpacity={opTangerine * 0.4} />
+            <Stop offset="100%" stopColor={glowColor || tangerine} stopOpacity="0" />
+          </RadialGradient>
+
+          {/* Top-left cool Blue Slate aura */}
+          <RadialGradient
+            id="ambientSlate"
+            cx="15%"
+            cy="22%"
+            rx="65%"
+            ry="60%"
+            fx="15%"
+            fy="15%"
+            gradientUnits="userSpaceOnUse"
+          >
+            <Stop offset="0%" stopColor={slate} stopOpacity={opSlate} />
+            <Stop offset="55%" stopColor={slate} stopOpacity={opSlate * 0.35} />
+            <Stop offset="100%" stopColor={slate} stopOpacity="0" />
+          </RadialGradient>
+
+          {/* Center-bottom soft Palm Leaf mist */}
+          <RadialGradient
+            id="ambientPalm"
+            cx="50%"
+            cy="65%"
+            rx="60%"
+            ry="45%"
+            fx="50%"
+            fy="55%"
+            gradientUnits="userSpaceOnUse"
+          >
+            <Stop offset="0%" stopColor={palmLeaf} stopOpacity={opPalm} />
+            <Stop offset="55%" stopColor={palmLeaf} stopOpacity={opPalm * 0.3} />
+            <Stop offset="100%" stopColor={palmLeaf} stopOpacity="0" />
           </RadialGradient>
         </Defs>
-        <Rect x="0" y="0" width={width} height={glowHeight} fill="url(#ambientWarmGlow)" />
+
+        <Rect x="0" y="0" width={width} height={glowHeight} fill="url(#ambientSlate)" />
+        <Rect x="0" y="0" width={width} height={glowHeight} fill="url(#ambientTangerine)" />
+        <Rect x="0" y="0" width={width} height={glowHeight} fill="url(#ambientPalm)" />
       </Svg>
     </View>
   );

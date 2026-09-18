@@ -51,6 +51,11 @@ export function useUserLive() {
   return useLiveQuery(query);
 }
 
+export function usePaymentQRsLive() {
+  const query = useMemo(() => db.select().from(schema.paymentQRsTable).orderBy(desc(schema.paymentQRsTable.createdAt)), []);
+  return useLiveQuery(query);
+}
+
 export function usePersonTransactionsLive(personId?: string) {
   const query = useMemo(() => {
     if (personId) {
@@ -665,6 +670,8 @@ export async function updateUserProfile(data: {
   phone?: string;
   avatar?: string;
   currency?: string;
+  upiId?: string;
+  qrCodeUri?: string;
 }) {
   const existing = db.select().from(schema.usersTable).where(eq(schema.usersTable.id, 'default_user')).all();
   if (existing.length > 0) {
@@ -674,6 +681,8 @@ export async function updateUserProfile(data: {
         phone: data.phone ?? '',
         avatar: data.avatar ?? 'avatar_matcha_fox',
         currency: data.currency ?? '₹ INR',
+        upiId: data.upiId ?? '',
+        qrCodeUri: data.qrCodeUri ?? '',
         updatedAt: new Date().toISOString(),
       })
       .where(eq(schema.usersTable.id, 'default_user'))
@@ -686,9 +695,45 @@ export async function updateUserProfile(data: {
         phone: data.phone ?? '',
         avatar: data.avatar ?? 'avatar_matcha_fox',
         currency: data.currency ?? '₹ INR',
+        upiId: data.upiId ?? '',
+        qrCodeUri: data.qrCodeUri ?? '',
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       })
       .run();
   }
+}
+
+// ==========================================
+// 7. PAYMENT QR CODE MUTATIONS
+// ==========================================
+
+export async function addPaymentQR(data: {
+  title: string;
+  upiId?: string;
+  imageUri: string;
+  isDefault?: boolean;
+}) {
+  const id = `qr-${Date.now()}`;
+  if (data.isDefault) {
+    db.update(schema.paymentQRsTable).set({ isDefault: false }).run();
+  }
+  db.insert(schema.paymentQRsTable).values({
+    id,
+    title: data.title,
+    upiId: data.upiId || '',
+    imageUri: data.imageUri,
+    isDefault: data.isDefault ?? false,
+    createdAt: new Date().toISOString(),
+  }).run();
+  return id;
+}
+
+export async function deletePaymentQR(id: string) {
+  db.delete(schema.paymentQRsTable).where(eq(schema.paymentQRsTable.id, id)).run();
+}
+
+export async function setDefaultPaymentQR(id: string) {
+  db.update(schema.paymentQRsTable).set({ isDefault: false }).run();
+  db.update(schema.paymentQRsTable).set({ isDefault: true }).where(eq(schema.paymentQRsTable.id, id)).run();
 }

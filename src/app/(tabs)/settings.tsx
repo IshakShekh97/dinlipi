@@ -7,6 +7,7 @@ import {
   StyleSheet,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { router } from 'expo-router';
 import { Lock, Sparkles, ChevronRight, Wallet } from 'lucide-react-native';
 import { useSecurity } from '../../context/security-context';
 import { useAppTheme } from '../../context/theme-context';
@@ -19,9 +20,7 @@ import { AmbientGlowBackground } from '../../components/ui/AmbientGlowBackground
 import { useUIStore } from '../../store/ui-store';
 import { useUserLive } from '../../db/queries';
 import { UserAvatar } from '../../components/ui/UserAvatar';
-import { UserProfileModal, UserProfile } from '../../components/profile/UserProfileModal';
-import { db } from '../../db/client';
-import * as schema from '../../db/schema';
+import type { UserProfile } from '../../components/profile/UserProfileModal';
 
 export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
@@ -38,7 +37,6 @@ export default function SettingsScreen() {
 
   const [passcodeModalVisible, setPasscodeModalVisible] = useState(false);
   const [modalMode, setModalMode] = useState<'create' | 'change'>('create');
-  const [profileModalVisible, setProfileModalVisible] = useState(false);
   const [defaultPaymentChannel, setDefaultPaymentChannel] = useState<'cash' | 'upi' | 'bank' | 'card'>('cash');
 
   const { data: dbUsers = [] } = useUserLive();
@@ -59,36 +57,6 @@ export default function SettingsScreen() {
       currency: activeCurrency,
     };
   }, [dbUsers, activeCurrency]);
-
-  const handleSaveProfile = (profile: UserProfile) => {
-    try {
-      db.insert(schema.usersTable)
-        .values({
-          id: 'default_user',
-          name: profile.name,
-          phone: profile.phone,
-          avatar: profile.avatar,
-          currency: profile.currency,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        })
-        .onConflictDoUpdate({
-          target: schema.usersTable.id,
-          set: {
-            name: profile.name,
-            phone: profile.phone,
-            avatar: profile.avatar,
-            currency: profile.currency,
-            updatedAt: new Date().toISOString(),
-          },
-        })
-        .run();
-      triggerHaptic('success');
-      setProfileModalVisible(false);
-    } catch (e) {
-      console.error('Failed to save user profile:', e);
-    }
-  };
 
   const handlePasscodeSuccess = async (pin: string) => {
     await setupPasscode(pin);
@@ -111,7 +79,7 @@ export default function SettingsScreen() {
         paddingTop: Math.max(insets.top + 6, 32),
       }}
     >
-      <AmbientGlowBackground glowColor={colors.mossSage} />
+      <AmbientGlowBackground glowColor={colors.tangerineDream} />
 
       {/* Header */}
       <View style={styles.headerRow}>
@@ -139,8 +107,8 @@ export default function SettingsScreen() {
             ]}
             activeOpacity={0.8}
           >
-            <Lock size={13} color={colors.matchaLime} />
-            <Text style={[styles.lockNowText, { color: colors.matchaLime }]}>
+            <Lock size={13} color={colors.palmLeaf} />
+            <Text style={[styles.lockNowText, { color: colors.palmLeaf }]}>
               Lock Now
             </Text>
           </TouchableOpacity>
@@ -160,13 +128,15 @@ export default function SettingsScreen() {
           <TouchableOpacity
             onPress={() => {
               triggerHaptic('light');
-              setProfileModalVisible(true);
+              router.push('/profile' as any);
             }}
             style={[
               styles.profileCard,
               {
-                backgroundColor: isDark ? colors.cardSecondary : '#FFFFFF',
-                borderColor: isDark ? colors.borderSubtle : '#EFEFE8',
+                backgroundColor: isDark ? '#11171A' : '#FFFFFF',
+                borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.05)',
+                borderTopColor: isDark ? 'rgba(255, 255, 255, 0.16)' : 'rgba(255, 255, 255, 0.95)',
+                borderWidth: 1,
               },
             ]}
             activeOpacity={0.8}
@@ -177,12 +147,12 @@ export default function SettingsScreen() {
                 <Text style={[styles.profileName, { color: colors.textPrimary }]} numberOfLines={1}>
                   {userProfile.name}
                 </Text>
-                <Sparkles size={13} color={colors.matchaLime} />
+                <Sparkles size={13} color={colors.tangerineDream} />
               </View>
               <Text style={[styles.profileRole, { color: colors.textSecondary }]} numberOfLines={1}>
                 {userProfile.phone ? userProfile.phone : 'Offline Ledger Vault Owner'}
               </Text>
-              <Text style={[styles.profileCurrency, { color: colors.matchaLime }]}>
+              <Text style={[styles.profileCurrency, { color: colors.palmLeaf }]}>
                 Default: {activeCurrency}
               </Text>
             </View>
@@ -210,8 +180,10 @@ export default function SettingsScreen() {
             style={[
               styles.cardBox,
               {
-                backgroundColor: isDark ? colors.cardSecondary : '#FFFFFF',
-                borderColor: isDark ? colors.borderSubtle : '#EFEFE8',
+                backgroundColor: isDark ? '#11171A' : '#FFFFFF',
+                borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.05)',
+                borderTopColor: isDark ? 'rgba(255, 255, 255, 0.16)' : 'rgba(255, 255, 255, 0.95)',
+                borderWidth: 1,
                 padding: 16,
               },
             ]}
@@ -279,12 +251,12 @@ export default function SettingsScreen() {
                         styles.chipBtn,
                         {
                           backgroundColor: isSelected
-                            ? colors.matchaLime
+                            ? colors.tangerineDream
                             : isDark
                             ? colors.cardElevated
                             : '#F4F4EE',
                           borderColor: isSelected
-                            ? colors.matchaLime
+                            ? colors.tangerineDream
                             : isDark
                             ? colors.borderSubtle
                             : '#EAEAE2',
@@ -296,7 +268,7 @@ export default function SettingsScreen() {
                         style={[
                           styles.chipBtnText,
                           {
-                            color: isSelected ? '#141715' : colors.textSecondary,
+                            color: isSelected ? colors.black : colors.textSecondary,
                             fontWeight: isSelected ? '800' : '600',
                           },
                         ]}
@@ -333,7 +305,7 @@ export default function SettingsScreen() {
               },
             ]}
           >
-            <Text style={[styles.brandBangla, { color: colors.matchaLime }]}>
+            <Text style={[styles.brandBangla, { color: colors.palmLeaf }]}>
               দ
             </Text>
           </View>
@@ -345,14 +317,6 @@ export default function SettingsScreen() {
           </Text>
         </View>
       </ScrollView>
-
-      {/* User Profile Modal */}
-      <UserProfileModal
-        visible={profileModalVisible}
-        profile={userProfile}
-        onSave={handleSaveProfile}
-        onClose={() => setProfileModalVisible(false)}
-      />
 
       {/* Passcode Modal */}
       <PasscodeModal

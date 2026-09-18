@@ -13,7 +13,6 @@ import {
   ChevronsRight,
   Sparkles,
   KeyRound,
-  ScanFace,
 } from 'lucide-react-native';
 import Animated, {
   useSharedValue,
@@ -38,7 +37,6 @@ const AuthLockContent: React.FC = () => {
   const { colors, isDark } = useAppTheme();
   const {
     settings,
-    capabilities,
     lockoutRemainingSeconds,
     unlockWithBiometrics,
     unlockWithPasscode,
@@ -191,8 +189,6 @@ const AuthLockContent: React.FC = () => {
     }
   };
 
-  const isFaceId = capabilities.biometricName === 'Face ID';
-
   return (
     <View
       style={[
@@ -233,11 +229,7 @@ const AuthLockContent: React.FC = () => {
                 },
               ]}
             >
-              {isFaceId ? (
-                <ScanFace size={32} color={colors.matchaLime} strokeWidth={2.2} />
-              ) : (
-                <Fingerprint size={32} color={colors.matchaLime} strokeWidth={2.2} />
-              )}
+              <Fingerprint size={32} color={colors.matchaLime} strokeWidth={2.2} />
             </TouchableOpacity>
           </View>
         ) : (

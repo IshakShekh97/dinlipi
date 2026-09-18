@@ -124,7 +124,7 @@ export const useSecurityStore = create<SecurityState>((set, get) => ({
       return {
         success: false,
         error:
-          "No fingerprint or Face ID enrolled. Please register biometrics in your phone system settings first.",
+          "No fingerprint enrolled. Please register biometrics in your phone system settings first.",
       };
     }
     const result = await SecurityService.authenticateWithBiometrics(

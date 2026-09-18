@@ -381,15 +381,15 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
               style={[
                 styles.actionBtn,
                 {
-                  backgroundColor: colors.matchaLime,
+                  backgroundColor: colors.tangerineDream,
                   shadowColor: '#000',
                   shadowOpacity: 0.15,
                 },
               ]}
               activeOpacity={0.8}
             >
-              <Share2 size={16} color="#141715" />
-              <Text style={[styles.actionBtnTextPrimary, { color: '#141715' }]}>Share Slip</Text>
+              <Share2 size={16} color={colors.black} />
+              <Text style={[styles.actionBtnTextPrimary, { color: colors.black }]}>Share Slip</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -411,13 +411,13 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
               style={[
                 styles.iconBtnDanger,
                 {
-                  backgroundColor: isDark ? 'rgba(224, 122, 95, 0.15)' : 'rgba(224, 122, 95, 0.1)',
-                  borderColor: colors.terracotta,
+                  backgroundColor: isDark ? 'rgba(176, 46, 12, 0.15)' : 'rgba(176, 46, 12, 0.1)',
+                  borderColor: colors.oxidizedIron,
                 },
               ]}
               activeOpacity={0.7}
             >
-              <Trash2 size={18} color={colors.terracotta} />
+              <Trash2 size={18} color={colors.oxidizedIron} />
             </TouchableOpacity>
           </View>
         </View>

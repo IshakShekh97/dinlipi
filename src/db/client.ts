@@ -93,11 +93,32 @@ export async function initializeDatabase() {
         category_id TEXT,
         is_active INTEGER DEFAULT 1
       );
+
+      CREATE TABLE IF NOT EXISTS payment_qrs (
+        id TEXT PRIMARY KEY NOT NULL,
+        title TEXT NOT NULL,
+        upi_id TEXT DEFAULT '',
+        image_uri TEXT NOT NULL,
+        is_default INTEGER DEFAULT 0,
+        created_at TEXT NOT NULL
+      );
       DELETE FROM transactions WHERE title IN ('Stripe', 'Payout', 'Broody', 'Spotify', 'Coffee', 'Gym Membership', 'Sample Income', 'Sample Expense');
     `);
 
     try {
       expoDb.execSync("ALTER TABLE people ADD COLUMN card_id TEXT DEFAULT '';");
+    } catch {
+      // Column already exists
+    }
+
+    try {
+      expoDb.execSync("ALTER TABLE users ADD COLUMN upi_id TEXT DEFAULT '';");
+    } catch {
+      // Column already exists
+    }
+
+    try {
+      expoDb.execSync("ALTER TABLE users ADD COLUMN qr_code_uri TEXT DEFAULT '';");
     } catch {
       // Column already exists
     }

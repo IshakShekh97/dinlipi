@@ -103,7 +103,7 @@ export function PermissionsModal({ visible, onClose }: PermissionsModalProps) {
       if (!capabilities.hasHardware || !capabilities.isEnrolled) {
         showConfirm({
           title: 'Biometrics Unavailable',
-          message: 'No biometric hardware or enrolled fingerprint/face found on this device.',
+          message: 'No biometric hardware or enrolled fingerprint found on this device.',
           confirmText: 'OK',
           cancelText: '',
           isDestructive: false,
@@ -140,7 +140,7 @@ export function PermissionsModal({ visible, onClose }: PermissionsModalProps) {
         triggerHaptic('success');
         showConfirm({
           title: 'Sensor Verified',
-          message: 'Biometric fingerprint/face sensor authenticated successfully.',
+          message: 'Biometric fingerprint sensor authenticated successfully.',
           confirmText: 'Awesome',
           cancelText: '',
           onConfirm: () => {},
@@ -254,7 +254,7 @@ export function PermissionsModal({ visible, onClose }: PermissionsModalProps) {
                   Biometric Sensor
                 </Text>
                 <Text style={[styles.permDesc, { color: colors.textSecondary }]}>
-                  {capabilities.biometricName || 'Fingerprint / Face ID'} lock protection
+                  {capabilities.biometricName || 'Fingerprint'} lock protection
                 </Text>
               </View>
             </View>

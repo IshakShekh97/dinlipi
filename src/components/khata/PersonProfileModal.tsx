@@ -248,9 +248,9 @@ export function PersonProfileModal({
               <View style={styles.statusCardHeader}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                   {person.type === 'receivable' ? (
-                    <TrendingUp size={18} color={colors.matchaLime} />
+                    <TrendingUp size={18} color={colors.palmLeaf} />
                   ) : (
-                    <TrendingDown size={18} color={colors.terracotta} />
+                    <TrendingDown size={18} color={colors.oxidizedIron} />
                   )}
                   <Text style={[styles.statusBadgeText, { color: colors.textSecondary }]}>
                     {person.type === 'receivable' ? 'You Will Receive' : 'You Need To Give'}
@@ -260,11 +260,11 @@ export function PersonProfileModal({
                   <View
                     style={[
                       styles.settledBadge,
-                      { backgroundColor: 'rgba(206, 240, 74, 0.16)' },
+                      { backgroundColor: 'rgba(137, 157, 120, 0.16)' },
                     ]}
                   >
-                    <CheckCircle2 size={12} color={colors.matchaLime} />
-                    <Text style={[styles.settledText, { color: colors.matchaLime }]}>Settled</Text>
+                    <CheckCircle2 size={12} color={colors.palmLeaf} />
+                    <Text style={[styles.settledText, { color: colors.palmLeaf }]}>Settled</Text>
                   </View>
                 )}
               </View>
@@ -274,10 +274,10 @@ export function PersonProfileModal({
                   styles.dueAmount,
                   {
                     color: isSettled
-                      ? colors.matchaLime
+                      ? colors.palmLeaf
                       : isReceivable
-                      ? colors.matchaLime
-                      : colors.terracotta,
+                      ? colors.palmLeaf
+                      : colors.oxidizedIron,
                   },
                 ]}
               >
@@ -296,7 +296,7 @@ export function PersonProfileModal({
                     styles.progressFill,
                     {
                       width: `${Math.round(progress * 100)}%`,
-                      backgroundColor: colors.matchaLime,
+                      backgroundColor: isReceivable ? colors.palmLeaf : colors.oxidizedIron,
                     },
                   ]}
                 />
@@ -329,44 +329,59 @@ export function PersonProfileModal({
                     Private Note
                   </Text>
                 </View>
-                <Text style={[styles.notesContent, { color: colors.textPrimary }]}>
+                <Text style={[styles.notesBody, { color: colors.textPrimary }]}>
                   {person.notes}
                 </Text>
               </View>
             ) : null}
 
-            {/* Payment History / Installments */}
-            {person.installments && person.installments.length > 0 && (
-              <View style={styles.historySection}>
-                <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>
-                  Payment History ({person.installments.length})
+            {/* Installment History Section */}
+            <View style={styles.historySection}>
+              <View style={styles.historyHeaderRow}>
+                <Text style={[styles.historyTitle, { color: colors.textPrimary }]}>
+                  Installment Records
                 </Text>
-                {person.installments.map((item) => (
+                <Text style={[styles.historyCount, { color: colors.textMuted }]}>
+                  {(person.installments || []).length} logged
+                </Text>
+              </View>
+
+              {(!person.installments || person.installments.length === 0) ? (
+                <View style={[styles.emptyHistory, { backgroundColor: colors.cardSecondary, borderColor: colors.borderSubtle }]}>
+                  <Text style={[styles.emptyHistoryText, { color: colors.textMuted }]}>
+                    No partial installments recorded yet.
+                  </Text>
+                </View>
+              ) : (
+                person.installments.map((item) => (
                   <View
                     key={item.id}
                     style={[
-                      styles.historyRow,
+                      styles.historyItem,
                       {
-                        backgroundColor: colors.cardPrimary,
+                        backgroundColor: colors.cardSecondary,
                         borderColor: colors.borderSubtle,
                       },
                     ]}
                   >
-                    <View>
-                      <Text style={[styles.historyMode, { color: colors.textPrimary }]}>
-                        {item.mode} Payment
-                      </Text>
-                      <Text style={[styles.historyDate, { color: colors.textSecondary }]}>
-                        {item.date}
-                      </Text>
+                    <View style={styles.historyItemLeft}>
+                      <View style={[styles.historyDot, { backgroundColor: colors.palmLeaf }]} />
+                      <View>
+                        <Text style={[styles.historyMode, { color: colors.textPrimary }]}>
+                          Payment via {item.mode}
+                        </Text>
+                        <Text style={[styles.historyDate, { color: colors.textMuted }]}>
+                          {item.date}
+                        </Text>
+                      </View>
                     </View>
-                    <Text style={[styles.historyAmount, { color: colors.matchaLime }]}>
+                    <Text style={[styles.historyAmount, { color: colors.palmLeaf }]}>
                       +{currencySymbol}{item.amount.toLocaleString()}
                     </Text>
                   </View>
-                ))}
-              </View>
-            )}
+                ))
+              )}
+            </View>
 
             {/* Primary Action Buttons */}
             <View style={styles.bottomButtons}>
@@ -376,10 +391,10 @@ export function PersonProfileModal({
                   onClose();
                   onRecordPayment(person);
                 }}
-                style={[styles.recordBtn, { backgroundColor: colors.matchaLime }]}
+                style={[styles.recordBtn, { backgroundColor: colors.tangerineDream }]}
                 activeOpacity={0.85}
               >
-                <PlusCircle size={20} color="#121413" />
+                <PlusCircle size={20} color={colors.black} />
                 <Text style={styles.recordBtnText}>Record Payment</Text>
               </TouchableOpacity>
 
@@ -394,6 +409,7 @@ export function PersonProfileModal({
                       cancelText: 'Cancel',
                       onConfirm: () => {
                         onSettle(person.id);
+                        useUIStore.getState().triggerConfetti();
                         onClose();
                       },
                     });
@@ -580,6 +596,10 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 18,
   },
+  notesBody: {
+    fontSize: 13,
+    lineHeight: 18,
+  },
   historySection: {
     marginTop: 18,
     gap: 8,
@@ -588,6 +608,49 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
     marginBottom: 4,
+  },
+  historyHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  historyTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  historyCount: {
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  emptyHistory: {
+    padding: 14,
+    borderRadius: 14,
+    borderWidth: 1,
+    alignItems: 'center',
+  },
+  emptyHistoryText: {
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  historyItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 12,
+    borderRadius: 16,
+    borderWidth: 1,
+    marginBottom: 6,
+  },
+  historyItemLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  historyDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
   },
   historyRow: {
     flexDirection: 'row',
@@ -624,7 +687,7 @@ const styles = StyleSheet.create({
   recordBtnText: {
     fontSize: 15,
     fontWeight: '800',
-    color: '#121413',
+    color: '#020202',
   },
   settleBtn: {
     flexDirection: 'row',

@@ -210,7 +210,7 @@ export default function KhataScreen() {
       totalDue: contact.totalDue,
       paidSoFar: contact.paidSoFar,
       avatarPreset: contact.avatar || 'avatar_matcha_fox',
-      avatarColor: contact.type === 'receivable' ? '#CEF04A' : '#E07A5F',
+      avatarColor: contact.type === 'receivable' ? colors.palmLeaf : colors.oxidizedIron,
       notes: contact.notes,
     };
     setEditingPerson(personData);
@@ -236,6 +236,7 @@ export default function KhataScreen() {
       await updatePerson(person);
     } else {
       await addPerson(person);
+      useUIStore.getState().triggerConfetti();
     }
   };
 
@@ -320,6 +321,7 @@ export default function KhataScreen() {
     }
 
     triggerHaptic('success');
+    useUIStore.getState().triggerConfetti();
     await recordInstallment(
       selectedKhataContact.id,
       num,
@@ -353,11 +355,11 @@ export default function KhataScreen() {
         </View>
 
         <TouchableOpacity
-          style={[styles.addPersonBtn, { backgroundColor: colors.matchaLime }]}
+          style={[styles.addPersonBtn, { backgroundColor: colors.tangerineDream }]}
           onPress={handleOpenAddPerson}
           activeOpacity={0.8}
         >
-          <UserPlus size={16} color="#141715" />
+          <UserPlus size={16} color={colors.black} />
           <Text style={styles.addPersonBtnText}>New Person</Text>
         </TouchableOpacity>
       </View>
@@ -394,24 +396,26 @@ export default function KhataScreen() {
         </View>
       </View>
 
-      {/* Aggregate Overview Cards */}
+      {/* Aggregate Overview Cards with 3D Claymorphic Depth */}
       <View style={styles.statsRow}>
         <View
           style={[
             styles.statCard,
             {
-              backgroundColor: isDark ? colors.cardSecondary : '#FFFFFF',
-              borderColor: isDark ? colors.borderSubtle : '#EFEFE8',
+              backgroundColor: isDark ? '#11171A' : '#FFFFFF',
+              borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.05)',
+              borderTopColor: isDark ? 'rgba(255, 255, 255, 0.16)' : 'rgba(255, 255, 255, 0.95)',
+              borderWidth: 1,
             },
           ]}
         >
           <View style={styles.statIconBoxReceivable}>
-            <ArrowDownLeft size={16} color={colors.matchaLime} />
+            <ArrowDownLeft size={16} color={colors.palmLeaf} />
           </View>
           <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
             You Will Get
           </Text>
-          <Text style={[styles.statAmount, { color: colors.matchaLime }]}>
+          <Text style={[styles.statAmount, { color: colors.palmLeaf }]}>
             {currencySymbol}{totalReceivable.toLocaleString()}
           </Text>
         </View>
@@ -420,18 +424,20 @@ export default function KhataScreen() {
           style={[
             styles.statCard,
             {
-              backgroundColor: isDark ? colors.cardSecondary : '#FFFFFF',
-              borderColor: isDark ? colors.borderSubtle : '#EFEFE8',
+              backgroundColor: isDark ? '#11171A' : '#FFFFFF',
+              borderColor: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.05)',
+              borderTopColor: isDark ? 'rgba(255, 255, 255, 0.16)' : 'rgba(255, 255, 255, 0.95)',
+              borderWidth: 1,
             },
           ]}
         >
           <View style={styles.statIconBoxPayable}>
-            <ArrowUpRight size={16} color={colors.terracotta} />
+            <ArrowUpRight size={16} color={colors.oxidizedIron} />
           </View>
           <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
             You Will Give
           </Text>
-          <Text style={[styles.statAmount, { color: colors.terracotta }]}>
+          <Text style={[styles.statAmount, { color: colors.oxidizedIron }]}>
             {currencySymbol}{totalPayable.toLocaleString()}
           </Text>
         </View>
@@ -782,7 +788,7 @@ export default function KhataScreen() {
           )}
 
           <TouchableOpacity
-            style={[styles.recordBtn, { backgroundColor: colors.matchaLime }]}
+            style={[styles.recordBtn, { backgroundColor: colors.tangerineDream }]}
             onPress={handleSaveInstallment}
             activeOpacity={0.8}
           >
@@ -845,7 +851,7 @@ const styles = StyleSheet.create({
   },
   addPersonBtnText: {
     fontFamily: FONTS.sansBold,
-    color: '#141715',
+    color: '#020202',
     fontSize: 13,
   },
   searchBarWrapper: {
@@ -892,7 +898,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 12,
-    backgroundColor: 'rgba(206, 240, 74, 0.16)',
+    backgroundColor: 'rgba(137, 157, 120, 0.16)',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 10,
@@ -901,7 +907,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 12,
-    backgroundColor: 'rgba(224, 122, 95, 0.16)',
+    backgroundColor: 'rgba(176, 46, 12, 0.16)',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 10,
@@ -981,6 +987,6 @@ const styles = StyleSheet.create({
   recordBtnText: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#141715',
+    color: '#020202',
   },
 });
