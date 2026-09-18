@@ -68,28 +68,28 @@ jobs:
 
       - name: 11. Publish / Update GitHub Release on Every Push
         uses: softprops/action-gh-release@v2
+        if: success()
         with:
           files: output/dinlipi-latest.apk
-          name: "Dinlipi Latest (Auto-Build)"
-          tag_name: "latest"
+          name: "Dinlipi (দিনলipi) Android APK"
+          tag_name: ${{ github.ref_type == 'tag' && github.ref_name || 'latest' }}
           draft: false
           prerelease: false
           make_latest: true
+          generate_release_notes: true
           body: |
-            ## Dinlipi (দিনলিপি) Latest Auto-Build 🍃
+            ## Dinlipi (দিনলিপি) Latest Release 🍃
 
-            > Automatically built on every commit to `main` via GitHub Actions. Zero cloud queue, zero cost.
+            > Standalone, zero-cloud, 100% offline personal ledger & Khata daybook.
 
-            ### 📲 Download & Run
-            - **Download File**: [**`dinlipi-latest.apk`**](https://github.com/${{ github.repository }}/releases/download/latest/dinlipi-latest.apk)
+            ### 📲 Download APK
+            - **Universal APK**: [**`dinlipi-latest.apk`**](https://github.com/${{ github.repository }}/releases/download/latest/dinlipi-latest.apk)
             - **Commit**: `${{ github.sha }}`
-            - **Platform**: Android 8.0+ (Universal APK)
-            - **Database**: 100% Offline SQLite with Drizzle ORM
+            - **Platform**: Android 8.0+
 
-            ### How to Install:
-            1. Tap **`dinlipi-latest.apk`** below to download.
-            2. Open the downloaded file on your Android phone.
-            3. If prompted, allow "Install from this source" in Settings.
-            4. Tap **Install** and open Dinlipi!
+            ### Quick Installation:
+            1. Download **`dinlipi-latest.apk`** below.
+            2. Open the file on your device.
+            3. Tap **Install** (allow unknown sources if prompted).
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
